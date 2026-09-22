@@ -1,0 +1,87 @@
+Meal Templates
+
+Always create meals and snacks based on the following templates. Each meal/snack should follow one of the options (ex: meal 1 should always be either a smoothie or oatmeal).
+
+The day's total calories should be within 100 calories of the target amount. The day's total macronutrient split should be within 2% of the target amounts.
+
+Snacks should be calorically half that of a meal. Each meal in a day should be roughly the same size (give or take 150cals). Each snack should be roughly the same as well (give or take 75cals).
+
+Example for 2 meals 1 snack:
+Meal 1: 950 cal, Snack: 450 cal, Meal 2: 850 cal
+
+When adding fruits and vegetables, prioritize diversity in micronutrients. (Ex: broccoli, carrots, and mixed berries in a day is better than bell peppers, mangos, and peaches)
+
+The lower the budget is, the more sacrifices should be made: the order of this list represents which should be sacrificed first -
+- Do not require organic items
+- Reduce overall ingredient count and variety in meals and micronutrients (if that lowers the price)
+- Cheaper items should be used (ex: bananas and raisins over fresh berries) where possible.
+
+Measurement units: Always include the weight in grams of each ingredient. Condense units as necessary (ex: display 2 tbsp instead of 6 tsp).
+- Items measured by the cup (protein powder, rice, oats, etc.) should always be displayed as a standard fraction of a cup (⅛, ¼, ⅓, ½) (can also be just whole number or whole number and standard fraction). Adjust macros and calories as needed to account for slight changes (1 cup protein powder instead of 0.9).
+
+Meal & Snack Planning Procedure
+
+Examples are based on a 2400 daily calorie goal with a 28 42 30 macro split with 3 meals and 2 snacks.
+
+1. Plan the protein sources for each meal. The protein source for each meal should have almost enough protein (3-8g below) to hit the amount required by both the caloric goal for the meal and the day's macronutrient split.
+
+Example:
+- Meal 1: 2 scoops protein
+- Meal 2: 8oz 93-7 ground beef
+- Meal 3: 6oz chicken breast
+
+2. Plan the protein sources for each snack (skip this step if no snacks). If there is only one snack, its protein source should have enough protein to hit the amount required by both the caloric goal for the snack and the day's macronutrient split. If there are two snacks, pick a fattier protein source (ex: almonds) for one and a leaner for the other (ex: 0% greek yogurt): the sum of their protein and fat amounts should hit the amount required by both the total caloric goal for the two snacks combined and the day's macronutrient split.
+3. Add the carb sources for each meal. The carb source(s) for each meal should have enough carbs to hit the amount required by both the caloric goal for the meal and the day's macronutrient split.
+4. Add the carb sources for each snack (skip this step if no snacks). If there is only one snack, its carb source should have enough carbs to hit the amount required by both the caloric goal for the snack and the day's macronutrient split. If there are two snacks, add carbs to the one with the lean protein so that the total calories of the combination of snacks is equal to the total goal (600 in this example).
+5. Add the fat sources for each meal. The fat source for each meal should have enough fat to hit the amount required by both the caloric goal for the meal and the day's macronutrient split.
+
+Meal Templates:
+
+Option 1 - Bowl:
+1. Protein: lean ground beef, lean ground turkey, chicken breast, chicken thighs, salmon filet, cod filet, eggs/egg whites. There should be enough to hit the protein target almost entirely.
+   1. Note: season lightly to taste
+2. Carb
+   1. white rice, brown rice, potatoes, or sweet potatoes. Should be enough to hit the carb target.
+   2. Vegetable: Always have a serving of vegetables. Broccoli, bell peppers, cauliflower, carrots, mixed vegetables, stir fry, or asparagus.
+3. Fat: 1-3 tsp extra virgin olive oil, portion of avocado, or hard boiled egg
+
+Option 2 - Smoothie:
+1. Protein: always use 0.5-2 servings of protein powder in smoothie based on protein need of meal
+2. Carbs
+   1. Fruit: Smoothie should have 1-2 servings of fruit. Always suggest ½ - 1 banana. Blueberries, strawberries, cherries, mixed berries, and mango are other good options. Serving of spinach optional
+   2. Oats: small amount of oats if high carb count required and not met by fruit
+3. Fats
+   1. 8oz milk (Use almond milk if day's protein or calories already too high)
+   2. 1-6 tsp chia seeds or hemp hearts or walnuts or nut butter if permitted by macro targets
+4. Flavor: suggest cinnamon or cacao as side note
+
+Option 3 - Oatmeal/overnight oats:
+1. Protein: always use 0.5-2 servings of protein powder in oatmeal based on protein need of meal
+2. Carbs
+   1. Oats: Always use base of 1-2 servings of oats based on carb target of meal. Oats should always cover at least ⅔ of meal's carb target.
+   2. Sweetness: suggest a form of sweetness in oatmeal, such as fruit (½-1 banana, ½ serving raisins, or ½ serving mixed berries) and/or 1-2tsp honey / maple syrup.
+3. Fats: 1-6 tsp chia seeds or hemp hearts or walnuts or nut butter if permitted by macro targets
+4. Milk: use 4oz per 1 serving of oats. Omit if causes total daily calories to surpass goal by more than 100.
+5. Flavor: suggest cinnamon or cacao or salt as side note
+
+Flavor profiles: for use in oatmeals or smoothies. Do not include raisins in smoothies.
+
+- Pumpkin spice: banana, pumpkin puree, raisins (optional), maple syrup (optional), walnuts (optional), pumpkin spice
+- Banana bread: banana, raisins (optional), walnuts (optional), maple syrup (optional), cinnamon
+- Berry banana: banana, berries (mixed berries or strawberries or blueberries), cinnamon (optional)
+- Peanut butter banana: banana, peanut butter or powdered peanut butter, cacao (optional), walnuts (optional)
+- Chocolate cherry: cherry, cacao, cinnamon (optional), walnuts (optional)
+
+Snack:
+
+Option 1 - Nut (almonds, peanuts, cashews, pistachios, mixed nuts, or other).
+
+Option 2 - Greek yogurt:
+- Protein: greek yogurt
+- Carb: .5-2 servings of fruit (banana, mango, mixed berries, etc)
+  - Optional: 1-2 tsp honey / maple syrup if carbs permit
+
+Option 3 - Cottage cheese:
+- Protein: cottage cheese
+- Carb: .5-2 servings of fruit (peach, mango, pineapple, mixed berries, etc)
+  - Optional: 1-2 tsp honey / maple syrup if carbs permit

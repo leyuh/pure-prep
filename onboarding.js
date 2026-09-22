@@ -122,7 +122,46 @@
     cottage_lf_cup: { name: "low-fat cottage cheese", unit: "cup", kcal: 163, p: 28, c: 6.1, f: 2.3, m: M({ calcium_mg: 138, sodium_mg: 700, potassium_mg: 190, vitB12_mcg: 0.8, magnesium_mg: 12, zinc_mg: 0.7, vitA_mcg: 40 }) },
     pineapple_cup: { name: "pineapple", unit: "cup", kcal: 82, p: 0.9, c: 21.6, f: 0.2, m: M({ fiber_g: 2.3, vitC_mg: 79, manganese: 1.5, potassium_mg: 180, calcium_mg: 21, magnesium_mg: 20, iron_mg: 0.5 }) },
     peach_cup: { name: "sliced peach", unit: "cup", kcal: 60, p: 1.4, c: 14.7, f: 0.4, m: M({ fiber_g: 2.3, vitC_mg: 10, vitA_mcg: 26, potassium_mg: 285, calcium_mg: 9, magnesium_mg: 14, iron_mg: 0.4 }) },
+    egg: { name: "large egg", unit: "egg", kcal: 72, p: 6.3, c: 0.4, f: 4.8, m: M({ sodium_mg: 71, vitA_mcg: 80, vitD_mcg: 1, vitB12_mcg: 0.5, iron_mg: 0.9, calcium_mg: 28, potassium_mg: 69, zinc_mg: 0.6, magnesium_mg: 6 }) },
+    egg_white: { name: "egg white", unit: "white", kcal: 17, p: 3.6, c: 0.2, f: 0.1, m: M({ sodium_mg: 55, potassium_mg: 54, calcium_mg: 2, magnesium_mg: 4 }) },
+    avocado_oz: { name: "avocado", unit: "oz", kcal: 45, p: 0.6, c: 2.4, f: 4.2, m: M({ fiber_g: 1.9, potassium_mg: 140, magnesium_mg: 8, vitC_mg: 2.8, vitA_mcg: 2, calcium_mg: 3, iron_mg: 0.15 }) },
+    hard_boiled_egg: { name: "hard boiled egg", unit: "egg", kcal: 78, p: 6.3, c: 0.6, f: 5.3, m: M({ sodium_mg: 62, vitA_mcg: 74, vitD_mcg: 1.1, vitB12_mcg: 0.55, iron_mg: 0.6, calcium_mg: 25, potassium_mg: 63, zinc_mg: 0.5 }) },
   };
+
+  /** Approximate edible grams per FOOD unit (for display). */
+  const UNIT_GRAMS = {
+    almond_milk_oz: 30, milk_skim_oz: 30, milk_2pct_oz: 30,
+    protein_scoop: 30, banana: 118, berries_cup: 140, blueberries_cup: 148,
+    strawberries_cup: 152, cherries_cup: 140, mango_cup: 165, spinach_cup: 30,
+    oats_cup: 80, chia_tbsp: 10, hemp_tbsp: 10, walnuts_tbsp: 7.5, pb_tbsp: 16,
+    chia_tsp: 3.3, hemp_tsp: 3.3, walnuts_tsp: 2.5, pb_tsp: 5.3,
+    pumpkin_cup: 245, raisins_cup: 145, maple_tsp: 7, honey_tsp: 7, cacao_tsp: 2.5,
+    beef_oz: 28, turkey_oz: 28, chicken_oz: 28, chicken_thigh_oz: 28, salmon_oz: 28, cod_oz: 28,
+    rice_cup: 158, brown_rice_cup: 195, potato_oz: 28, sweet_potato_oz: 28,
+    broccoli_cup: 91, peppers_cup: 149, cauliflower_cup: 100, carrots_cup: 128,
+    mixed_veg_cup: 140, asparagus_cup: 134, evoo_tsp: 4.5,
+    almonds_oz: 28, peanuts_oz: 28, cashews_oz: 28, pistachios_oz: 28,
+    greek_nonfat_cup: 245, greek_2pct_cup: 245, cottage_lf_cup: 226,
+    pineapple_cup: 165, peach_cup: 154,
+    egg: 50, egg_white: 33, avocado_oz: 28, hard_boiled_egg: 50,
+  };
+
+  const DAYS_OF_WEEK = [
+    { id: "mon", label: "Monday", short: "Mon" },
+    { id: "tue", label: "Tuesday", short: "Tue" },
+    { id: "wed", label: "Wednesday", short: "Wed" },
+    { id: "thu", label: "Thursday", short: "Thu" },
+    { id: "fri", label: "Friday", short: "Fri" },
+    { id: "sat", label: "Saturday", short: "Sat" },
+    { id: "sun", label: "Sunday", short: "Sun" },
+  ];
+
+  function budgetTier(monthlyBudget) {
+    const b = Number(monthlyBudget) || 0;
+    if (b < 200) return { id: "low", label: "Low", requireOrganic: false, reduceVariety: true, preferCheapProduce: true };
+    if (b <= 400) return { id: "mid", label: "Mid", requireOrganic: false, reduceVariety: false, preferCheapProduce: false };
+    return { id: "high", label: "High", requireOrganic: false, reduceVariety: false, preferCheapProduce: false };
+  }
 
   /**
    * Walmart-style estimated grocery price catalog (typical US prices).
@@ -181,6 +220,10 @@
     cottage_lf_cup: { product: "Low-fat cottage cheese", packageQty: 2, packageUnit: "cup", packagePrice: 2.98 },
     pineapple_cup: { product: "Pineapple chunks", packageQty: 2.5, packageUnit: "cup", packagePrice: 2.48 },
     peach_cup: { product: "Sliced peaches", packageQty: 2.5, packageUnit: "cup", packagePrice: 2.28 },
+    egg: { product: "Large eggs", packageQty: 12, packageUnit: "egg", packagePrice: 2.98 },
+    egg_white: { product: "Egg whites (carton)", packageQty: 10, packageUnit: "white", packagePrice: 3.98 },
+    avocado_oz: { product: "Avocados", packageQty: 6, packageUnit: "oz", packagePrice: 1.48 },
+    hard_boiled_egg: { product: "Large eggs", packageQty: 12, packageUnit: "egg", packagePrice: 2.98 },
   };
 
   /** Unit price for one FOOD catalog unit. Swappable for a live Walmart API. */
@@ -241,6 +284,44 @@
     };
   }
 
+  const CUP_FRACTIONS = [0, 1 / 8, 1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4, 1];
+  const CUP_GLYPH = { 0: "0", 0.125: "⅛", 0.25: "¼", 0.333: "⅓", 0.5: "½", 0.667: "⅔", 0.75: "¾", 1: "1" };
+
+  function snapCupFraction(n) {
+    if (!isFinite(n) || n <= 0) return 0.125;
+    const whole = Math.floor(n);
+    const frac = n - whole;
+    let best = CUP_FRACTIONS[0];
+    let bestDiff = Infinity;
+    for (const f of CUP_FRACTIONS) {
+      const d = Math.abs(frac - f);
+      if (d < bestDiff) {
+        bestDiff = d;
+        best = f;
+      }
+    }
+    // Prefer nearest; also compare rounding up whole+0
+    if (best === 1) return whole + 1;
+    return whole + best;
+  }
+
+  function formatCupQty(n) {
+    const snapped = snapCupFraction(n);
+    const whole = Math.floor(snapped + 1e-9);
+    const frac = Math.round((snapped - whole) * 1000) / 1000;
+    let fracStr = "";
+    if (Math.abs(frac - 0.125) < 0.02) fracStr = "⅛";
+    else if (Math.abs(frac - 0.25) < 0.02) fracStr = "¼";
+    else if (Math.abs(frac - 0.333) < 0.02 || Math.abs(frac - 1 / 3) < 0.02) fracStr = "⅓";
+    else if (Math.abs(frac - 0.5) < 0.02) fracStr = "½";
+    else if (Math.abs(frac - 0.667) < 0.02 || Math.abs(frac - 2 / 3) < 0.02) fracStr = "⅔";
+    else if (Math.abs(frac - 0.75) < 0.02) fracStr = "¾";
+    else if (frac > 0.02) fracStr = String(Math.round(frac * 100) / 100);
+    if (whole === 0) return fracStr || "⅛";
+    if (!fracStr) return String(whole);
+    return String(whole) + fracStr;
+  }
+
   function formatQty(n) {
     if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
     const tenths = Math.round(n * 10) / 10;
@@ -250,20 +331,95 @@
     if (Math.abs(tenths - 0.75) < 0.05) return "¾";
     if (Math.abs(tenths - 0.33) < 0.05 || Math.abs(tenths - 1 / 3) < 0.05) return "⅓";
     if (Math.abs(tenths - 0.67) < 0.05 || Math.abs(tenths - 2 / 3) < 0.05) return "⅔";
+    if (Math.abs(tenths - 0.125) < 0.02) return "⅛";
     return String(tenths);
   }
 
-  function qtyLine(foodKey, qty, labelOverride) {
-    const f = FOOD[foodKey];
-    const kcal = Math.round(f.kcal * qty);
-    const p = round1(f.p * qty);
-    const c = round1(f.c * qty);
-    const fat = round1(f.f * qty);
-    let label = labelOverride;
-    if (!label) {
-      label = formatQty(qty) + " " + f.unit + " " + f.name;
+  /** Condense tsp → tbsp when divisible by 3 (e.g. 6 tsp → 2 tbsp). */
+  function condenseTsp(foodKey, qty) {
+    const tbspMap = { chia_tsp: "chia_tbsp", hemp_tsp: "hemp_tbsp", walnuts_tsp: "walnuts_tbsp", pb_tsp: "pb_tbsp", evoo_tsp: null };
+    if (!(foodKey in tbspMap) && foodKey !== "evoo_tsp" && foodKey !== "maple_tsp" && foodKey !== "honey_tsp" && foodKey !== "cacao_tsp") {
+      return { key: foodKey, qty };
     }
-    return { label, kcal, p, c, f: fat, _key: foodKey, _qty: qty };
+    if (qty >= 3 && Math.abs(qty % 3) < 0.05) {
+      const tbspQty = qty / 3;
+      if (foodKey === "chia_tsp") return { key: "chia_tbsp", qty: tbspQty };
+      if (foodKey === "hemp_tsp") return { key: "hemp_tbsp", qty: tbspQty };
+      if (foodKey === "walnuts_tsp") return { key: "walnuts_tbsp", qty: tbspQty };
+      if (foodKey === "pb_tsp") return { key: "pb_tbsp", qty: tbspQty };
+      // evoo/maple/honey/cacao stay as tsp unless we invent tbsp entries — display as tbsp text
+      if (foodKey === "evoo_tsp" || foodKey === "maple_tsp" || foodKey === "honey_tsp") {
+        return { key: foodKey, qty, displayUnit: "tbsp", displayQty: tbspQty };
+      }
+    }
+    return { key: foodKey, qty };
+  }
+
+  function gramsFor(foodKey, qty) {
+    const g = UNIT_GRAMS[foodKey];
+    if (!g) return null;
+    return Math.round(g * qty);
+  }
+
+  function qtyLine(foodKey, qty, labelOverride) {
+    let key = foodKey;
+    let q = qty;
+    let displayUnit = null;
+    let displayQty = null;
+    const condensed = condenseTsp(foodKey, qty);
+    key = condensed.key;
+    q = condensed.qty;
+    if (condensed.displayUnit) {
+      displayUnit = condensed.displayUnit;
+      displayQty = condensed.displayQty;
+      key = foodKey; // keep macros from original tsp key using original qty
+      q = qty;
+    }
+    // Snap cup quantities to standard fractions and adjust macros via snapped qty
+    const f0 = FOOD[key] || FOOD[foodKey];
+    if (f0 && f0.unit === "cup") {
+      q = snapCupFraction(q);
+      key = foodKey;
+    } else if (f0 && f0.unit === "scoop") {
+      q = Math.max(0.5, Math.round(q * 2) / 2);
+      key = foodKey;
+    }
+    // Prefer condensed food key for macros when tsp→tbsp mapped
+    let macroKey = key;
+    let macroQty = q;
+    if (displayUnit) {
+      // keep original tsp macros
+      macroKey = foodKey;
+      macroQty = qty;
+    } else if (key !== foodKey) {
+      macroKey = key;
+      macroQty = q;
+    }
+    const f = FOOD[macroKey];
+    const kcal = Math.round(f.kcal * macroQty);
+    const p = round1(f.p * macroQty);
+    const c = round1(f.c * macroQty);
+    const fat = round1(f.f * macroQty);
+    const grams = gramsFor(macroKey, macroQty);
+    let label;
+    if (displayUnit) {
+      label = formatQty(displayQty) + " " + displayUnit + " " + FOOD[foodKey].name;
+    } else if (f.unit === "cup") {
+      label = formatCupQty(macroQty) + " cup " + f.name;
+    } else if (f.unit === "scoop") {
+      label = formatQty(macroQty) + " scoop" + (macroQty === 1 ? "" : "s") + " " + f.name;
+    } else {
+      label = formatQty(macroQty) + " " + f.unit + " " + f.name;
+    }
+    // Ignore labelOverride for unit wording so condensation/grams stay consistent;
+    // keep flavor-specific prefixes only when override doesn't encode a different unit.
+    if (labelOverride && !/\b(tsp|tbsp|cup|oz|scoop)/i.test(labelOverride)) {
+      label = labelOverride;
+    }
+    if (grams != null && !/\(\d+g\)/.test(label)) {
+      label = label + " (" + grams + "g)";
+    }
+    return { label, kcal, p, c, f: fat, _key: macroKey, _qty: macroQty, _grams: grams };
   }
 
   function noteLine(text) {
@@ -626,6 +782,7 @@
 
   function buildBowlSlot(protein, targetCal, targetGrams, options) {
     options = options || {};
+    const tier = options.tier || budgetTier(options.budget || 300);
     const proteinKey = {
       beef: "beef_oz",
       turkey: "turkey_oz",
@@ -633,6 +790,8 @@
       chicken_thigh: "chicken_thigh_oz",
       salmon: "salmon_oz",
       cod: "cod_oz",
+      eggs: "egg",
+      egg_whites: "egg_white",
     }[protein];
     const titles = {
       beef: "Ground beef bowl",
@@ -641,27 +800,47 @@
       chicken_thigh: "Chicken thigh bowl",
       salmon: "Salmon bowl",
       cod: "Cod bowl",
+      eggs: "Egg bowl",
+      egg_whites: "Egg white bowl",
     };
     const vegKey = options.vegKey || "broccoli_cup";
+    const fatStyle = options.fatStyle || "evoo"; // evoo | avocado | hbe
 
     const ings = [];
     // Protein almost entirely (3–8g below meal protein target)
-    const oz = proteinQtyForTarget(FOOD[proteinKey].p, targetGrams.p, 3, 10, 0.5);
-    ings.push(qtyLine(proteinKey, oz, formatQty(oz) + " oz " + FOOD[proteinKey].name));
+    if (protein === "eggs" || protein === "egg_whites") {
+      const per = FOOD[proteinKey].p;
+      let count = clamp(Math.round(proteinQtyForTarget(per, targetGrams.p, 3, 8, 1)), 2, 8);
+      ings.push(qtyLine(proteinKey, count));
+    } else {
+      const oz = proteinQtyForTarget(FOOD[proteinKey].p, targetGrams.p, 3, 10, 0.5);
+      ings.push(qtyLine(proteinKey, oz));
+    }
 
     // Carb to hit meal carb target + always a veg
     let used = sumIngredients(ings);
     const carbNeed = Math.max(0, targetGrams.c - used.c - 12); // leave room for veg carbs
-    let riceCups = clamp(Math.round((carbNeed / FOOD.rice_cup.c) * 4) / 4, 0.5, 2);
-    ings.push(qtyLine("rice_cup", riceCups, formatQty(riceCups) + " cup cooked white rice"));
-    ings.push(qtyLine(vegKey, 1.5, "1½ cups " + FOOD[vegKey].name));
+    const carbKey = tier.id === "low" ? "rice_cup" : (options.carbKey || "rice_cup");
+    let riceCups = clamp(snapCupFraction(carbNeed / FOOD[carbKey].c), 0.5, 2);
+    ings.push(qtyLine(carbKey, riceCups));
+    // Low budget: smaller veg portion to cut price/variety
+    const vegQty = tier.reduceVariety ? 1 : 1.5;
+    ings.push(qtyLine(vegKey, vegQty));
 
-    // Fat: 1–3 tsp EVOO if fat target permits
+    // Fat: 1–3 tsp EVOO, portion of avocado, or hard boiled egg
     used = sumIngredients(ings);
     const fatNeed = targetGrams.f - used.f;
     if (fatNeed >= 2) {
-      const tsp = clamp(Math.round(fatNeed / FOOD.evoo_tsp.f), 1, 3);
-      ings.push(qtyLine("evoo_tsp", tsp, formatQty(tsp) + " tsp extra virgin olive oil"));
+      if (fatStyle === "avocado") {
+        const oz = clamp(Math.round((fatNeed / FOOD.avocado_oz.f) * 2) / 2, 1, 4);
+        ings.push(qtyLine("avocado_oz", oz));
+      } else if (fatStyle === "hbe") {
+        const n = clamp(Math.round(fatNeed / FOOD.hard_boiled_egg.f), 1, 2);
+        ings.push(qtyLine("hard_boiled_egg", n));
+      } else {
+        const tsp = clamp(Math.round(fatNeed / FOOD.evoo_tsp.f), 1, 3);
+        ings.push(qtyLine("evoo_tsp", tsp));
+      }
     }
 
     const totals = roundMacros(sumIngredients(ings));
@@ -784,20 +963,25 @@
    * Build full day following Meal & Snack Planning Procedure.
    * Prefer even calorie split; allow ±150 meal / ±75 snack if needed later.
    */
-  function assignSuggestions(slots, macroPct, dailyCalories, variant) {
+  function assignSuggestions(slots, macroPct, dailyCalories, variant, planOptions) {
     variant = Math.max(0, Number(variant) || 0);
+    planOptions = planOptions || {};
+    const tier = budgetTier(planOptions.budget || 300);
+    const fatStyles = ["evoo", "avocado", "hbe"];
     const mealSlots = slots.filter((s) => s.kind === "meal");
     const snackSlots = slots.filter((s) => s.kind === "snack");
     const is3m2s = mealSlots.length === 3 && snackSlots.length === 2;
 
-    const bowlProteins = ["beef", "chicken", "turkey", "salmon", "chicken_thigh", "cod"];
-    const breakfastFlavors = [
-      "berry_banana",
-      "pumpkin_spice",
-      "pb_banana",
-      "banana_bread",
-      "chocolate_cherry",
-    ];
+    const bowlProteins = ["beef", "chicken", "turkey", "salmon", "chicken_thigh", "cod", "eggs", "egg_whites"];
+    const breakfastFlavors = tier.preferCheapProduce
+      ? ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
+      : [
+          "berry_banana",
+          "pumpkin_spice",
+          "pb_banana",
+          "banana_bread",
+          "chocolate_cherry",
+        ];
     const smoothieSafeFlavors = breakfastFlavors.filter((f) => f !== "pumpkin_spice" && f !== "banana_bread");
     const nutKeys = ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
     const leanKinds = ["cottage", "greek"];
@@ -873,7 +1057,7 @@
             }
           } else if (mealCount === 2) {
             const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
-            suggestion = buildBowlSlot(bowlProtein, slot.calories, tg, { vegKey });
+            suggestion = buildBowlSlot(bowlProtein, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
             bowlI += 1;
           } else {
             if (meal1Smoothie) {
@@ -894,7 +1078,7 @@
           breakfastI += 1;
         } else {
           const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
-          suggestion = buildBowlSlot(bowlProteins[bowlI % bowlProteins.length], slot.calories, tg, { vegKey });
+          suggestion = buildBowlSlot(bowlProteins[bowlI % bowlProteins.length], slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
           bowlI += 1;
         }
         markProduceFromIngredients(usedProduce, suggestion.ingredients);
@@ -1346,7 +1530,7 @@
     if (unit === "tsp") return Math.ceil(qty);
     if (unit === "tbsp") return Math.ceil(qty * 2) / 2;
     if (unit === "scoop") return Math.ceil(qty * 2) / 2;
-    if (unit === "medium") return Math.ceil(qty);
+    if (unit === "medium" || unit === "egg" || unit === "white") return Math.ceil(qty);
     return Math.ceil(qty * 4) / 4;
   }
 
@@ -1360,7 +1544,12 @@
    * Uses lookupPrice() (Walmart-style estimates; API-ready).
    */
   function buildGroceryList(schedule, answers) {
-    const planDays = shoppingPlanDays(answers.cadence, answers.daysPerWeek);
+    const daysPerWeek =
+      (Array.isArray(answers.selectedDays) && answers.selectedDays.length) ||
+      Number(answers.daysPerWeek) ||
+      7;
+    const planDays = shoppingPlanDays(answers.cadence, daysPerWeek);
+    const tier = budgetTier(answers.budget);
     const agg = {};
     for (const slot of schedule) {
       for (const ing of slot.suggestion.ingredients) {
@@ -1420,14 +1609,19 @@
       planDays,
       cadence: answers.cadence,
       cadenceLabel,
-      daysPerWeek: answers.daysPerWeek,
+      daysPerWeek,
       items,
       grandTotal,
       monthlyEstimate,
       monthlyFactor,
       budget,
       overBudget,
-      priceNote: "Estimated Walmart prices (API not connected yet)",
+      priceNote: "Estimated Walmart prices (API not connected yet)" +
+        (tier.id === "low"
+          ? " · budget: non-organic & cheaper staples"
+          : tier.id === "high"
+            ? " · budget: full produce variety"
+            : " · budget: mid tier"),
     };
   }
 
@@ -1493,7 +1687,8 @@
       buildSchedule(calories, meals, snacks),
       macroPct,
       calories,
-      variant
+      variant,
+      { budget: answers.budget }
     );
 
     const actualRaw = schedule.reduce(
@@ -1507,11 +1702,16 @@
     );
     const actual = roundMacros(actualRaw);
 
+    const selectedDays = Array.isArray(answers.selectedDays) ? answers.selectedDays.slice() : [];
+    const daysPerWeek = selectedDays.length || Number(answers.daysPerWeek) || 0;
+    const tier = budgetTier(answers.budget);
     const plan = {
       variant,
       budget: answers.budget,
+      budgetTier: tier,
       cadence: answers.cadence,
-      daysPerWeek: answers.daysPerWeek,
+      selectedDays,
+      daysPerWeek,
       daily: {
         calories,
         macros: macroPct,
@@ -1526,6 +1726,100 @@
     plan.micros = aggregateDayMicros(schedule);
     plan.grocery = buildGroceryList(schedule, answers);
     return plan;
+  }
+
+
+  function recomputePlanFromSchedule(answers, schedule, variant) {
+    const calories =
+      answers.calorieMode === "help"
+        ? estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity)
+        : answers.calories;
+    const macro =
+      typeof answers.macros === "string" ? MACRO_PRESETS[answers.macros] : answers.macros;
+    const macroPct = { p: macro.p, c: macro.c, f: macro.f };
+    const dailyGrams = gramsFromPct(calories, macroPct);
+    const actualRaw = schedule.reduce(
+      (a, s) => ({
+        kcal: a.kcal + s.suggestion.totals.kcal,
+        p: a.p + s.suggestion.totals.p,
+        c: a.c + s.suggestion.totals.c,
+        f: a.f + s.suggestion.totals.f,
+      }),
+      { kcal: 0, p: 0, c: 0, f: 0 }
+    );
+    const actual = roundMacros(actualRaw);
+    const selectedDays = Array.isArray(answers.selectedDays) ? answers.selectedDays.slice() : [];
+    const daysPerWeek = selectedDays.length || Number(answers.daysPerWeek) || 0;
+    const tier = budgetTier(answers.budget);
+    const plan = {
+      variant: variant || 0,
+      budget: answers.budget,
+      budgetTier: tier,
+      cadence: answers.cadence,
+      selectedDays,
+      daysPerWeek,
+      daily: {
+        calories,
+        macros: macroPct,
+        protein_g: dailyGrams.p,
+        carbs_g: dailyGrams.c,
+        fat_g: dailyGrams.f,
+      },
+      schedule,
+      actual,
+      _slotVariants: answers._slotVariants ? answers._slotVariants.slice() : [],
+    };
+    plan.compliance = evaluateCompliance(plan);
+    plan.micros = aggregateDayMicros(schedule);
+    plan.grocery = buildGroceryList(schedule, answers);
+    return plan;
+  }
+
+  /** Reroll a single meal/snack slot; keep others. Best-effort day tolerances. */
+  function rerollSlot(currentPlan, answers, slotIndex, fromVariant) {
+    const base = Math.max(0, Number(fromVariant) || 0);
+    const prevTitle =
+      currentPlan.schedule[slotIndex] &&
+      currentPlan.schedule[slotIndex].suggestion &&
+      currentPlan.schedule[slotIndex].suggestion.title;
+    let best = null;
+    let bestDifferent = null;
+    const slotVariants = (answers._slotVariants || currentPlan._slotVariants || []).slice();
+    for (let i = 1; i <= 24; i++) {
+      const trialVariant = base + i + slotIndex * 3;
+      const trial = buildPlan(answers, { variant: trialVariant });
+      if (!trial.schedule[slotIndex]) continue;
+      const newTitle = trial.schedule[slotIndex].suggestion.title;
+      const schedule = currentPlan.schedule.map((s, j) =>
+        j === slotIndex ? trial.schedule[slotIndex] : s
+      );
+      const nextVariants = slotVariants.slice();
+      nextVariants[slotIndex] = trialVariant;
+      const rebuilt = recomputePlanFromSchedule(answers, schedule, trialVariant);
+      rebuilt._slotVariants = nextVariants;
+      const calDelta = Math.abs(rebuilt.actual.kcal - rebuilt.daily.calories);
+      const score = (rebuilt.compliance.withinTolerances ? 0 : 1000) + calDelta;
+      if (!best || score < best._score) {
+        best = rebuilt;
+        best._score = score;
+      }
+      if (newTitle !== prevTitle) {
+        if (!bestDifferent || score < bestDifferent._score) {
+          bestDifferent = rebuilt;
+          bestDifferent._score = score;
+        }
+        // Prefer a different title that stays within (or close to) tolerances
+        if (rebuilt.compliance.withinTolerances || calDelta <= 150) {
+          answers._slotVariants = nextVariants;
+          return rebuilt;
+        }
+      } else if (rebuilt.compliance.withinTolerances && !bestDifferent) {
+        // keep searching for a title change
+      }
+    }
+    const chosen = bestDifferent || best || currentPlan;
+    if (chosen._slotVariants) answers._slotVariants = chosen._slotVariants.slice();
+    return chosen;
   }
 
   /* ── UI ── */
@@ -1544,6 +1838,7 @@
       meals: 3,
       snacks: 0,
       daysPerWeek: null,
+      selectedDays: [],
     };
     let step = 0;
     let planVariant = 0;
@@ -1644,7 +1939,14 @@
         render();
       }
       next.onclick = goNext;
+      const dash = el(`<button type="button" class="mp-back" id="dashLink">Dashboard</button>`);
+      dash.onclick = () => {
+        root.dispatchEvent(
+          new CustomEvent("pureprep-goto", { detail: { screen: "home", save: false }, bubbles: true })
+        );
+      };
       nav.appendChild(back);
+      nav.appendChild(dash);
       nav.appendChild(next);
       wrap.appendChild(nav);
       root.appendChild(wrap);
@@ -1839,17 +2141,35 @@
       }
 
       if (id === "daysPerWeek") {
+        const selected = new Set(answers.selectedDays || []);
+        const box = el(`<div class="mp-options mp-days"></div>`);
+        DAYS_OF_WEEK.forEach((d) => {
+          const on = selected.has(d.id);
+          const row = el(
+            `<label class="mp-option${on ? " selected" : ""}">
+              <input type="checkbox" name="planDay" value="${d.id}" ${on ? "checked" : ""} />
+              <span>${d.label}</span>
+            </label>`
+          );
+          row.addEventListener("click", (e) => {
+            // let checkbox toggle; sync selected class
+            setTimeout(() => {
+              const inp = row.querySelector("input");
+              row.classList.toggle("selected", inp.checked);
+            }, 0);
+          });
+          box.appendChild(row);
+        });
         ask(
-          "How many days per week will you follow your plan?",
-          radioGroup(
-            "days",
-            [5, 6, 7].map((d) => ({ value: String(d), label: d + " days" })),
-            answers.daysPerWeek != null ? String(answers.daysPerWeek) : null
-          ),
+          "Which days of the week will you follow your plan?",
+          box,
           () => {
-            const v = selectedRadio("days");
-            if (!v) return "Pick 5, 6, or 7.";
-            answers.daysPerWeek = Number(v);
+            const checked = Array.from(root.querySelectorAll('input[name="planDay"]:checked')).map(
+              (n) => n.value
+            );
+            if (!checked.length) return "Select at least one day.";
+            answers.selectedDays = checked;
+            answers.daysPerWeek = checked.length;
           },
           "See my plan"
         );
@@ -1861,7 +2181,8 @@
     }
 
     function showResult() {
-      const plan = buildPlan(answers, { variant: planVariant });
+      const plan = answers.__lockedPlan || buildPlan(answers, { variant: planVariant });
+      answers.__lockedPlan = null;
       clear();
       root.appendChild(progressBar(steps().length - 1, steps().length));
 
@@ -1925,11 +2246,11 @@
             ${badge(c.fOk, "F ±2%")}
           </div>
         </div>
-        <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week. Snacks ≈ half a meal (±75); meals within ±150.</p>
+        <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Snacks ≈ half a meal (±75); meals within ±150.</p>
         <h2>Meals &amp; snacks</h2>
         <div class="mp-slots"></div>
         <h2>Micronutrients</h2>
-        <p class="mp-hint">Day’s food vs adult RDA/DRI targets</p>
+        <p class="mp-hint">Day’s food vs adult RDA/DRI targets. <em>Sodium value does not include added salt/seasoning.</em></p>
         <div class="mp-micros">${microRows}</div>
         <h2>Grocery list</h2>
         <p class="mp-hint">${g.priceNote} · shopping window: <strong>${g.planDays} plan-days</strong> (${g.cadenceLabel} × ${g.daysPerWeek} days/week)</p>
@@ -1951,8 +2272,9 @@
           <button type="button" class="mp-next" id="restart">Restart</button>
         </div>`;
 
+      let currentPlan = plan;
       const slotsEl = section.querySelector(".mp-slots");
-      plan.schedule.forEach((slot) => {
+      plan.schedule.forEach((slot, slotIndex) => {
         const s = slot.suggestion;
         const t = s.totals;
         const lis = s.ingredients
@@ -1967,10 +2289,13 @@
           .map((n) => `<p class="mp-note">${n}</p>`)
           .join("");
         const card = el(
-          `<article class="mp-card">
-            <header>
-              <strong>${slot.name}: ${slot.calories} cal</strong>
-              <span class="mp-suggest"> — ${s.title}</span>
+          `<article class="mp-card" data-slot-index="${slotIndex}">
+            <header class="mp-card-head">
+              <div>
+                <strong>${slot.name}: ${slot.calories} cal</strong>
+                <span class="mp-suggest"> — ${s.title}</span>
+              </div>
+              <button type="button" class="mp-reroll mp-reroll-slot" data-slot="${slotIndex}">Reroll</button>
             </header>
             <ul class="mp-ingredients">
               ${lis}
@@ -1985,36 +2310,56 @@
         slotsEl.appendChild(card);
       });
 
+      const nav = section.querySelector(".mp-nav");
+      nav.innerHTML = `
+          <button type="button" class="mp-back" id="toDash">← Dashboard</button>
+          <button type="button" class="mp-reroll" id="reroll">Reroll all meals</button>
+          <button type="button" class="mp-next" id="saveClose">Save &amp; close</button>`;
+
       root.appendChild(section);
+
+      function finishToDashboard() {
+        const detail = {
+          plan: currentPlan,
+          answers: Object.assign({}, answers),
+          save: true,
+        };
+        root.dispatchEvent(new CustomEvent("onboarding-complete", { detail, bubbles: true }));
+        root.dispatchEvent(
+          new CustomEvent("pureprep-goto", {
+            detail: { screen: "home", save: true, plan: currentPlan, answers: Object.assign({}, answers) },
+            bubbles: true,
+          })
+        );
+      }
+
+      section.querySelectorAll(".mp-reroll-slot").forEach((btn) => {
+        btn.onclick = () => {
+          const idx = Number(btn.getAttribute("data-slot"));
+          const from =
+            (currentPlan._slotVariants && currentPlan._slotVariants[idx]) || planVariant;
+          currentPlan = rerollSlot(currentPlan, answers, idx, from);
+          planVariant = currentPlan.variant || planVariant;
+          // Re-render by temporarily swapping buildPlan path: stash and redraw
+          answers.__lockedPlan = currentPlan;
+          showResult();
+        };
+      });
+
       section.querySelector("#reroll").onclick = () => {
+        answers.__lockedPlan = null;
         const start = planVariant + 1;
         let chosen = start;
-        let best = null;
         for (let i = 0; i < 12; i++) {
           const trial = buildPlan(answers, { variant: start + i });
-          if (!best || (trial.compliance.withinTolerances && !best.compliance.withinTolerances)) {
-            best = trial;
-            chosen = start + i;
-          }
+          chosen = start + i;
           if (trial.compliance.withinTolerances) break;
         }
         planVariant = chosen;
         showResult();
       };
-      section.querySelector("#restart").onclick = () => {
-        Object.keys(answers).forEach((k) => {
-          if (k === "meals") answers[k] = 3;
-          else if (k === "snacks") answers[k] = 0;
-          else answers[k] = null;
-        });
-        planVariant = 0;
-        step = 0;
-        render();
-      };
-
-      root.dispatchEvent(
-        new CustomEvent("onboarding-complete", { detail: plan, bubbles: true })
-      );
+      section.querySelector("#saveClose").onclick = finishToDashboard;
+      section.querySelector("#toDash").onclick = finishToDashboard;
     }
 
     render();
@@ -2036,6 +2381,8 @@
     MICRO_TARGETS,
     MICRO_KEYS,
     PRICE_CATALOG,
+    UNIT_GRAMS,
+    DAYS_OF_WEEK,
     estimateCalories,
     buildSchedule,
     buildPlan,
@@ -2046,5 +2393,10 @@
     aggregateDayMicros,
     buildGroceryList,
     shoppingPlanDays,
+    budgetTier,
+    rerollSlot,
+    recomputePlanFromSchedule,
+    formatCupQty,
+    snapCupFraction,
   };
 })(typeof window !== "undefined" ? window : globalThis);

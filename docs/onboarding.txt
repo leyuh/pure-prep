@@ -1,0 +1,48 @@
+Onboarding questionnaire
+
+Interactive form that prompts the user for input beginning with question 1 and so on.
+
+Input:
+
+1. What is your monthly grocery budget?
+2. How often do you want to get groceries? (Weekly, every other week, monthly)
+3. What is your daily caloric goal?
+   Help me find out:
+   - Weight
+   - Weight goal (lose, maintain, gain)
+   - Activity level
+4. What are your macro goals?
+   - 33% p 42% c 25% f (recommended for cutting)
+   - 28% p 42% c 30% f (recommended for maintenance)
+   - 25% p 45% c 30% f (recommended for bulking)
+5. How many meals per day?
+   - 2 meals, 1 snack
+   - 3 meals
+   - 3 meals, 2 snacks
+   - 4 meals
+   - 5 meals
+   - Custom
+6. How many days per week will you follow your plan?
+   - Checkbox list of days of week
+
+Output:
+
+Based on input from questionnaire, display:
+- Day's total caloric and macronutrient targets
+- Meal / snack list with each of their caloric targets and a suggested meal/snack based on the Meal Templates document. The suggested meal/snack's macro split must be very close to the value from question #4. Display the macronutrients of each ingredient in the meal/snack and the total macros for the meal.
+  - Each meal/snack should have a reroll button that gives a new suggestion that adheres to the Meal & Snack Planning Procedure.
+- Micronutrients breakdown of day's food and how close major micronutrients are to suggested daily intake.
+  - For sodium, note that value does not include added salt/seasoning
+- Using Walmart API, grocery list that accounts for all ingredients needed for the specified time frame (#2 in questionnaire) and the amount of days that the meal plan will be followed (#6 in questionnaire). Provide price for each item and total price for all groceries needed.
+- Save & close button that returns user to dashboard.
+
+Give user option to return to Dashboard.
+
+Example-
+Daily targets: 2400 cals, 160 g p, 240g c, 80g f
+
+Meal 1: 600 cal - banana berry smoothie
+Snack 1: 300 cal - almonds
+Meal 2: 600 cal - ground beef bowl
+Snack 2: 300 cal - cottage cheese & pineapple
+Meal 3: 600 cal - pumpkin spice oatmeal

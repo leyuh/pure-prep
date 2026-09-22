@@ -1,0 +1,23 @@
+Home screen is default. Each screen should have a icon button in the nav bar on the screen.
+
+Home screen:
+
+Start with a welcome message that greets user based on time of day.
+
+"Week at a glance" panel with the following information (if the onboarding questionnaire has not been filled out, prompt user to do so):
+- Daily calorie goal & macro split- display as hollow pie chart for macro distribution with total calories in middle.
+- Number of days a week to follow plan
+- Daily meal plan that shows each meal/snack name and calories
+  - Clicking on meal/snack name expands it to view ingredients and total meal macros
+
+"Inventory" panel that initially is empty. Once the questionnaire is filled, prompt the user to order the groceries they need for the time frame indicated.
+
+"Schedule" panel that says the next date groceries need to be ordered.
+
+Inventory:
+
+Display list of user's grocery inventory. Will be empty until the user completes the questionnaire and confirms the suggested groceries were ordered. Every real life day that passes should deplete the grocery inventory appropriately based on the meal plan (unless it is a day which was indicated that the meal plan should not be followed).
+
+Schedule:
+
+Show current calendar month. Arrows on side of month name to switch between months. Highlight current day. Mark on the calendar how long the groceries are scheduled to last and the next date that they will need to be ordered.
