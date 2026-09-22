@@ -1,19 +1,8 @@
 Onboarding questionnaire
 
-Notes-
-#1 - 400 default
-#2 - every other week default
-#3 - 2000 default
-#4 - 2nd macro option default; exact labels
-#5 - 3 meals, 2 snacks default
-#6 - Monday-saturday default
+Notes: #1 400, #2 every other week, #3 2000, #4 maintenance default + exact labels,
+#5 3m2s, #6 Mon–Sat.
 
-Input: budget, cadence, calories (+ help), macros (+ Custom), meals/day, weekday checkboxes
-
-Output:
-- Target (left) and actual (right): calories + macro pie each
-- Meal/snack list from Meal Templates; ingredient macros; per-slot reroll
-- Nutrition overview 3–5 sentences
-- Micronutrients: collapsed until clicked; pie % with hover amount; sodium note
-- Grocery list for cadence × plan days with prices
-- Save & close → Dashboard
+Output includes dual target/actual macro pies, meal list with ingredient macros,
+per-slot + all-day reroll (maximize different options), nutrition overview 3–5 sentences,
+collapsed micronutrient pies with hover amounts, grocery list, Save & close.

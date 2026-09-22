@@ -2090,20 +2090,44 @@
   }
 
   /** Reroll a single meal/snack slot; keep others. Best-effort day tolerances. */
+  function suggestionFingerprint(s) {
+    if (!s) return "";
+    return [s.type || "", s.protein || "", s.flavor || "", s.title || ""].join("|");
+  }
+
+  /**
+   * Onboarding: rerolls should explore as many different options as possible.
+   * Prefer a new title/type/protein/flavor, avoid repeats already on the day or
+   * recently shown for this slot, while staying near calorie/macro tolerances.
+   */
   function rerollSlot(currentPlan, answers, slotIndex, fromVariant) {
     const base = Math.max(0, Number(fromVariant) || 0);
-    const prevTitle =
-      currentPlan.schedule[slotIndex] &&
-      currentPlan.schedule[slotIndex].suggestion &&
-      currentPlan.schedule[slotIndex].suggestion.title;
+    const prev =
+      currentPlan.schedule[slotIndex] && currentPlan.schedule[slotIndex].suggestion;
+    const prevTitle = prev ? prev.title : "";
+    const prevFp = suggestionFingerprint(prev);
+    const dayTitles = new Set(
+      currentPlan.schedule
+        .map((s, j) => (j === slotIndex ? null : s.suggestion && s.suggestion.title))
+        .filter(Boolean)
+    );
+    if (!answers._rerollHistory) answers._rerollHistory = {};
+    const history = (answers._rerollHistory[slotIndex] || []).slice();
+    if (prevTitle && history[history.length - 1] !== prevTitle) history.push(prevTitle);
+    const historySet = new Set(history);
+
     let best = null;
-    let bestDifferent = null;
     const slotVariants = (answers._slotVariants || currentPlan._slotVariants || []).slice();
-    for (let i = 1; i <= 24; i++) {
-      const trialVariant = base + i + slotIndex * 3;
+    const triedTitles = new Set();
+
+    for (let i = 1; i <= 96; i++) {
+      // Irregular stride explores more of the variant space than +1 each time
+      const trialVariant = base + i * 7 + slotIndex * 13 + ((i * 3) % 11);
       const trial = buildPlan(answers, { variant: trialVariant });
       if (!trial.schedule[slotIndex]) continue;
-      const newTitle = trial.schedule[slotIndex].suggestion.title;
+      const cand = trial.schedule[slotIndex].suggestion;
+      const newTitle = cand.title;
+      triedTitles.add(newTitle);
       const schedule = currentPlan.schedule.map((s, j) =>
         j === slotIndex ? trial.schedule[slotIndex] : s
       );
@@ -2111,29 +2135,86 @@
       nextVariants[slotIndex] = trialVariant;
       const rebuilt = recomputePlanFromSchedule(answers, schedule, trialVariant);
       rebuilt._slotVariants = nextVariants;
+
       const calDelta = Math.abs(rebuilt.actual.kcal - rebuilt.daily.calories);
-      const score = (rebuilt.compliance.withinTolerances ? 0 : 1000) + calDelta;
-      if (!best || score < best._score) {
+      let score = calDelta;
+      if (!rebuilt.compliance.withinTolerances) score += 400;
+      if (calDelta > 150) score += 200;
+
+      const fp = suggestionFingerprint(cand);
+      if (newTitle === prevTitle) score += 500;
+      else score -= 80;
+      if (fp === prevFp) score += 200;
+      if (cand.type && prev && cand.type === prev.type) score += 60;
+      else score -= 40;
+      if (cand.protein && prev && cand.protein === prev.protein) score += 40;
+      if (cand.flavor && prev && cand.flavor === prev.flavor) score += 40;
+      if (dayTitles.has(newTitle)) score += 120;
+      if (historySet.has(newTitle)) score += 160;
+      // Slight preference for titles not yet seen in this search pass
+      score += Math.min(30, triedTitles.size);
+
+      rebuilt._score = score;
+      rebuilt._newTitle = newTitle;
+      if (!best || score < best._score) best = rebuilt;
+
+      // Early exit on a clearly different, in-tolerance option
+      if (
+        newTitle !== prevTitle &&
+        fp !== prevFp &&
+        !historySet.has(newTitle) &&
+        !dayTitles.has(newTitle) &&
+        rebuilt.compliance.withinTolerances
+      ) {
         best = rebuilt;
-        best._score = score;
-      }
-      if (newTitle !== prevTitle) {
-        if (!bestDifferent || score < bestDifferent._score) {
-          bestDifferent = rebuilt;
-          bestDifferent._score = score;
-        }
-        // Prefer a different title that stays within (or close to) tolerances
-        if (rebuilt.compliance.withinTolerances || calDelta <= 150) {
-          answers._slotVariants = nextVariants;
-          return rebuilt;
-        }
-      } else if (rebuilt.compliance.withinTolerances && !bestDifferent) {
-        // keep searching for a title change
+        break;
       }
     }
-    const chosen = bestDifferent || best || currentPlan;
+
+    const chosen = best || currentPlan;
     if (chosen._slotVariants) answers._slotVariants = chosen._slotVariants.slice();
+    const chosenTitle =
+      chosen.schedule &&
+      chosen.schedule[slotIndex] &&
+      chosen.schedule[slotIndex].suggestion &&
+      chosen.schedule[slotIndex].suggestion.title;
+    if (chosenTitle) {
+      history.push(chosenTitle);
+      // Keep a rolling window so rerolls keep finding new options
+      answers._rerollHistory[slotIndex] = history.slice(-12);
+    }
     return chosen;
+  }
+
+  /** Reroll the whole day toward a plan with as many new meal/snack titles as possible. */
+  function rerollDay(answers, currentPlan, fromVariant) {
+    const base = Math.max(0, Number(fromVariant) || 0);
+    const prevTitles = (currentPlan.schedule || []).map((s) => s.suggestion && s.suggestion.title);
+    let best = null;
+    for (let i = 1; i <= 64; i++) {
+      const trialVariant = base + i * 5 + ((i * 9) % 17);
+      const trial = buildPlan(answers, { variant: trialVariant });
+      const titles = trial.schedule.map((s) => s.suggestion.title);
+      let different = 0;
+      for (let j = 0; j < titles.length; j++) {
+        if (titles[j] !== prevTitles[j]) different += 1;
+      }
+      const calDelta = Math.abs(trial.actual.kcal - trial.daily.calories);
+      let score = -different * 100 + calDelta;
+      if (!trial.compliance.withinTolerances) score += 300;
+      // Prefer not reusing the exact same set of titles
+      const sameSet =
+        titles.slice().sort().join("|") === prevTitles.slice().sort().join("|");
+      if (sameSet) score += 250;
+      trial._score = score;
+      trial._slotVariants = trial.schedule.map(() => trialVariant);
+      if (!best || score < best._score) best = trial;
+      if (different === titles.length && trial.compliance.withinTolerances) {
+        best = trial;
+        break;
+      }
+    }
+    return best || currentPlan;
   }
 
 
@@ -2829,14 +2910,11 @@
 
       section.querySelector("#reroll").onclick = () => {
         answers.__lockedPlan = null;
-        const start = planVariant + 1;
-        let chosen = start;
-        for (let i = 0; i < 12; i++) {
-          const trial = buildPlan(answers, { variant: start + i });
-          chosen = start + i;
-          if (trial.compliance.withinTolerances) break;
-        }
-        planVariant = chosen;
+        answers._rerollHistory = {};
+        const next = rerollDay(answers, currentPlan, planVariant);
+        planVariant = next.variant || planVariant + 1;
+        answers._slotVariants = next._slotVariants ? next._slotVariants.slice() : [];
+        answers.__lockedPlan = next;
         showResult();
       };
       section.querySelector("#saveClose").onclick = finishToDashboard;
@@ -2880,6 +2958,7 @@
     shoppingPlanDays,
     budgetTier,
     rerollSlot,
+    rerollDay,
     recomputePlanFromSchedule,
     buildSaladJarSlot,
     buildHbEggSnack,
