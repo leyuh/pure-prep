@@ -38,12 +38,24 @@
     "potassium_mg",
     "calcium_mg",
     "iron_mg",
+    "magnesium_mg",
+    "zinc_mg",
+    "phosphorus_mg",
+    "selenium_mcg",
+    "copper_mg",
+    "manganese_mg",
     "vitA_mcg",
     "vitC_mg",
     "vitD_mcg",
+    "vitE_mg",
+    "vitK_mcg",
+    "thiamin_mg",
+    "riboflavin_mg",
+    "niacin_mg",
+    "vitB6_mg",
+    "folate_mcg",
     "vitB12_mcg",
-    "magnesium_mg",
-    "zinc_mg",
+    "choline_mg",
   ];
 
   /** Adult RDA/DRI / Daily Value style targets (mixed adult) */
@@ -53,12 +65,24 @@
     potassium_mg: { label: "Potassium", target: 3400, unit: "mg" },
     calcium_mg: { label: "Calcium", target: 1000, unit: "mg" },
     iron_mg: { label: "Iron", target: 18, unit: "mg" },
-    vitA_mcg: { label: "Vitamin A (RAE)", target: 900, unit: "mcg" },
-    vitC_mg: { label: "Vitamin C", target: 90, unit: "mg" },
-    vitD_mcg: { label: "Vitamin D", target: 20, unit: "mcg" },
-    vitB12_mcg: { label: "Vitamin B12", target: 2.4, unit: "mcg" },
     magnesium_mg: { label: "Magnesium", target: 400, unit: "mg" },
     zinc_mg: { label: "Zinc", target: 11, unit: "mg" },
+    phosphorus_mg: { label: "Phosphorus", target: 700, unit: "mg" },
+    selenium_mcg: { label: "Selenium", target: 55, unit: "mcg" },
+    copper_mg: { label: "Copper", target: 0.9, unit: "mg" },
+    manganese_mg: { label: "Manganese", target: 2.3, unit: "mg" },
+    vitA_mcg: { label: "Vitamin A", target: 900, unit: "mcg" },
+    vitC_mg: { label: "Vitamin C", target: 90, unit: "mg" },
+    vitD_mcg: { label: "Vitamin D", target: 20, unit: "mcg" },
+    vitE_mg: { label: "Vitamin E", target: 15, unit: "mg" },
+    vitK_mcg: { label: "Vitamin K", target: 120, unit: "mcg" },
+    thiamin_mg: { label: "Thiamin (B1)", target: 1.2, unit: "mg" },
+    riboflavin_mg: { label: "Riboflavin (B2)", target: 1.3, unit: "mg" },
+    niacin_mg: { label: "Niacin (B3)", target: 16, unit: "mg" },
+    vitB6_mg: { label: "Vitamin B6", target: 1.3, unit: "mg" },
+    folate_mcg: { label: "Folate", target: 400, unit: "mcg" },
+    vitB12_mcg: { label: "Vitamin B12", target: 2.4, unit: "mcg" },
+    choline_mg: { label: "Choline", target: 550, unit: "mg" },
   };
 
   function M(o) {
@@ -71,17 +95,17 @@
 
   const FOOD = {
     almond_milk_oz: { name: "unsweetened almond milk", unit: "oz", kcal: 5, p: 0.2, c: 0.2, f: 0.4, m: M({ calcium_mg: 56, vitA_mcg: 19, vitD_mcg: 0.3, vitE: 0, potassium_mg: 20, sodium_mg: 19 }) },
-    milk_skim_oz: { name: "skim milk", unit: "oz", kcal: 10.6, p: 1.05, c: 1.5, f: 0.05, m: M({ calcium_mg: 38, potassium_mg: 49, sodium_mg: 13, vitA_mcg: 19, vitD_mcg: 0.4, vitB12_mcg: 0.16, magnesium_mg: 3.5, zinc_mg: 0.13, iron_mg: 0.01 }) },
+    milk_skim_oz: { name: "skim milk", unit: "oz", kcal: 10.6, p: 1.05, c: 1.5, f: 0.05, m: M({ calcium_mg: 38, potassium_mg: 49, sodium_mg: 13, vitA_mcg: 19, vitD_mcg: 0.4, vitB12_mcg: 0.16, magnesium_mg: 3.5, zinc_mg: 0.13, iron_mg: 0.01, phosphorus_mg: 30, riboflavin_mg: 0.05, vitB12_mcg: 0.16}) },
     milk_2pct_oz: { name: "2% milk", unit: "oz", kcal: 15, p: 1, c: 1.5, f: 0.625, m: M({ calcium_mg: 37, potassium_mg: 44, sodium_mg: 14, vitA_mcg: 17, vitD_mcg: 0.4, vitB12_mcg: 0.14, magnesium_mg: 3.4, zinc_mg: 0.12 }) },
-    protein_scoop: { name: "protein powder", unit: "scoop", kcal: 120, p: 24, c: 3, f: 1, m: M({ calcium_mg: 120, sodium_mg: 150, potassium_mg: 160, iron_mg: 0.5, magnesium_mg: 20, zinc_mg: 1.5, vitB12_mcg: 0.5 }) },
-    banana: { name: "banana", unit: "medium", kcal: 105, p: 1.3, c: 27, f: 0.4, m: M({ fiber_g: 3.1, potassium_mg: 422, magnesium_mg: 32, vitC_mg: 10.3, vitA_mcg: 3, calcium_mg: 6, iron_mg: 0.3, zinc_mg: 0.2 }) },
-    berries_cup: { name: "mixed berries", unit: "cup", kcal: 70, p: 1, c: 17, f: 0.5, m: M({ fiber_g: 6, vitC_mg: 30, vitA_mcg: 8, potassium_mg: 180, calcium_mg: 25, iron_mg: 0.6, magnesium_mg: 15 }) },
+    protein_scoop: { name: "protein powder", unit: "scoop", kcal: 120, p: 24, c: 3, f: 1, m: M({ calcium_mg: 120, sodium_mg: 150, potassium_mg: 160, iron_mg: 0.5, magnesium_mg: 20, zinc_mg: 1.5, vitB12_mcg: 0.5, phosphorus_mg: 100, selenium_mcg: 8, choline_mg: 50}) },
+    banana: { name: "banana", unit: "medium", kcal: 105, p: 1.3, c: 27, f: 0.4, m: M({ fiber_g: 3.1, potassium_mg: 422, magnesium_mg: 32, vitC_mg: 10.3, vitA_mcg: 3, calcium_mg: 6, iron_mg: 0.3, zinc_mg: 0.2, vitB6_mg: 0.4, folate_mcg: 24, manganese_mg: 0.3, copper_mg: 0.1, choline_mg: 12, thiamin_mg: 0.04, riboflavin_mg: 0.09, niacin_mg: 0.8, phosphorus_mg: 26}) },
+    berries_cup: { name: "mixed berries", unit: "cup", kcal: 70, p: 1, c: 17, f: 0.5, m: M({ fiber_g: 6, vitC_mg: 30, vitA_mcg: 8, potassium_mg: 180, calcium_mg: 25, iron_mg: 0.6, magnesium_mg: 15, vitE_mg: 0.8, vitK_mcg: 20, manganese_mg: 0.7, folate_mcg: 25}) },
     blueberries_cup: { name: "blueberries", unit: "cup", kcal: 84, p: 1.1, c: 21, f: 0.5, m: M({ fiber_g: 3.6, vitC_mg: 14, potassium_mg: 114, vitaminK: 0, calcium_mg: 9, iron_mg: 0.4, magnesium_mg: 9 }) },
     strawberries_cup: { name: "strawberries", unit: "cup", kcal: 50, p: 1, c: 12, f: 0.5, m: M({ fiber_g: 3, vitC_mg: 89, potassium_mg: 220, calcium_mg: 24, iron_mg: 0.6, magnesium_mg: 18, vitA_mcg: 1 }) },
     cherries_cup: { name: "frozen cherries", unit: "cup", kcal: 90, p: 1.5, c: 22, f: 0.3, m: M({ fiber_g: 2.5, vitC_mg: 10, potassium_mg: 268, calcium_mg: 18, iron_mg: 0.5, magnesium_mg: 14, vitA_mcg: 19 }) },
     mango_cup: { name: "mango", unit: "cup", kcal: 100, p: 1.4, c: 25, f: 0.6, m: M({ fiber_g: 2.6, vitC_mg: 60, vitA_mcg: 89, potassium_mg: 277, calcium_mg: 18, magnesium_mg: 17, iron_mg: 0.3 }) },
-    spinach_cup: { name: "spinach", unit: "cup", kcal: 7, p: 0.9, c: 1.1, f: 0.1, m: M({ fiber_g: 0.7, vitA_mcg: 281, vitC_mg: 8, calcium_mg: 30, iron_mg: 0.8, magnesium_mg: 24, potassium_mg: 167, zinc_mg: 0.2 }) },
-    oats_cup: { name: "dry oats", unit: "cup", kcal: 300, p: 10, c: 54, f: 6, m: M({ fiber_g: 8, iron_mg: 3.6, magnesium_mg: 110, zinc_mg: 2.9, potassium_mg: 293, calcium_mg: 42, sodium_mg: 2 }) },
+    spinach_cup: { name: "spinach", unit: "cup", kcal: 7, p: 0.9, c: 1.1, f: 0.1, m: M({ fiber_g: 0.7, vitA_mcg: 281, vitC_mg: 8, calcium_mg: 30, iron_mg: 0.8, magnesium_mg: 24, potassium_mg: 167, zinc_mg: 0.2, vitK_mcg: 145, folate_mcg: 58, vitE_mg: 0.6, manganese_mg: 0.3, copper_mg: 0.05, choline_mg: 6, thiamin_mg: 0.03, riboflavin_mg: 0.06, niacin_mg: 0.2, vitB6_mg: 0.06, phosphorus_mg: 15}) },
+    oats_cup: { name: "dry oats", unit: "cup", kcal: 300, p: 10, c: 54, f: 6, m: M({ fiber_g: 8, iron_mg: 3.6, magnesium_mg: 110, zinc_mg: 2.9, potassium_mg: 293, calcium_mg: 42, sodium_mg: 2, thiamin_mg: 0.6, phosphorus_mg: 340, manganese_mg: 3.6, selenium_mcg: 24, copper_mg: 0.3, vitE_mg: 0.6, vitB6_mg: 0.1, folate_mcg: 40, choline_mg: 30, riboflavin_mg: 0.1, niacin_mg: 1}) },
     chia_tbsp: { name: "chia seeds", unit: "tbsp", kcal: 58, p: 2, c: 5, f: 3.5, m: M({ fiber_g: 4.1, calcium_mg: 76, magnesium_mg: 40, iron_mg: 0.9, zinc_mg: 0.5, potassium_mg: 50 }) },
     hemp_tbsp: { name: "hemp hearts", unit: "tbsp", kcal: 55, p: 3.2, c: 0.8, f: 4.5, m: M({ fiber_g: 0.4, magnesium_mg: 70, iron_mg: 1.2, zinc_mg: 1.5, calcium_mg: 14, potassium_mg: 120 }) },
     walnuts_tbsp: { name: "walnuts", unit: "tbsp", kcal: 48, p: 1.1, c: 1, f: 4.8, m: M({ fiber_g: 0.5, magnesium_mg: 12, zinc_mg: 0.2, iron_mg: 0.2, potassium_mg: 32, calcium_mg: 7 }) },
@@ -95,15 +119,15 @@
     maple_tsp: { name: "maple syrup", unit: "tsp", kcal: 17, p: 0, c: 4.4, f: 0, m: M({ calcium_mg: 7, potassium_mg: 14, magnesium_mg: 1, zinc_mg: 0.05, iron_mg: 0.01 }) },
     honey_tsp: { name: "honey", unit: "tsp", kcal: 21, p: 0, c: 5.8, f: 0, m: M({ potassium_mg: 3.5, calcium_mg: 0.4 }) },
     cacao_tsp: { name: "cacao powder", unit: "tsp", kcal: 8, p: 0.5, c: 1.2, f: 0.4, m: M({ fiber_g: 0.7, iron_mg: 0.5, magnesium_mg: 10, zinc_mg: 0.15, potassium_mg: 30, calcium_mg: 5 }) },
-    beef_oz: { name: "93% lean ground beef (cooked)", unit: "oz", kcal: 48, p: 7, c: 0, f: 2.2, m: M({ iron_mg: 0.7, zinc_mg: 1.5, vitB12_mcg: 0.7, potassium_mg: 90, sodium_mg: 20, magnesium_mg: 6, calcium_mg: 4, vitA_mcg: 1 }) },
+    beef_oz: { name: "93% lean ground beef (cooked)", unit: "oz", kcal: 48, p: 7, c: 0, f: 2.2, m: M({ iron_mg: 0.7, zinc_mg: 1.5, vitB12_mcg: 0.7, potassium_mg: 90, sodium_mg: 20, magnesium_mg: 6, calcium_mg: 4, vitA_mcg: 1, niacin_mg: 1.5, selenium_mcg: 6, phosphorus_mg: 55, vitB6_mg: 0.1, choline_mg: 20, riboflavin_mg: 0.05}) },
     turkey_oz: { name: "lean ground turkey (cooked)", unit: "oz", kcal: 45, p: 7.2, c: 0, f: 1.8, m: M({ zinc_mg: 0.9, iron_mg: 0.4, vitB12_mcg: 0.4, potassium_mg: 80, sodium_mg: 25, magnesium_mg: 7, calcium_mg: 5 }) },
-    chicken_oz: { name: "chicken breast (cooked)", unit: "oz", kcal: 46, p: 8.8, c: 0, f: 1, m: M({ zinc_mg: 0.3, iron_mg: 0.15, vitB12_mcg: 0.1, potassium_mg: 73, sodium_mg: 20, magnesium_mg: 8, calcium_mg: 4 }) },
+    chicken_oz: { name: "chicken breast (cooked)", unit: "oz", kcal: 46, p: 8.8, c: 0, f: 1, m: M({ zinc_mg: 0.3, iron_mg: 0.15, vitB12_mcg: 0.1, potassium_mg: 73, sodium_mg: 20, magnesium_mg: 8, calcium_mg: 4, niacin_mg: 3.5, selenium_mcg: 7, phosphorus_mg: 60, vitB6_mg: 0.25, choline_mg: 20, thiamin_mg: 0.02, riboflavin_mg: 0.04, folate_mcg: 1}) },
     chicken_thigh_oz: { name: "chicken thigh (cooked)", unit: "oz", kcal: 55, p: 7.2, c: 0, f: 2.9, m: M({ zinc_mg: 0.5, iron_mg: 0.25, vitB12_mcg: 0.15, potassium_mg: 70, sodium_mg: 25, magnesium_mg: 7, calcium_mg: 4 }) },
-    salmon_oz: { name: "salmon fillet (cooked)", unit: "oz", kcal: 59, p: 6.5, c: 0, f: 3.6, m: M({ vitD_mcg: 3.2, vitB12_mcg: 0.9, potassium_mg: 110, sodium_mg: 15, magnesium_mg: 8, zinc_mg: 0.2, iron_mg: 0.15, calcium_mg: 4, vitA_mcg: 10 }) },
+    salmon_oz: { name: "salmon fillet (cooked)", unit: "oz", kcal: 59, p: 6.5, c: 0, f: 3.6, m: M({ vitD_mcg: 3.2, vitB12_mcg: 0.9, potassium_mg: 110, sodium_mg: 15, magnesium_mg: 8, zinc_mg: 0.2, iron_mg: 0.15, calcium_mg: 4, vitA_mcg: 10, selenium_mcg: 12, phosphorus_mg: 70, niacin_mg: 2.2, vitB6_mg: 0.2, choline_mg: 25, vitE_mg: 0.3, thiamin_mg: 0.05, riboflavin_mg: 0.05, folate_mcg: 5}) },
     cod_oz: { name: "cod fillet (cooked)", unit: "oz", kcal: 30, p: 6.5, c: 0, f: 0.2, m: M({ vitB12_mcg: 0.3, vitD_mcg: 0.15, potassium_mg: 90, sodium_mg: 25, magnesium_mg: 8, zinc_mg: 0.15, calcium_mg: 5, iron_mg: 0.1 }) },
-    shrimp_oz: { name: "shrimp (cooked)", unit: "oz", kcal: 28, p: 6.8, c: 0.2, f: 0.3, m: M({ sodium_mg: 110, potassium_mg: 50, magnesium_mg: 10, zinc_mg: 0.4, iron_mg: 0.2, vitB12_mcg: 0.4, calcium_mg: 15 }) },
-    lettuce_cup: { name: "lettuce", unit: "cup", kcal: 8, p: 0.6, c: 1.5, f: 0.1, m: M({ fiber_g: 0.7, vitA_mcg: 100, vitC_mg: 3, potassium_mg: 80, calcium_mg: 15, iron_mg: 0.3, magnesium_mg: 5 }) },
-    kale_cup: { name: "kale", unit: "cup", kcal: 33, p: 2.9, c: 6, f: 0.6, m: M({ fiber_g: 2.4, vitA_mcg: 500, vitC_mg: 80, calcium_mg: 150, potassium_mg: 300, iron_mg: 1, magnesium_mg: 30 }) },
+    shrimp_oz: { name: "shrimp (cooked)", unit: "oz", kcal: 28, p: 6.8, c: 0.2, f: 0.3, m: M({ sodium_mg: 110, potassium_mg: 50, magnesium_mg: 10, zinc_mg: 0.4, iron_mg: 0.2, vitB12_mcg: 0.4, calcium_mg: 15, selenium_mcg: 14, phosphorus_mg: 50, choline_mg: 25, copper_mg: 0.05, vitB12_mcg: 0.4}) },
+    lettuce_cup: { name: "lettuce", unit: "cup", kcal: 8, p: 0.6, c: 1.5, f: 0.1, m: M({ fiber_g: 0.7, vitA_mcg: 100, vitC_mg: 3, potassium_mg: 80, calcium_mg: 15, iron_mg: 0.3, magnesium_mg: 5, vitK_mcg: 48, folate_mcg: 38}) },
+    kale_cup: { name: "kale", unit: "cup", kcal: 33, p: 2.9, c: 6, f: 0.6, m: M({ fiber_g: 2.4, vitA_mcg: 500, vitC_mg: 80, calcium_mg: 150, potassium_mg: 300, iron_mg: 1, magnesium_mg: 30, vitK_mcg: 547, folate_mcg: 20, vitE_mg: 1, manganese_mg: 0.5, copper_mg: 0.1}) },
     mixed_greens_cup: { name: "mixed greens", unit: "cup", kcal: 10, p: 0.8, c: 1.8, f: 0.2, m: M({ fiber_g: 1, vitA_mcg: 120, vitC_mg: 10, potassium_mg: 100, calcium_mg: 30, iron_mg: 0.5, magnesium_mg: 10 }) },
     cherry_tomato_cup: { name: "cherry tomatoes", unit: "cup", kcal: 27, p: 1.3, c: 5.8, f: 0.3, m: M({ fiber_g: 1.8, vitC_mg: 20, vitA_mcg: 80, potassium_mg: 350, calcium_mg: 15, magnesium_mg: 15, iron_mg: 0.4 }) },
     cucumber_cup: { name: "cucumber", unit: "cup", kcal: 16, p: 0.7, c: 3.8, f: 0.1, m: M({ fiber_g: 0.5, vitC_mg: 3, potassium_mg: 150, calcium_mg: 16, magnesium_mg: 12 }) },
@@ -116,26 +140,26 @@
     brown_rice_cup: { name: "cooked brown rice", unit: "cup", kcal: 215, p: 5, c: 45, f: 1.6, m: M({ fiber_g: 3.5, magnesium_mg: 84, zinc_mg: 1.2, iron_mg: 0.8, potassium_mg: 154, calcium_mg: 20 }) },
     potato_oz: { name: "potato", unit: "oz", kcal: 25, p: 0.6, c: 5.7, f: 0, m: M({ fiber_g: 0.6, potassium_mg: 120, vitC_mg: 5.5, magnesium_mg: 6, iron_mg: 0.1, calcium_mg: 3 }) },
     sweet_potato_oz: { name: "sweet potato", unit: "oz", kcal: 24, p: 0.4, c: 5.6, f: 0, m: M({ fiber_g: 0.8, vitA_mcg: 250, vitC_mg: 3.5, potassium_mg: 95, magnesium_mg: 5, calcium_mg: 8, iron_mg: 0.15 }) },
-    broccoli_cup: { name: "broccoli", unit: "cup", kcal: 55, p: 3.7, c: 11, f: 0.6, m: M({ fiber_g: 5.1, vitC_mg: 81, vitA_mcg: 57, calcium_mg: 62, potassium_mg: 457, iron_mg: 1, magnesium_mg: 30, zinc_mg: 0.6 }) },
+    broccoli_cup: { name: "broccoli", unit: "cup", kcal: 55, p: 3.7, c: 11, f: 0.6, m: M({ fiber_g: 5.1, vitC_mg: 81, vitA_mcg: 57, calcium_mg: 62, potassium_mg: 457, iron_mg: 1, magnesium_mg: 30, zinc_mg: 0.6, vitK_mcg: 90, folate_mcg: 60, vitE_mg: 0.8, manganese_mg: 0.2, phosphorus_mg: 60, choline_mg: 19, thiamin_mg: 0.07, riboflavin_mg: 0.1, niacin_mg: 0.6, vitB6_mg: 0.2, selenium_mcg: 2.5}) },
     peppers_cup: { name: "bell peppers", unit: "cup", kcal: 30, p: 1, c: 7, f: 0.2, m: M({ fiber_g: 2.5, vitC_mg: 152, vitA_mcg: 117, potassium_mg: 251, calcium_mg: 10, magnesium_mg: 14, iron_mg: 0.5 }) },
     cauliflower_cup: { name: "cauliflower", unit: "cup", kcal: 27, p: 2, c: 5, f: 0.3, m: M({ fiber_g: 2.1, vitC_mg: 51, potassium_mg: 320, calcium_mg: 24, magnesium_mg: 16, iron_mg: 0.4, zinc_mg: 0.3 }) },
     carrots_cup: { name: "carrots", unit: "cup", kcal: 50, p: 1.1, c: 12, f: 0.3, m: M({ fiber_g: 3.6, vitA_mcg: 1069, vitC_mg: 7.6, potassium_mg: 410, calcium_mg: 42, magnesium_mg: 15, iron_mg: 0.4 }) },
     mixed_veg_cup: { name: "mixed vegetables", unit: "cup", kcal: 60, p: 2.5, c: 12, f: 0.5, m: M({ fiber_g: 4, vitA_mcg: 400, vitC_mg: 15, potassium_mg: 280, calcium_mg: 35, iron_mg: 0.8, magnesium_mg: 25 }) },
     asparagus_cup: { name: "asparagus", unit: "cup", kcal: 40, p: 4.3, c: 7.4, f: 0.4, m: M({ fiber_g: 3.6, vitA_mcg: 90, vitC_mg: 10, folate: 0, potassium_mg: 270, calcium_mg: 32, iron_mg: 2, magnesium_mg: 18, zinc_mg: 0.7 }) },
     evoo_tsp: { name: "extra virgin olive oil", unit: "tsp", kcal: 40, p: 0, c: 0, f: 4.5, m: M({ vitA_mcg: 0 }) },
-    almonds_oz: { name: "almonds", unit: "oz", kcal: 164, p: 6, c: 6.1, f: 14.2, m: M({ fiber_g: 3.5, magnesium_mg: 76, calcium_mg: 76, iron_mg: 1.1, zinc_mg: 0.9, potassium_mg: 208, vitE: 7.3 }) },
+    almonds_oz: { name: "almonds", unit: "oz", kcal: 164, p: 6, c: 6.1, f: 14.2, m: M({ fiber_g: 3.5, magnesium_mg: 76, calcium_mg: 76, iron_mg: 1.1, zinc_mg: 0.9, potassium_mg: 208, vitE: 7.3, vitE_mg: 7.3, manganese_mg: 0.6, copper_mg: 0.3, phosphorus_mg: 136, riboflavin_mg: 0.3, choline_mg: 15, thiamin_mg: 0.05, niacin_mg: 1, vitB6_mg: 0.04, folate_mcg: 12, selenium_mcg: 1}) },
     peanuts_oz: { name: "peanuts", unit: "oz", kcal: 161, p: 7.3, c: 4.6, f: 14, m: M({ fiber_g: 2.4, magnesium_mg: 50, zinc_mg: 0.9, iron_mg: 0.6, potassium_mg: 200, calcium_mg: 26 }) },
     cashews_oz: { name: "cashews", unit: "oz", kcal: 157, p: 5.2, c: 8.6, f: 12.4, m: M({ fiber_g: 0.9, magnesium_mg: 83, zinc_mg: 1.6, iron_mg: 1.9, potassium_mg: 187, calcium_mg: 13 }) },
     pistachios_oz: { name: "pistachios", unit: "oz", kcal: 159, p: 5.7, c: 7.7, f: 12.9, m: M({ fiber_g: 3, magnesium_mg: 34, zinc_mg: 0.7, iron_mg: 1.1, potassium_mg: 291, calcium_mg: 30 }) },
-    greek_nonfat_cup: { name: "0% Greek yogurt", unit: "cup", kcal: 130, p: 23, c: 9, f: 0.7, m: M({ calcium_mg: 250, potassium_mg: 240, sodium_mg: 65, vitB12_mcg: 0.8, magnesium_mg: 22, zinc_mg: 1.2, vitA_mcg: 5 }) },
+    greek_nonfat_cup: { name: "0% Greek yogurt", unit: "cup", kcal: 130, p: 23, c: 9, f: 0.7, m: M({ calcium_mg: 250, potassium_mg: 240, sodium_mg: 65, vitB12_mcg: 0.8, magnesium_mg: 22, zinc_mg: 1.2, vitA_mcg: 5, phosphorus_mg: 230, riboflavin_mg: 0.5, vitB6_mg: 0.1, folate_mcg: 20, choline_mg: 30, selenium_mcg: 10}) },
     greek_2pct_cup: { name: "2% Greek yogurt", unit: "cup", kcal: 150, p: 20, c: 8, f: 4, m: M({ calcium_mg: 230, potassium_mg: 220, sodium_mg: 70, vitB12_mcg: 0.7, magnesium_mg: 20, zinc_mg: 1, vitA_mcg: 20 }) },
-    cottage_lf_cup: { name: "low-fat cottage cheese", unit: "cup", kcal: 163, p: 28, c: 6.1, f: 2.3, m: M({ calcium_mg: 138, sodium_mg: 700, potassium_mg: 190, vitB12_mcg: 0.8, magnesium_mg: 12, zinc_mg: 0.7, vitA_mcg: 40 }) },
+    cottage_lf_cup: { name: "low-fat cottage cheese", unit: "cup", kcal: 163, p: 28, c: 6.1, f: 2.3, m: M({ calcium_mg: 138, sodium_mg: 700, potassium_mg: 190, vitB12_mcg: 0.8, magnesium_mg: 12, zinc_mg: 0.7, vitA_mcg: 40, phosphorus_mg: 300, riboflavin_mg: 0.4, selenium_mcg: 20, choline_mg: 40, folate_mcg: 25}) },
     pineapple_cup: { name: "pineapple", unit: "cup", kcal: 82, p: 0.9, c: 21.6, f: 0.2, m: M({ fiber_g: 2.3, vitC_mg: 79, manganese: 1.5, potassium_mg: 180, calcium_mg: 21, magnesium_mg: 20, iron_mg: 0.5 }) },
     peach_cup: { name: "sliced peach", unit: "cup", kcal: 60, p: 1.4, c: 14.7, f: 0.4, m: M({ fiber_g: 2.3, vitC_mg: 10, vitA_mcg: 26, potassium_mg: 285, calcium_mg: 9, magnesium_mg: 14, iron_mg: 0.4 }) },
-    egg: { name: "large egg", unit: "egg", kcal: 72, p: 6.3, c: 0.4, f: 4.8, m: M({ sodium_mg: 71, vitA_mcg: 80, vitD_mcg: 1, vitB12_mcg: 0.5, iron_mg: 0.9, calcium_mg: 28, potassium_mg: 69, zinc_mg: 0.6, magnesium_mg: 6 }) },
+    egg: { name: "large egg", unit: "egg", kcal: 72, p: 6.3, c: 0.4, f: 4.8, m: M({ sodium_mg: 71, vitA_mcg: 80, vitD_mcg: 1, vitB12_mcg: 0.5, iron_mg: 0.9, calcium_mg: 28, potassium_mg: 69, zinc_mg: 0.6, magnesium_mg: 6, choline_mg: 147, selenium_mcg: 15, phosphorus_mg: 86, riboflavin_mg: 0.2, folate_mcg: 24, vitE_mg: 0.5, vitK_mcg: 0.3, thiamin_mg: 0.04, niacin_mg: 0.05, vitB6_mg: 0.06}) },
     egg_white: { name: "egg white", unit: "white", kcal: 17, p: 3.6, c: 0.2, f: 0.1, m: M({ sodium_mg: 55, potassium_mg: 54, calcium_mg: 2, magnesium_mg: 4 }) },
-    avocado_oz: { name: "avocado", unit: "oz", kcal: 45, p: 0.6, c: 2.4, f: 4.2, m: M({ fiber_g: 1.9, potassium_mg: 140, magnesium_mg: 8, vitC_mg: 2.8, vitA_mcg: 2, calcium_mg: 3, iron_mg: 0.15 }) },
-    hard_boiled_egg: { name: "hard boiled egg", unit: "egg", kcal: 78, p: 6.3, c: 0.6, f: 5.3, m: M({ sodium_mg: 62, vitA_mcg: 74, vitD_mcg: 1.1, vitB12_mcg: 0.55, iron_mg: 0.6, calcium_mg: 25, potassium_mg: 63, zinc_mg: 0.5 }) },
+    avocado_oz: { name: "avocado", unit: "oz", kcal: 45, p: 0.6, c: 2.4, f: 4.2, m: M({ fiber_g: 1.9, potassium_mg: 140, magnesium_mg: 8, vitC_mg: 2.8, vitA_mcg: 2, calcium_mg: 3, iron_mg: 0.15, vitE_mg: 0.6, vitK_mcg: 6, folate_mcg: 25, copper_mg: 0.05, manganese_mg: 0.04, choline_mg: 4}) },
+    hard_boiled_egg: { name: "hard boiled egg", unit: "egg", kcal: 78, p: 6.3, c: 0.6, f: 5.3, m: M({ sodium_mg: 62, vitA_mcg: 74, vitD_mcg: 1.1, vitB12_mcg: 0.55, iron_mg: 0.6, calcium_mg: 25, potassium_mg: 63, zinc_mg: 0.5, choline_mg: 147, selenium_mcg: 15, phosphorus_mg: 86, riboflavin_mg: 0.2, folate_mcg: 22, vitE_mg: 0.5}) },
   };
 
   /** Approximate edible grams per FOOD unit (for display). */
@@ -2506,7 +2530,7 @@
         const m = plan.micros.breakdown[k];
         const pct = Math.min(100, Math.max(0, m.pct));
         const pie = "conic-gradient(var(--moss) 0 " + pct + "%, var(--linen) " + pct + "% 100%)";
-        const amtLabel = m.amount + m.unit;
+        const amtLabel = (Math.abs(m.amount) >= 10 ? Math.round(m.amount) : Math.round(m.amount * 10) / 10) + m.unit;
         const sodiumNote = k === "sodium_mg"
           ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
           : "";
@@ -2623,8 +2647,7 @@
           `<article class="mp-card" data-slot-index="${slotIndex}">
             <header class="mp-card-head">
               <div>
-                <strong>${slot.name}: ${t.kcal} cal</strong>
-                <span class="mp-suggest"> — ${s.title}</span>
+                <strong>${slot.name}: ${t.kcal} cal - ${s.title}</strong>
               </div>
               <button type="button" class="mp-reroll mp-reroll-slot" data-slot="${slotIndex}">Reroll</button>
             </header>

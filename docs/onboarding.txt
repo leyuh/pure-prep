@@ -11,3 +11,6 @@ Notes (defaults):
 Input + Output as in Drive doc: dual target/actual macro pies, meal list with rerolls,
 3–5 sentence nutrition overview, collapsed micronutrient pies with hover amounts,
 sodium note, grocery list, save & close.
+
+
+Synced 2026-09-22: defaults #1–#6, dual target/actual pies, expanded vitamins/minerals, cache-busted JS.
