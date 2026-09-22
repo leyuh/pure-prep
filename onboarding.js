@@ -1259,6 +1259,149 @@
     return ings;
   }
 
+  const MEAL_TYPES_ALL = ["smoothie", "oatmeal", "bowl", "salad_jar"];
+  const SNACK_TYPES_ALL = ["nut", "cottage", "greek", "hb_egg"];
+
+  /** Shared protein/flavor pools respecting budgetTier preferences. */
+  function mealTypePools(planOptions) {
+    planOptions = planOptions || {};
+    const tier =
+      planOptions.tier || budgetTier(planOptions.budget || 300, planOptions.tierOverrides);
+    const cheapProteins = ["beef", "chicken", "turkey", "chicken_thigh", "eggs", "egg_whites"];
+    const priceyProteins = ["salmon", "shrimp", "cod"];
+    const bowlProteins = tier.preferCheapProtein
+      ? cheapProteins.slice()
+      : cheapProteins.concat(priceyProteins);
+    const breakfastFlavors = tier.preferCheapProduce
+      ? tier.reduceVariety
+        ? ["banana_bread", "pumpkin_spice", "pb_banana"]
+        : ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
+      : [
+          "berry_banana",
+          "pumpkin_spice",
+          "pb_banana",
+          "banana_bread",
+          "chocolate_cherry",
+        ];
+    const smoothieSafeFlavors = breakfastFlavors.filter(
+      (f) => f !== "pumpkin_spice" && f !== "banana_bread"
+    );
+    const nutKeys =
+      tier.preferCheapProduce || tier.preferCheapProtein
+        ? tier.reduceVariety
+          ? ["peanuts_oz"]
+          : ["peanuts_oz", "almonds_oz"]
+        : ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
+    const fruits = tier.preferCheapProduce
+      ? tier.reduceVariety
+        ? ["pineapple", "peach"]
+        : ["pineapple", "peach", "mango", "berries"]
+      : ["pineapple", "peach", "mango", "berries"];
+    return { tier, bowlProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
+  }
+
+  /**
+   * Build one meal suggestion of an explicit type (not locked by slot position).
+   * seed cycles flavors / proteins / veg / fat styles.
+   */
+  function buildMealSuggestionForType(type, calories, targetGrams, seed, planOptions) {
+    seed = Math.max(0, Number(seed) || 0);
+    planOptions = planOptions || {};
+    const pools = mealTypePools(planOptions);
+    const { tier, bowlProteins, breakfastFlavors, smoothieSafeFlavors } = pools;
+    const fatStyles = ["evoo", "avocado", "hbe"];
+    const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
+    const tg = { p: targetGrams.p, c: targetGrams.c, f: targetGrams.f };
+    const pick = (arr, i) => arr[((i % arr.length) + arr.length) % arr.length];
+
+    if (type === "smoothie") {
+      const fl = pick(smoothieSafeFlavors, seed);
+      return buildSmoothieSlot(fl, calories, tg, "almond_milk_oz");
+    }
+    if (type === "oatmeal") {
+      const fl = pick(breakfastFlavors, seed);
+      return buildOatmealSlot(fl, calories, tg, true);
+    }
+    if (type === "salad_jar") {
+      const prot = pick(bowlProteins, Math.floor(seed / 2));
+      const greenOpts = ["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"];
+      const vegPool = [
+        "carrots_cup",
+        "peppers_cup",
+        "cherry_tomato_cup",
+        "cucumber_cup",
+        "onion_cup",
+        "corn_cup",
+      ];
+      const greens = pick(greenOpts, seed);
+      const vegKeys = [
+        pick(vegPool, seed),
+        pick(vegPool, seed + 2),
+        pick(vegPool, seed + 4),
+      ].filter((k, idx, arr) => arr.indexOf(k) === idx);
+      return buildSaladJarSlot(prot, calories, tg, {
+        greensKey: greens,
+        vegKeys,
+        budget: planOptions.budget,
+        tier,
+        fatStyle: pick(saladFat, seed),
+        addBeans: seed % 3 === 0,
+        variant: seed,
+      });
+    }
+    // bowl (default)
+    const prot = pick(bowlProteins, Math.floor(seed / 2));
+    const vegKey = pick(BOWL_VEG_KEYS, seed);
+    return buildBowlSlot(prot, calories, tg, {
+      vegKey,
+      budget: planOptions.budget,
+      tier,
+      fatStyle: pick(fatStyles, seed),
+    });
+  }
+
+  /** Build one snack of an explicit kind: nut | cottage | greek | hb_egg. */
+  function buildSnackSuggestionForType(type, calories, targetGrams, seed, planOptions) {
+    seed = Math.max(0, Number(seed) || 0);
+    planOptions = planOptions || {};
+    const pools = mealTypePools(planOptions);
+    const { nutKeys, fruits } = pools;
+    const tg = { p: targetGrams.p, c: targetGrams.c, f: targetGrams.f };
+    const pick = (arr, i) => arr[((i % arr.length) + arr.length) % arr.length];
+
+    if (type === "nut") {
+      return buildNutOnlySnack(pick(nutKeys, seed), calories, tg);
+    }
+    if (type === "hb_egg") {
+      return buildHbEggSnack(calories, tg, pick(fruits, seed));
+    }
+    const kind = type === "cottage" ? "cottage" : "greek";
+    const fruit = pick(fruits, seed);
+    const base = buildLeanSnackProtein(kind, fruit, tg.p, tg.f);
+    addFruitCarbs(
+      base.ings,
+      fruit,
+      tg.c - sumIngredients(base.ings).c,
+      calories - sumIngredients(base.ings).kcal
+    );
+    return {
+      title: base.title,
+      type: kind === "cottage" ? "cottage_cheese" : "greek_yogurt",
+      ingredients: base.ings,
+      totals: roundMacros(sumIngredients(base.ings)),
+      notes: [],
+      targetGrams: tg,
+      targetCal: calories,
+    };
+  }
+
+  function normalizeSnackRerollType(t) {
+    if (t === "cottage_cheese") return "cottage";
+    if (t === "greek_yogurt") return "greek";
+    if (t === "hb_egg_snack") return "hb_egg";
+    return t || "";
+  }
+
   /**
    * Build full day following Meal & Snack Planning Procedure.
    * Prefer even calorie split; allow ±150 meal / ±75 snack if needed later.
@@ -1364,7 +1507,15 @@
       if (slot.kind === "meal") {
         mealCount += 1;
         let suggestion;
-        if (is3m2s) {
+        if (planOptions.freeMealTypes) {
+          // Variant-driven among all 4 meal types (used by day reroll / free mix)
+          const type = MEAL_TYPES_ALL[(variant + mealCount) % MEAL_TYPES_ALL.length];
+          suggestion = buildMealSuggestionForType(type, slot.calories, tg, variant + mealCount * 17, {
+            budget: planOptions.budget,
+            tier,
+            tierOverrides: planOptions.tierOverrides,
+          });
+        } else if (is3m2s) {
           if (mealCount === 1) {
             // Map variant onto type + flavor directly so rerolls cycle many options
             const useSmoothie = variant % 2 === 0;
@@ -2068,7 +2219,11 @@
       macroPct,
       calories,
       variant,
-      { budget: answers.budget, tierOverrides: tierOverrides }
+      {
+        budget: answers.budget,
+        tierOverrides: tierOverrides,
+        freeMealTypes: !!options.freeMealTypes,
+      }
     );
 
     const actualRaw = schedule.reduce(
@@ -2268,10 +2423,13 @@
    */
   function rerollSlot(currentPlan, answers, slotIndex, fromVariant) {
     const base = Math.max(0, Number(fromVariant) || 0);
-    const prev =
-      currentPlan.schedule[slotIndex] && currentPlan.schedule[slotIndex].suggestion;
+    const slot = currentPlan.schedule[slotIndex];
+    if (!slot) return currentPlan;
+    const prev = slot.suggestion;
     const prevTitle = prev ? prev.title : "";
     const prevFp = suggestionFingerprint(prev);
+    const prevType = prev ? prev.type : "";
+    const prevSnackKind = normalizeSnackRerollType(prevType);
     const dayTitles = new Set(
       currentPlan.schedule
         .map((s, j) => (j === slotIndex ? null : s.suggestion && s.suggestion.title))
@@ -2286,17 +2444,70 @@
     const slotVariants = (answers._slotVariants || currentPlan._slotVariants || []).slice();
     const triedTitles = new Set();
 
-    for (let i = 1; i <= 96; i++) {
-      // Irregular stride explores more of the variant space than +1 each time
-      const trialVariant = base + i * 7 + slotIndex * 13 + ((i * 3) % 11);
-      const trial = buildPlan(answers, { variant: trialVariant, skipFit: true });
-      if (!trial.schedule[slotIndex]) continue;
-      const cand = trial.schedule[slotIndex].suggestion;
+    const planOptions = {
+      budget: answers.budget,
+      tierOverrides: answers._tierOverrides,
+      tier: budgetTier(answers.budget, answers._tierOverrides),
+    };
+    const macroPct = currentPlan.daily.macros;
+    const tg = gramsExact(slot.calories, macroPct);
+    const isMeal = slot.kind === "meal";
+
+    // Build candidate list: meals explore all 4 template types; snacks explore nut/cottage/greek/hb_egg
+    const candidates = [];
+    if (isMeal) {
+      const orderedTypes = MEAL_TYPES_ALL.slice().sort((a, b) => {
+        if (a === prevType) return 1;
+        if (b === prevType) return -1;
+        return 0;
+      });
+      const pools = mealTypePools(planOptions);
+      for (const type of orderedTypes) {
+        let dim = 1;
+        if (type === "smoothie") dim = Math.max(1, pools.smoothieSafeFlavors.length);
+        else if (type === "oatmeal") dim = Math.max(1, pools.breakfastFlavors.length);
+        else if (type === "bowl") dim = Math.max(1, pools.bowlProteins.length) * 3;
+        else dim = Math.max(1, pools.bowlProteins.length) * 5;
+        // Extra seeds so proteins × flavors × fats get coverage beyond the minimum dims
+        const seedCount = Math.max(12, dim);
+        for (let s = 0; s < seedCount; s++) {
+          const seed = base + s * 7 + slotIndex * 13 + ((s * 3) % 11) + orderedTypes.indexOf(type) * 19;
+          candidates.push({
+            suggestion: buildMealSuggestionForType(type, slot.calories, tg, seed, planOptions),
+            seed,
+            type,
+          });
+        }
+      }
+    } else {
+      const orderedSnacks = SNACK_TYPES_ALL.slice().sort((a, b) => {
+        if (a === prevSnackKind) return 1;
+        if (b === prevSnackKind) return -1;
+        return 0;
+      });
+      for (const type of orderedSnacks) {
+        for (let s = 0; s < 10; s++) {
+          const seed = base + s * 5 + slotIndex * 11 + ((s * 7) % 9) + orderedSnacks.indexOf(type) * 17;
+          candidates.push({
+            suggestion: buildSnackSuggestionForType(type, slot.calories, tg, seed, planOptions),
+            seed,
+            type,
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < candidates.length; i++) {
+      const entry = candidates[i];
+      const cand = entry.suggestion;
+      const trialVariant = entry.seed;
       const newTitle = cand.title;
       triedTitles.add(newTitle);
-      const schedule = currentPlan.schedule.map((s, j) =>
-        j === slotIndex ? trial.schedule[slotIndex] : s
-      );
+      const newSlot = Object.assign({}, slot, {
+        targetMacros: gramsFromPct(slot.calories, macroPct),
+        suggestion: cand,
+      });
+      const schedule = currentPlan.schedule.map((s, j) => (j === slotIndex ? newSlot : s));
       const nextVariants = slotVariants.slice();
       nextVariants[slotIndex] = trialVariant;
       const rebuilt = recomputePlanFromSchedule(answers, schedule, trialVariant);
@@ -2312,22 +2523,26 @@
       if (newTitle === prevTitle) score += 500;
       else score -= 80;
       if (fp === prevFp) score += 200;
-      if (cand.type && prev && cand.type === prev.type) score += 60;
-      else score -= 40;
+      // Heavy preference for a different meal/snack template type (bowls/salads/smoothies/etc.)
+      const candKind = isMeal ? cand.type : normalizeSnackRerollType(cand.type);
+      const prevKind = isMeal ? prevType : prevSnackKind;
+      if (candKind && prevKind && candKind === prevKind) score += 160;
+      else score -= 140;
       if (cand.protein && prev && cand.protein === prev.protein) score += 40;
       if (cand.flavor && prev && cand.flavor === prev.flavor) score += 40;
       if (dayTitles.has(newTitle)) score += 120;
       if (historySet.has(newTitle)) score += 160;
-      // Slight preference for titles not yet seen in this search pass
       score += Math.min(30, triedTitles.size);
 
       rebuilt._score = score;
       rebuilt._newTitle = newTitle;
       if (!best || score < best._score) best = rebuilt;
 
-      // Early exit on a clearly different, in-tolerance option
+      // Early exit: new type + new title + in tolerance
       if (
         newTitle !== prevTitle &&
+        candKind &&
+        candKind !== prevKind &&
         fp !== prevFp &&
         !historySet.has(newTitle) &&
         !dayTitles.has(newTitle) &&
@@ -2347,7 +2562,6 @@
       chosen.schedule[slotIndex].suggestion.title;
     if (chosenTitle) {
       history.push(chosenTitle);
-      // Keep a rolling window so rerolls keep finding new options
       answers._rerollHistory[slotIndex] = history.slice(-12);
     }
     return chosen;
@@ -2360,7 +2574,11 @@
     let best = null;
     for (let i = 1; i <= 64; i++) {
       const trialVariant = base + i * 5 + ((i * 9) % 17);
-      const trial = buildPlan(answers, { variant: trialVariant, skipFit: true });
+      const trial = buildPlan(answers, {
+        variant: trialVariant,
+        skipFit: true,
+        freeMealTypes: true,
+      });
       const titles = trial.schedule.map((s) => s.suggestion.title);
       let different = 0;
       for (let j = 0; j < titles.length; j++) {
@@ -3130,6 +3348,8 @@
     rerollSlot,
     rerollDay,
     recomputePlanFromSchedule,
+    buildMealSuggestionForType,
+    buildSnackSuggestionForType,
     buildSaladJarSlot,
     buildHbEggSnack,
     formatCupQty,
