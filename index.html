@@ -395,17 +395,7 @@
       box-shadow: inset 0 0 0 6px var(--card);
       background: var(--linen);
     }
-    .mp-micro-pie span {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--accent-deep);
-      background: var(--card);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-    }
+    /* pie center labels styled via .mp-pie-pct / .mp-pie-amt */
     .mp-micro-pie-label {
       font-size: 0.72rem;
       font-weight: 600;
@@ -433,6 +423,82 @@
       padding: 4px 0;
     }
     .mp-micro-expand[open] summary { margin-bottom: 10px; }
+
+    .mp-dual-macros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 720px) {
+      .mp-dual-macros { grid-template-columns: 1fr; }
+    }
+    .mp-macro-panel { margin: 0; }
+    .mp-panel-title {
+      margin: 0 0 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-deep);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .mp-macro-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .mp-cals-block { flex: 1; min-width: 110px; }
+    .mp-macro-pie {
+      width: 108px;
+      height: 108px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .mp-macro-pie-hole {
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      background: var(--card);
+      display: grid;
+      place-content: center;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+    .mp-macro-pie-hole strong {
+      font-size: 0.95rem;
+      color: var(--accent-deep);
+      line-height: 1.1;
+    }
+    .mp-macro-pie-hole span {
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .mp-micro-pie {
+      position: relative;
+    }
+    .mp-micro-pie .mp-pie-pct,
+    .mp-micro-pie .mp-pie-amt {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent-deep);
+      background: var(--card);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      line-height: 1;
+      text-align: center;
+      padding: 2px;
+    }
+    .mp-micro-pie .mp-pie-amt { display: none; font-size: 0.58rem; }
+    .mp-micro-pie:hover .mp-pie-pct,
+    .mp-micro-pie:focus-within .mp-pie-pct { display: none; }
+    .mp-micro-pie:hover .mp-pie-amt,
+    .mp-micro-pie:focus-within .mp-pie-amt { display: grid; }
+
 
     .mp-micro-row > .mp-badge { grid-column: 2; grid-row: 1; justify-self: end; }
     .mp-grocery-list small.mp-buy-qty { color: var(--muted); font-weight: 400; }

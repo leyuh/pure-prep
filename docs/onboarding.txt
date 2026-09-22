@@ -2,33 +2,13 @@ Onboarding questionnaire
 
 Interactive form that prompts the user for input beginning with question 1 and so on.
 
-#4 - have the 2nd option selected by default and show the exact text I have here for each of the options
+#4 - 2nd option default; exact macro labels as written.
 
-Input:
-1. What is your monthly grocery budget?
-2. How often do you prefer to order groceries? (Weekly, every other week, monthly)
-3. What is your daily caloric goal?
-   Help me find out: Weight, Weight goal (lose/maintain/gain), Activity level
-4. What are your macronutrient targets?
-   - 33 p | 42 c | 25 f (recommended for weight loss)
-   - 28 p | 42 c | 30 f (recommended for weight maintenance) [default]
-   - 25 p | 45 c | 30 f (recommended for weight gain)
-   - Custom
-5. How many meals do you like per day?
-   - 2 meals, 1 snack
-   - 3 meals
-   - 3 meals, 2 snacks
-   - 4 meals
-   - 5 meals
-6. How many days per week will you follow your plan?
-   - Checkbox list of days of week
+Input: budget, grocery cadence, calories (+ help), macros (loss/maintenance/gain/Custom), meals/day (no Custom), weekday checkboxes.
 
 Output:
-- Day’s total caloric and macronutrient targets
-- Meal/snack list with suggested meals/snacks and their exact calories (curated totals, not slot targets). Macro split very close to #4. Show ingredient macros + meal totals. Per-slot reroll.
-- Nutrition overview paragraph + micronutrient rating /5 stars
-- Micros as small pie charts (% in center); expand for horizontal bars; sodium note under sodium
-- Grocery list for cadence (#2) × plan days (#6) with item + total prices (Walmart estimates)
-- Save & close → Dashboard
-
-Example values are illustrative only — mix meals/snacks to hit the user’s daily targets.
+- Day’s total caloric and macronutrient targets AND actuals. Targets on the left, actual on the right. Each: calories on the left + pie chart macro distribution on the right.
+- Meal/snack list from Meal Templates; macros close to #4; ingredient macros + meal totals; per-slot reroll. Show exact curated calories.
+- Nutrition overview: short paragraph (3–5 sentences) on best nutritional aspects. No star rating.
+- Micronutrients: collapsed expandable tab until clicked. Inside: small pie charts for vitamins/minerals with % in center; hover swaps to amount (g/mg). Sodium note under sodium.
+- Grocery list for cadence × plan days with prices. Save & close → Dashboard.

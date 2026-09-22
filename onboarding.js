@@ -1996,53 +1996,130 @@
 
   function nutritionOverview(plan) {
     const bd = (plan.micros && plan.micros.breakdown) || {};
-    const keys = MICRO_KEYS.filter((k) => k !== "sodium_mg");
-    const scores = keys.map((k) => {
-      const pct = bd[k] ? bd[k].pct : 0;
-      // Ideal ~100%; score decays away from 100, capped
-      const diff = Math.abs(pct - 100);
-      if (diff <= 20) return 1;
-      if (diff <= 40) return 0.75;
-      if (diff <= 60) return 0.5;
-      if (pct >= 40) return 0.35;
-      return 0.15;
-    });
-    const sodium = bd.sodium_mg ? bd.sodium_mg.pct : 100;
-    // Sodium: at or under target is good
-    let sodiumScore = 1;
-    if (sodium > 130) sodiumScore = 0.3;
-    else if (sodium > 100) sodiumScore = 0.6;
-    const avg = (scores.reduce((a, b) => a + b, 0) + sodiumScore) / (scores.length + 1);
-    const stars = Math.max(1, Math.min(5, Math.round(avg * 5 * 10) / 10));
-    const starInt = Math.round(stars);
+    const schedule = plan.schedule || [];
+    const titles = schedule.map((s) => (s.suggestion && s.suggestion.title) || "").filter(Boolean);
+    const types = schedule.map((s) => (s.suggestion && s.suggestion.type) || "").filter(Boolean);
+    const sentences = [];
 
-    const highlights = [];
     const fiber = bd.fiber_g;
-    if (fiber && fiber.pct >= 80) {
-      highlights.push("Solid fiber from oats, produce, and beans supports digestion and steady energy.");
+    if (fiber && fiber.pct >= 75) {
+      sentences.push(
+        "Fiber lands near " +
+          fiber.pct +
+          "% of the daily suggestion, so bowls of oats, beans, and produce help support digestion and steady energy."
+      );
+    } else if (titles.some((t) => /oatmeal|oat/i.test(t))) {
+      sentences.push(
+        "Oatmeal in the rotation brings soluble fiber that can support digestion and help keep you full between meals."
+      );
     }
-    const pot = bd.potassium_mg;
-    if (pot && pot.pct >= 70) {
-      highlights.push("Potassium-rich fruit and vegetables help round out the day’s electrolyte picture.");
-    }
+
     const vitC = bd.vitC_mg;
-    if (vitC && vitC.pct >= 80) {
-      highlights.push("Vitamin C from fruit and veg is in a strong range for daily immune support.");
+    if (vitC && vitC.pct >= 70) {
+      sentences.push(
+        "Vitamin C is at about " +
+          vitC.pct +
+          "% of the daily mark from fruit and vegetables, which is useful for everyday immune support."
+      );
     }
+
+    const pot = bd.potassium_mg;
+    if (pot && pot.pct >= 60) {
+      sentences.push(
+        "Potassium from fruit and veg sits around " +
+          pot.pct +
+          "% of the suggested intake, rounding out electrolytes alongside the day’s proteins."
+      );
+    }
+
     const iron = bd.iron_mg;
-    if (iron && iron.pct >= 70) {
-      highlights.push("Iron from lean proteins and greens helps cover a key micronutrient for energy.");
+    if (iron && iron.pct >= 55) {
+      sentences.push(
+        "Iron from lean proteins and greens covers roughly " +
+          iron.pct +
+          "% of the daily suggestion, which helps with energy metabolism."
+      );
     }
+
     const cal = bd.calcium_mg;
-    if (cal && cal.pct >= 70) {
-      highlights.push("Dairy or fortified options in the plan contribute meaningful calcium.");
+    if (cal && cal.pct >= 55) {
+      sentences.push(
+        "Calcium from dairy, fortified milks, or greens reaches about " +
+          cal.pct +
+          "% of the daily target."
+      );
     }
-    if (!highlights.length) {
-      highlights.push("This plan balances macros while covering a spread of produce and proteins for micronutrient variety.");
+
+    const mag = bd.magnesium_mg;
+    if (mag && mag.pct >= 55 && sentences.length < 5) {
+      sentences.push(
+        "Magnesium from oats, nuts, and produce sits near " +
+          mag.pct +
+          "% of the suggested amount, supporting muscle and recovery needs."
+      );
     }
-    // Prefer 2 short sentences
-    const blurb = highlights.slice(0, 2).join(" ");
-    return { stars: starInt, starsExact: stars, blurb };
+
+    if (types.includes("smoothie") || titles.some((t) => /smoothie/i.test(t))) {
+      if (sentences.length < 5) {
+        sentences.push(
+          "Smoothie slots pack fruit and protein powder into an easy prep that still contributes meaningful micronutrients."
+        );
+      }
+    }
+    if (types.includes("bowl") || titles.some((t) => /bowl|salad/i.test(t))) {
+      if (sentences.length < 5) {
+        sentences.push(
+          "Savory bowls and jars keep vegetables in the mix so the day isn’t only carbs and protein powder."
+        );
+      }
+    }
+    if (titles.some((t) => /egg|yogurt|cottage|almond|nut/i.test(t)) && sentences.length < 5) {
+      sentences.push(
+        "Snacks lean on eggs, yogurt, cottage cheese, or nuts so protein stays available between larger meals."
+      );
+    }
+
+    while (sentences.length < 3) {
+      const fillers = [
+        "Produce choices are spread across different colors so vitamin and mineral coverage is broader than a single fruit or veg repeated all day.",
+        "Macros stay close to your targets while ingredients stay prep-friendly for a once-a-week cook.",
+        "Overall, the day balances protein-forward meals with fiber-rich carbs and measured fats for satiety.",
+      ];
+      sentences.push(fillers[sentences.length % fillers.length]);
+    }
+
+    const blurb = sentences.slice(0, 5).join(" ");
+    return { blurb };
+  }
+
+  function macroPieHtml(macros, centerStrong, centerLabel) {
+    const p = Number(macros.p) || 0;
+    const c = Number(macros.c) || 0;
+    const f = Number(macros.f) || 0;
+    const pEnd = p;
+    const cEnd = p + c;
+    const style =
+      "background: conic-gradient(" +
+      "#5a7a52 0 " +
+      pEnd +
+      "%, " +
+      "#c4785a " +
+      pEnd +
+      "% " +
+      cEnd +
+      "%, " +
+      "#d4a84b " +
+      cEnd +
+      "% 100%)";
+    return (
+      '<div class="mp-macro-pie" style="' +
+      style +
+      '"><div class="mp-macro-pie-hole"><strong>' +
+      centerStrong +
+      "</strong><span>" +
+      centerLabel +
+      "</span></div></div>"
+    );
   }
 
   /* ── UI ── */
@@ -2423,35 +2500,23 @@
       const c = plan.compliance;
       const g = plan.grocery;
       const overview = nutritionOverview(plan);
-      const starStr = "★".repeat(overview.stars) + "☆".repeat(5 - overview.stars);
+      const targetPie = macroPieHtml(plan.daily.macros, String(plan.daily.calories), "cals");
+      const actualPie = macroPieHtml(c.actualPct, String(plan.actual.kcal), "cals");
       const microPies = MICRO_KEYS.map((k) => {
         const m = plan.micros.breakdown[k];
         const pct = Math.min(100, Math.max(0, m.pct));
         const pie = "conic-gradient(var(--moss) 0 " + pct + "%, var(--linen) " + pct + "% 100%)";
+        const amtLabel = m.amount + m.unit;
         const sodiumNote = k === "sodium_mg"
           ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
           : "";
-        return `<div class="mp-micro-pie-card" data-micro="${k}">
-          <div class="mp-micro-pie" style="background:${pie}"><span>${m.pct}%</span></div>
+        return `<div class="mp-micro-pie-card" data-micro="${k}" title="${amtLabel} · ${m.pct}% of ${m.target}${m.unit}">
+          <div class="mp-micro-pie" style="background:${pie}">
+            <span class="mp-pie-pct">${m.pct}%</span>
+            <span class="mp-pie-amt">${amtLabel}</span>
+          </div>
           <div class="mp-micro-pie-label">${m.label}</div>
           ${sodiumNote}
-        </div>`;
-      }).join("");
-      const microBars = MICRO_KEYS.map((k) => {
-        const m = plan.micros.breakdown[k];
-        const pctW = Math.min(100, Math.max(0, m.pct));
-        const barCls = m.status === "ok" ? "ok" : m.status === "mid" ? "mid" : m.status === "high" ? "high" : "low";
-        const sodiumNote = k === "sodium_mg"
-          ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
-          : "";
-        return `<div class="mp-micro-row">
-          <div class="mp-micro-meta">
-            <span class="mp-micro-label">${m.label}</span>
-            <span class="mp-micro-amt">${m.amount}${m.unit} · ${m.pct}% of ${m.target}${m.unit}</span>
-            ${sodiumNote}
-          </div>
-          <div class="mp-micro-bar"><span class="${barCls}" style="width:${pctW}%"></span></div>
-          <span class="mp-badge ${m.status === "ok" ? "ok" : "warn"}">${m.pct}%</span>
         </div>`;
       }).join("");
 
@@ -2471,26 +2536,39 @@
 
       const section = el(`<section class="mp-result"></section>`);
       section.innerHTML = `
-        <h2>Daily targets</h2>
-        <div class="mp-goal">
-          <div class="mp-cals">${plan.daily.calories} cals</div>
-          <div class="mp-macros">
-            ${plan.daily.protein_g}g protein · ${plan.daily.carbs_g}g carbs · ${plan.daily.fat_g}g fat
-            <br/>
-            (${plan.daily.macros.p}% p / ${plan.daily.macros.c}% c / ${plan.daily.macros.f}% f)
+        <h2>Daily targets &amp; actuals</h2>
+        <div class="mp-dual-macros">
+          <div class="mp-goal mp-macro-panel">
+            <h3 class="mp-panel-title">Target</h3>
+            <div class="mp-macro-row">
+              <div class="mp-cals-block">
+                <div class="mp-cals">${plan.daily.calories}</div>
+                <div class="mp-macros">
+                  ${plan.daily.protein_g}g p · ${plan.daily.carbs_g}g c · ${plan.daily.fat_g}g f
+                  <br/>(${plan.daily.macros.p}% / ${plan.daily.macros.c}% / ${plan.daily.macros.f}%)
+                </div>
+              </div>
+              ${targetPie}
+            </div>
           </div>
-        </div>
-        <div class="mp-goal mp-actual">
-          <div class="mp-cals-sm">Day actual: ${plan.actual.kcal} kcal · ${plan.actual.p}p / ${plan.actual.c}c / ${plan.actual.f}f</div>
-          <div class="mp-macros">
-            Split ${c.actualPct.p}% p / ${c.actualPct.c}% c / ${c.actualPct.f}% f
-            (target ${plan.daily.macros.p}/${plan.daily.macros.c}/${plan.daily.macros.f})
-          </div>
-          <div class="mp-badges">
-            ${badge(c.calOk, "±100 cal")}
-            ${badge(c.pOk, "P ±2%")}
-            ${badge(c.cOk, "C ±2%")}
-            ${badge(c.fOk, "F ±2%")}
+          <div class="mp-goal mp-macro-panel mp-actual">
+            <h3 class="mp-panel-title">Actual</h3>
+            <div class="mp-macro-row">
+              <div class="mp-cals-block">
+                <div class="mp-cals">${plan.actual.kcal}</div>
+                <div class="mp-macros">
+                  ${plan.actual.p}g p · ${plan.actual.c}g c · ${plan.actual.f}g f
+                  <br/>(${c.actualPct.p}% / ${c.actualPct.c}% / ${c.actualPct.f}%)
+                </div>
+              </div>
+              ${actualPie}
+            </div>
+            <div class="mp-badges">
+              ${badge(c.calOk, "±100 cal")}
+              ${badge(c.pOk, "P ±2%")}
+              ${badge(c.cOk, "C ±2%")}
+              ${badge(c.fOk, "F ±2%")}
+            </div>
           </div>
         </div>
         <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Snacks ≈ half a meal (±75); meals within ±150.</p>
@@ -2498,15 +2576,12 @@
         <div class="mp-slots"></div>
         <h2>Nutrition overview</h2>
         <div class="mp-goal mp-nutrition-overview">
-          <div class="mp-stars" aria-label="${overview.stars} out of 5 stars">${starStr}</div>
           <p class="mp-overview-blurb">${overview.blurb}</p>
         </div>
-        <h2>Micronutrients</h2>
-        <p class="mp-hint">Each chart shows % of suggested daily intake. Expand for the full breakdown.</p>
-        <div class="mp-micro-pies">${microPies}</div>
         <details class="mp-micro-expand">
-          <summary>Full micronutrient breakdown</summary>
-          <div class="mp-micros">${microBars}</div>
+          <summary>Micronutrients</summary>
+          <p class="mp-hint">Vitamins and minerals vs suggested daily intake. Hover a chart to see the amount.</p>
+          <div class="mp-micro-pies">${microPies}</div>
         </details>
         <h2>Grocery list</h2>
         <p class="mp-hint">${g.priceNote} · shopping window: <strong>${g.planDays} plan-days</strong> (${g.cadenceLabel} × ${g.daysPerWeek} days/week)</p>
@@ -2648,6 +2723,7 @@
     lookupPrice,
     aggregateDayMicros,
     nutritionOverview,
+    macroPieHtml,
     buildGroceryList,
     shoppingPlanDays,
     budgetTier,
