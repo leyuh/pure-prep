@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pure Prep</title>
+  <link rel="icon" href="assets/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" href="assets/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <meta name="theme-color" content="#5a7a52" />
+
   <style>
 
     :root {
@@ -613,13 +618,16 @@
       font-weight: 650;
     }
 
+  
+    h1.brand { display: flex; align-items: center; gap: 10px; font-family: inherit; }
+    .brand-mark { border-radius: 9px; box-shadow: 0 2px 8px rgba(70,55,35,.1); }
   </style>
 </head>
 <body>
   <div class="app-frame" id="app-root">
     <div class="top-brand">
       <svg class="leaf-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3c4.5 2 7 5.5 7 10.5S15.5 21 12 21 5 17.5 5 13.5 7.5 5 12 3z" stroke="currentColor" stroke-width="1.6"/><path d="M12 21V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <h1>Pure Prep</h1>
+      <h1 class="brand"><img src="assets/icon.png" alt="" class="brand-mark" width="36" height="36" /> Pure Prep</h1>
     </div>
 
     <div id="screen-home"></div>
