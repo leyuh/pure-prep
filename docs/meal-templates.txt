@@ -38,7 +38,7 @@ Example:
 Meal Templates:
 
 Option 1 - Bowl:
-1. Protein: lean ground beef, lean ground turkey, chicken breast, chicken thighs, salmon filet, cod filet, eggs/egg whites. There should be enough to hit the protein target almost entirely.
+1. Protein: lean ground beef, lean ground turkey, chicken breast, chicken thighs, salmon filet, cod filet, shrimp, eggs/egg whites. There should be enough to hit the protein target almost entirely.
    1. Note: season lightly to taste
 2. Carb
    1. white rice, brown rice, potatoes, or sweet potatoes. Should be enough to hit the carb target.
@@ -72,9 +72,20 @@ Flavor profiles: for use in oatmeals or smoothies. Do not include raisins in smo
 - Peanut butter banana: banana, peanut butter or powdered peanut butter, cacao (optional), walnuts (optional)
 - Chocolate cherry: cherry, cacao, cinnamon (optional), walnuts (optional)
 
+Option 4 - Salad jar:
+1. Protein: lean ground beef, lean ground turkey, chicken breast, chicken thighs, salmon filet, cod filet, eggs/egg whites, shrimp. There should be enough to hit the protein target almost entirely.
+   1. Optionally, ¼-½ serving of beans in addition to protein source above
+   2. Note: season lightly to taste
+2. Carb
+   1. Always include 2-4 cups of greens (mostly lettuce, spinach / kale / mixed greens optional)
+   2. Vegetable: Suggest 1-3 different small portions of vegetables (¼-1 serving): bell peppers, carrots, cherry tomatoes, onion, cucumbers, corn
+   3. Optionally, small portion of rice to help hit carb target
+3. Fat: 1-3 tsp extra virgin olive oil, portion of avocado, hard boiled egg, and/or small portion of cheese (feta, parmesan)
+
 Snack:
 
-Option 1 - Nut (almonds, peanuts, cashews, pistachios, mixed nuts, or other).
+Option 1 - Nuts
+- Protein: nut (almonds, peanuts, cashews, pistachios, mixed nuts, or other).
 
 Option 2 - Greek yogurt:
 - Protein: greek yogurt
@@ -85,3 +96,7 @@ Option 3 - Cottage cheese:
 - Protein: cottage cheese
 - Carb: .5-2 servings of fruit (peach, mango, pineapple, mixed berries, etc)
   - Optional: 1-2 tsp honey / maple syrup if carbs permit
+
+Option 4 - Hard boiled egg
+- Protein: 1-3 hard boiled eggs
+- Carb: .5-2 servings of fruit

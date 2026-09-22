@@ -102,6 +102,17 @@
     chicken_thigh_oz: { name: "chicken thigh (cooked)", unit: "oz", kcal: 55, p: 7.2, c: 0, f: 2.9, m: M({ zinc_mg: 0.5, iron_mg: 0.25, vitB12_mcg: 0.15, potassium_mg: 70, sodium_mg: 25, magnesium_mg: 7, calcium_mg: 4 }) },
     salmon_oz: { name: "salmon fillet (cooked)", unit: "oz", kcal: 59, p: 6.5, c: 0, f: 3.6, m: M({ vitD_mcg: 3.2, vitB12_mcg: 0.9, potassium_mg: 110, sodium_mg: 15, magnesium_mg: 8, zinc_mg: 0.2, iron_mg: 0.15, calcium_mg: 4, vitA_mcg: 10 }) },
     cod_oz: { name: "cod fillet (cooked)", unit: "oz", kcal: 30, p: 6.5, c: 0, f: 0.2, m: M({ vitB12_mcg: 0.3, vitD_mcg: 0.15, potassium_mg: 90, sodium_mg: 25, magnesium_mg: 8, zinc_mg: 0.15, calcium_mg: 5, iron_mg: 0.1 }) },
+    shrimp_oz: { name: "shrimp (cooked)", unit: "oz", kcal: 28, p: 6.8, c: 0.2, f: 0.3, m: M({ sodium_mg: 110, potassium_mg: 50, magnesium_mg: 10, zinc_mg: 0.4, iron_mg: 0.2, vitB12_mcg: 0.4, calcium_mg: 15 }) },
+    lettuce_cup: { name: "lettuce", unit: "cup", kcal: 8, p: 0.6, c: 1.5, f: 0.1, m: M({ fiber_g: 0.7, vitA_mcg: 100, vitC_mg: 3, potassium_mg: 80, calcium_mg: 15, iron_mg: 0.3, magnesium_mg: 5 }) },
+    kale_cup: { name: "kale", unit: "cup", kcal: 33, p: 2.9, c: 6, f: 0.6, m: M({ fiber_g: 2.4, vitA_mcg: 500, vitC_mg: 80, calcium_mg: 150, potassium_mg: 300, iron_mg: 1, magnesium_mg: 30 }) },
+    mixed_greens_cup: { name: "mixed greens", unit: "cup", kcal: 10, p: 0.8, c: 1.8, f: 0.2, m: M({ fiber_g: 1, vitA_mcg: 120, vitC_mg: 10, potassium_mg: 100, calcium_mg: 30, iron_mg: 0.5, magnesium_mg: 10 }) },
+    cherry_tomato_cup: { name: "cherry tomatoes", unit: "cup", kcal: 27, p: 1.3, c: 5.8, f: 0.3, m: M({ fiber_g: 1.8, vitC_mg: 20, vitA_mcg: 80, potassium_mg: 350, calcium_mg: 15, magnesium_mg: 15, iron_mg: 0.4 }) },
+    cucumber_cup: { name: "cucumber", unit: "cup", kcal: 16, p: 0.7, c: 3.8, f: 0.1, m: M({ fiber_g: 0.5, vitC_mg: 3, potassium_mg: 150, calcium_mg: 16, magnesium_mg: 12 }) },
+    onion_cup: { name: "onion", unit: "cup", kcal: 64, p: 1.8, c: 15, f: 0.2, m: M({ fiber_g: 2.7, vitC_mg: 8, potassium_mg: 230, calcium_mg: 30, magnesium_mg: 15 }) },
+    corn_cup: { name: "corn", unit: "cup", kcal: 130, p: 4.5, c: 30, f: 1.5, m: M({ fiber_g: 3.5, potassium_mg: 300, magnesium_mg: 40, iron_mg: 0.6, zinc_mg: 0.7, vitC_mg: 8 }) },
+    black_beans_cup: { name: "black beans (cooked)", unit: "cup", kcal: 227, p: 15, c: 41, f: 0.9, m: M({ fiber_g: 15, iron_mg: 3.6, magnesium_mg: 120, potassium_mg: 610, calcium_mg: 46, zinc_mg: 1.9, sodium_mg: 2 }) },
+    feta_oz: { name: "feta cheese", unit: "oz", kcal: 75, p: 4, c: 1.2, f: 6, m: M({ calcium_mg: 140, sodium_mg: 316, vitA_mcg: 35, vitB12_mcg: 0.5, zinc_mg: 0.8 }) },
+    parmesan_oz: { name: "parmesan", unit: "oz", kcal: 110, p: 10, c: 1, f: 7, m: M({ calcium_mg: 330, sodium_mg: 430, vitA_mcg: 40, vitB12_mcg: 0.4, zinc_mg: 0.8 }) },
     rice_cup: { name: "cooked white rice", unit: "cup", kcal: 205, p: 4.3, c: 45, f: 0.4, m: M({ magnesium_mg: 19, zinc_mg: 0.8, iron_mg: 0.4, potassium_mg: 55, sodium_mg: 2, calcium_mg: 16, fiber_g: 0.6 }) },
     brown_rice_cup: { name: "cooked brown rice", unit: "cup", kcal: 215, p: 5, c: 45, f: 1.6, m: M({ fiber_g: 3.5, magnesium_mg: 84, zinc_mg: 1.2, iron_mg: 0.8, potassium_mg: 154, calcium_mg: 20 }) },
     potato_oz: { name: "potato", unit: "oz", kcal: 25, p: 0.6, c: 5.7, f: 0, m: M({ fiber_g: 0.6, potassium_mg: 120, vitC_mg: 5.5, magnesium_mg: 6, iron_mg: 0.1, calcium_mg: 3 }) },
@@ -136,7 +147,9 @@
     oats_cup: 80, chia_tbsp: 10, hemp_tbsp: 10, walnuts_tbsp: 7.5, pb_tbsp: 16,
     chia_tsp: 3.3, hemp_tsp: 3.3, walnuts_tsp: 2.5, pb_tsp: 5.3,
     pumpkin_cup: 245, raisins_cup: 145, maple_tsp: 7, honey_tsp: 7, cacao_tsp: 2.5,
-    beef_oz: 28, turkey_oz: 28, chicken_oz: 28, chicken_thigh_oz: 28, salmon_oz: 28, cod_oz: 28,
+    beef_oz: 28, turkey_oz: 28, chicken_oz: 28, chicken_thigh_oz: 28, salmon_oz: 28, cod_oz: 28, shrimp_oz: 28,
+    lettuce_cup: 36, kale_cup: 67, mixed_greens_cup: 40, cherry_tomato_cup: 149, cucumber_cup: 104,
+    onion_cup: 160, corn_cup: 164, black_beans_cup: 172, feta_oz: 28, parmesan_oz: 28,
     rice_cup: 158, brown_rice_cup: 195, potato_oz: 28, sweet_potato_oz: 28,
     broccoli_cup: 91, peppers_cup: 149, cauliflower_cup: 100, carrots_cup: 128,
     mixed_veg_cup: 140, asparagus_cup: 134, evoo_tsp: 4.5,
@@ -224,6 +237,17 @@
     egg_white: { product: "Egg whites (carton)", packageQty: 10, packageUnit: "white", packagePrice: 3.98 },
     avocado_oz: { product: "Avocados", packageQty: 6, packageUnit: "oz", packagePrice: 1.48 },
     hard_boiled_egg: { product: "Large eggs", packageQty: 12, packageUnit: "egg", packagePrice: 2.98 },
+    shrimp_oz: { product: "Frozen shrimp", packageQty: 16, packageUnit: "oz", packagePrice: 8.98 },
+    lettuce_cup: { product: "Romaine lettuce", packageQty: 10, packageUnit: "cup", packagePrice: 2.48 },
+    kale_cup: { product: "Kale", packageQty: 6, packageUnit: "cup", packagePrice: 2.98 },
+    mixed_greens_cup: { product: "Mixed greens", packageQty: 8, packageUnit: "cup", packagePrice: 3.48 },
+    cherry_tomato_cup: { product: "Cherry tomatoes", packageQty: 3, packageUnit: "cup", packagePrice: 2.48 },
+    cucumber_cup: { product: "Cucumber", packageQty: 4, packageUnit: "cup", packagePrice: 0.98 },
+    onion_cup: { product: "Yellow onion", packageQty: 4, packageUnit: "cup", packagePrice: 1.28 },
+    corn_cup: { product: "Frozen corn", packageQty: 5, packageUnit: "cup", packagePrice: 1.48 },
+    black_beans_cup: { product: "Canned black beans", packageQty: 3.5, packageUnit: "cup", packagePrice: 0.92 },
+    feta_oz: { product: "Feta cheese", packageQty: 6, packageUnit: "oz", packagePrice: 3.48 },
+    parmesan_oz: { product: "Parmesan", packageQty: 5, packageUnit: "oz", packagePrice: 3.98 },
   };
 
   /** Unit price for one FOOD catalog unit. Swappable for a live Walmart API. */
@@ -792,6 +816,7 @@
       cod: "cod_oz",
       eggs: "egg",
       egg_whites: "egg_white",
+      shrimp: "shrimp_oz",
     }[protein];
     const titles = {
       beef: "Ground beef bowl",
@@ -802,6 +827,7 @@
       cod: "Cod bowl",
       eggs: "Egg bowl",
       egg_whites: "Egg white bowl",
+      shrimp: "Shrimp bowl",
     };
     const vegKey = options.vegKey || "broccoli_cup";
     const fatStyle = options.fatStyle || "evoo"; // evoo | avocado | hbe
@@ -851,6 +877,104 @@
       ingredients: ings,
       totals,
       notes: ["Season lightly to taste"],
+      targetGrams,
+      targetCal,
+    };
+  }
+
+  function buildSaladJarSlot(protein, targetCal, targetGrams, options) {
+    options = options || {};
+    const tier = options.tier || budgetTier(options.budget || 300);
+    const proteinKey = {
+      beef: "beef_oz", turkey: "turkey_oz", chicken: "chicken_oz", chicken_thigh: "chicken_thigh_oz",
+      salmon: "salmon_oz", cod: "cod_oz", eggs: "egg", egg_whites: "egg_white", shrimp: "shrimp_oz",
+    }[protein];
+    const titles = {
+      beef: "Ground beef salad jar", turkey: "Turkey salad jar", chicken: "Chicken salad jar",
+      chicken_thigh: "Chicken thigh salad jar", salmon: "Salmon salad jar", cod: "Cod salad jar",
+      eggs: "Egg salad jar", egg_whites: "Egg white salad jar", shrimp: "Shrimp salad jar",
+    };
+    const greensKey = options.greensKey || "lettuce_cup";
+    const vegKeys = options.vegKeys || ["carrots_cup", "cucumber_cup", "cherry_tomato_cup"];
+    const fatStyle = options.fatStyle || "evoo";
+    const ings = [];
+
+    if (protein === "eggs" || protein === "egg_whites") {
+      const per = FOOD[proteinKey].p;
+      let count = clamp(Math.round(proteinQtyForTarget(per, targetGrams.p, 3, 8, 1)), 2, 8);
+      ings.push(qtyLine(proteinKey, count));
+    } else {
+      const oz = proteinQtyForTarget(FOOD[proteinKey].p, targetGrams.p, 3, 10, 0.5);
+      ings.push(qtyLine(proteinKey, oz));
+    }
+
+    // Optional beans 1/4–1/2 cup
+    if (options.addBeans) {
+      ings.push(qtyLine("black_beans_cup", snapCupFraction(0.25 + (options.variant || 0) % 2 * 0.25)));
+    }
+
+    // Greens 2–4 cups
+    let used = sumIngredients(ings);
+    const greensCups = clamp(snapCupFraction(tier.reduceVariety ? 2 : 2.5 + ((options.variant || 0) % 3) * 0.5), 2, 4);
+    ings.push(qtyLine(greensKey, greensCups));
+
+    // 1–3 veg portions
+    const nVeg = tier.reduceVariety ? 1 : Math.min(3, vegKeys.length);
+    for (let i = 0; i < nVeg; i++) {
+      const vk = vegKeys[i % vegKeys.length];
+      const qty = snapCupFraction(0.25 + (i % 3) * 0.25);
+      ings.push(qtyLine(vk, clamp(qty, 0.25, 1)));
+    }
+
+    // Optional rice for carbs
+    used = sumIngredients(ings);
+    const carbNeed = targetGrams.c - used.c;
+    if (carbNeed > 12) {
+      const riceCups = clamp(snapCupFraction(carbNeed / FOOD.rice_cup.c), 0.125, 1);
+      if (riceCups >= 0.125) ings.push(qtyLine("rice_cup", riceCups));
+    }
+
+    used = sumIngredients(ings);
+    const fatNeed = targetGrams.f - used.f;
+    if (fatNeed >= 2) {
+      if (fatStyle === "avocado") {
+        ings.push(qtyLine("avocado_oz", clamp(Math.round((fatNeed / FOOD.avocado_oz.f) * 2) / 2, 1, 3)));
+      } else if (fatStyle === "hbe") {
+        ings.push(qtyLine("hard_boiled_egg", clamp(Math.round(fatNeed / FOOD.hard_boiled_egg.f), 1, 2)));
+      } else if (fatStyle === "feta") {
+        ings.push(qtyLine("feta_oz", clamp(Math.round((fatNeed / FOOD.feta_oz.f) * 2) / 2, 0.5, 2)));
+      } else if (fatStyle === "parmesan") {
+        ings.push(qtyLine("parmesan_oz", clamp(Math.round((fatNeed / FOOD.parmesan_oz.f) * 2) / 2, 0.5, 1.5)));
+      } else {
+        ings.push(qtyLine("evoo_tsp", clamp(Math.round(fatNeed / FOOD.evoo_tsp.f), 1, 3)));
+      }
+    }
+
+    return {
+      title: titles[protein] || "Salad jar",
+      type: "salad_jar",
+      protein,
+      ingredients: ings,
+      totals: roundMacros(sumIngredients(ings)),
+      notes: ["Season lightly to taste"],
+      targetGrams,
+      targetCal,
+    };
+  }
+
+  function buildHbEggSnack(targetCal, targetGrams, fruitName) {
+    const fruit = fruitName || "berries";
+    const eggs = clamp(Math.round(targetGrams.p / FOOD.hard_boiled_egg.p), 1, 3);
+    const ings = [qtyLine("hard_boiled_egg", eggs)];
+    const used = sumIngredients(ings);
+    addFruitCarbs(ings, fruit, targetGrams.c - used.c, targetCal - used.kcal);
+    const fruitLabel = fruit === "berries" ? "berries" : fruit;
+    return {
+      title: "Hard boiled eggs & " + fruitLabel,
+      type: "hb_egg_snack",
+      ingredients: ings,
+      totals: roundMacros(sumIngredients(ings)),
+      notes: [],
       targetGrams,
       targetCal,
     };
@@ -972,7 +1096,7 @@
     const snackSlots = slots.filter((s) => s.kind === "snack");
     const is3m2s = mealSlots.length === 3 && snackSlots.length === 2;
 
-    const bowlProteins = ["beef", "chicken", "turkey", "salmon", "chicken_thigh", "cod", "eggs", "egg_whites"];
+    const bowlProteins = ["beef", "chicken", "turkey", "salmon", "chicken_thigh", "cod", "eggs", "egg_whites", "shrimp"];
     const breakfastFlavors = tier.preferCheapProduce
       ? ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
       : [
@@ -1057,7 +1181,26 @@
             }
           } else if (mealCount === 2) {
             const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
-            suggestion = buildBowlSlot(bowlProtein, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
+            const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
+            if (variant % 2 === 1) {
+              const greens = pickDiverseKey(["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"], usedProduce, variant);
+              const vegKeys = [
+                pickDiverseKey(["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"], usedProduce, variant),
+                pickDiverseKey(["cucumber_cup", "carrots_cup", "cherry_tomato_cup", "peppers_cup"], usedProduce, variant + 1),
+                pickDiverseKey(["cherry_tomato_cup", "onion_cup", "corn_cup", "cucumber_cup"], usedProduce, variant + 2),
+              ];
+              suggestion = buildSaladJarSlot(bowlProtein, slot.calories, tg, {
+                greensKey: greens,
+                vegKeys,
+                budget: planOptions.budget,
+                tier,
+                fatStyle: saladFat[variant % saladFat.length],
+                addBeans: variant % 3 === 0,
+                variant,
+              });
+            } else {
+              suggestion = buildBowlSlot(bowlProtein, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
+            }
             bowlI += 1;
           } else {
             if (meal1Smoothie) {
@@ -1078,7 +1221,26 @@
           breakfastI += 1;
         } else {
           const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
-          suggestion = buildBowlSlot(bowlProteins[bowlI % bowlProteins.length], slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
+          const prot = bowlProteins[bowlI % bowlProteins.length];
+          const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
+          if ((variant + bowlI) % 2 === 1) {
+            const greens = pickDiverseKey(["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"], usedProduce, variant + bowlI);
+            const vegKeys = [
+              pickDiverseKey(["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"], usedProduce, variant + bowlI),
+              pickDiverseKey(["cucumber_cup", "carrots_cup", "cherry_tomato_cup"], usedProduce, variant + bowlI + 1),
+            ];
+            suggestion = buildSaladJarSlot(prot, slot.calories, tg, {
+              greensKey: greens,
+              vegKeys,
+              budget: planOptions.budget,
+              tier,
+              fatStyle: saladFat[(variant + bowlI) % saladFat.length],
+              addBeans: (variant + bowlI) % 3 === 0,
+              variant: variant + bowlI,
+            });
+          } else {
+            suggestion = buildBowlSlot(prot, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
+          }
           bowlI += 1;
         }
         markProduceFromIngredients(usedProduce, suggestion.ingredients);
@@ -1106,9 +1268,13 @@
             pendingLean.push({ slot, tg, index: results.length });
             results.push(null);
           }
-        } else if (snackSlots.length === 1 && variant % 2 === 1) {
-          // Alternate single-snack: nut-only on odd variants
+        } else if (snackSlots.length === 1 && variant % 3 === 1) {
           const suggestion = buildNutOnlySnack(pick(nutKeys, variant), slot.calories, tg);
+          results.push(Object.assign({}, slot, { targetMacros: gramsFromPct(slot.calories, macroPct), suggestion }));
+        } else if (snackSlots.length === 1 && variant % 3 === 2) {
+          const sf = pickDiverseFruitName(fruits, usedProduce, variant + snackCount);
+          const suggestion = buildHbEggSnack(slot.calories, tg, sf);
+          markProduceFromIngredients(usedProduce, suggestion.ingredients);
           results.push(Object.assign({}, slot, { targetMacros: gramsFromPct(slot.calories, macroPct), suggestion }));
         } else {
           const sk = pick(leanKinds, variant);
@@ -2396,6 +2562,8 @@
     budgetTier,
     rerollSlot,
     recomputePlanFromSchedule,
+    buildSaladJarSlot,
+    buildHbEggSnack,
     formatCupQty,
     snapCupFraction,
   };

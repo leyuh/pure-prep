@@ -6,24 +6,29 @@ Input:
 
 1. What is your monthly grocery budget?
 2. How often do you want to get groceries? (Weekly, every other week, monthly)
+
 3. What is your daily caloric goal?
-   Help me find out:
-   - Weight
-   - Weight goal (lose, maintain, gain)
-   - Activity level
+
+Help me find out:
+- Weight
+- Weight goal (lose, maintain, gain)
+- Activity level
+
 4. What are your macro goals?
-   - 33% p 42% c 25% f (recommended for cutting)
-   - 28% p 42% c 30% f (recommended for maintenance)
-   - 25% p 45% c 30% f (recommended for bulking)
+- 33% p 42% c 25% f (recommended for cutting)
+- 28% p 42% c 30% f (recommended for maintenance)
+- 25% p 45% c 30% f (recommended for bulking)
+
 5. How many meals per day?
-   - 2 meals, 1 snack
-   - 3 meals
-   - 3 meals, 2 snacks
-   - 4 meals
-   - 5 meals
-   - Custom
+- 2 meals, 1 snack
+- 3 meals
+- 3 meals, 2 snacks
+- 4 meals
+- 5 meals
+- Custom
+
 6. How many days per week will you follow your plan?
-   - Checkbox list of days of week
+- Checkbox list of days of week
 
 Output:
 

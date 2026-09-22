@@ -876,7 +876,7 @@
             })
             .join("");
           return `<details class="meal-row">
-            <summary><span>${slot.name}: ${s.title}</span><span class="cal-chip">${slot.calories} cal</span></summary>
+            <summary><span>${slot.name}: ${s.title}</span><span class="cal-chip">${s.totals.kcal} cal</span></summary>
             <div class="detail">
               <ul class="mp-ingredients">${lis}
                 <li class="totals"><span class="ing-name">Meal total</span><span class="ing-macros">${s.totals.kcal} kcal · ${s.totals.p}p / ${s.totals.c}c / ${s.totals.f}f</span></li>

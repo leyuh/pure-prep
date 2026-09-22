@@ -7,7 +7,7 @@ Start with a welcome message that greets user based on time of day.
 "Week at a glance" panel with the following information (if the onboarding questionnaire has not been filled out, prompt user to do so):
 - Daily calorie goal & macro split- display as hollow pie chart for macro distribution with total calories in middle.
 - Number of days a week to follow plan
-- Daily meal plan that shows each meal/snack name and calories
+- Daily meal plan that shows each meal/snack name and calories. Calories should be the exact calories of the curated meal, not the general target.
   - Clicking on meal/snack name expands it to view ingredients and total meal macros
 
 "Inventory" panel that initially is empty. Once the questionnaire is filled, prompt the user to order the groceries they need for the time frame indicated.
