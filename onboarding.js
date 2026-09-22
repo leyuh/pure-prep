@@ -1311,24 +1311,27 @@
         let suggestion;
         if (is3m2s) {
           if (mealCount === 1) {
-            if (meal1Smoothie) {
-              const fl = pickDiverseFlavor(smoothieSafeFlavors, usedProduce, variant);
-              suggestion = buildSmoothieSlot(fl, slot.calories, tg, "almond_milk_oz");
-            } else {
-              flavorA = pickDiverseFlavor(breakfastFlavors, usedProduce, variant);
-              suggestion = buildOatmealSlot(flavorA, slot.calories, tg, true);
-            }
+            // Map variant onto type + flavor directly so rerolls cycle many options
+            const useSmoothie = variant % 2 === 0;
+            const pool = useSmoothie ? smoothieSafeFlavors : breakfastFlavors;
+            const fl = pool[Math.floor(variant / 2) % pool.length];
+            suggestion = useSmoothie
+              ? buildSmoothieSlot(fl, slot.calories, tg, "almond_milk_oz")
+              : buildOatmealSlot(fl, slot.calories, tg, true);
           } else if (mealCount === 2) {
             const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
             const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
+            const prot = bowlProteins[Math.floor(variant / 2) % bowlProteins.length];
             if (variant % 2 === 1) {
-              const greens = pickDiverseKey(["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"], usedProduce, variant);
+              const greenOpts = ["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"];
+              const greens = greenOpts[variant % greenOpts.length];
+              const vegPool = ["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"];
               const vegKeys = [
-                pickDiverseKey(["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"], usedProduce, variant),
-                pickDiverseKey(["cucumber_cup", "carrots_cup", "cherry_tomato_cup", "peppers_cup"], usedProduce, variant + 1),
-                pickDiverseKey(["cherry_tomato_cup", "onion_cup", "corn_cup", "cucumber_cup"], usedProduce, variant + 2),
-              ];
-              suggestion = buildSaladJarSlot(bowlProtein, slot.calories, tg, {
+                vegPool[variant % vegPool.length],
+                vegPool[(variant + 2) % vegPool.length],
+                vegPool[(variant + 4) % vegPool.length],
+              ].filter((k, idx, arr) => arr.indexOf(k) === idx);
+              suggestion = buildSaladJarSlot(prot, slot.calories, tg, {
                 greensKey: greens,
                 vegKeys,
                 budget: planOptions.budget,
@@ -1338,7 +1341,7 @@
                 variant,
               });
             } else {
-              suggestion = buildBowlSlot(bowlProtein, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
+              suggestion = buildBowlSlot(prot, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
             }
             bowlI += 1;
           } else {
