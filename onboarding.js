@@ -16,9 +16,9 @@
   };
 
   const MACRO_PRESETS = {
-    cutting: { p: 33, c: 42, f: 25, label: "33% p / 42% c / 25% f (cutting)" },
-    maintenance: { p: 28, c: 42, f: 30, label: "28% p / 42% c / 30% f (maintenance)" },
-    bulking: { p: 25, c: 45, f: 30, label: "25% p / 45% c / 30% f (bulking)" },
+    cutting: { p: 33, c: 42, f: 25, label: "33 p | 42 c | 25 f (recommended for weight loss)" },
+    maintenance: { p: 28, c: 42, f: 30, label: "28 p | 42 c | 30 f (recommended for weight maintenance)" },
+    bulking: { p: 25, c: 45, f: 30, label: "25 p | 45 c | 30 f (recommended for weight gain)" },
   };
 
   const MEAL_OPTIONS = {
@@ -27,7 +27,6 @@
     "3m2s": { meals: 3, snacks: 2, label: "3 meals, 2 snacks" },
     "4m": { meals: 4, snacks: 0, label: "4 meals" },
     "5m": { meals: 5, snacks: 0, label: "5 meals" },
-    custom: { meals: null, snacks: null, label: "Custom" },
   };
 
   /* Per-unit food database — approximate USDA-style macros + micros */
@@ -1837,12 +1836,18 @@
     if (answers.calorieMode === "help") {
       calories = estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity);
     }
-    const macro =
-      typeof answers.macros === "string" ? MACRO_PRESETS[answers.macros] : answers.macros;
+    let macro;
+    if (answers.macros === "custom" && answers.customMacros) {
+      macro = answers.customMacros;
+    } else if (typeof answers.macros === "string") {
+      macro = MACRO_PRESETS[answers.macros] || MACRO_PRESETS.maintenance;
+    } else {
+      macro = answers.macros || MACRO_PRESETS.maintenance;
+    }
 
     let meals = answers.meals;
     let snacks = answers.snacks;
-    if (answers.mealOption && answers.mealOption !== "custom") {
+    if (answers.mealOption && MEAL_OPTIONS[answers.mealOption]) {
       meals = MEAL_OPTIONS[answers.mealOption].meals;
       snacks = MEAL_OPTIONS[answers.mealOption].snacks;
     }
@@ -1901,7 +1906,7 @@
         ? estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity)
         : answers.calories;
     const macro =
-      typeof answers.macros === "string" ? MACRO_PRESETS[answers.macros] : answers.macros;
+      answers.macros === "custom" && answers.customMacros ? answers.customMacros : (typeof answers.macros === "string" ? (MACRO_PRESETS[answers.macros] || MACRO_PRESETS.maintenance) : (answers.macros || MACRO_PRESETS.maintenance));
     const macroPct = { p: macro.p, c: macro.c, f: macro.f };
     const dailyGrams = gramsFromPct(calories, macroPct);
     const actualRaw = schedule.reduce(
@@ -1988,6 +1993,58 @@
     return chosen;
   }
 
+
+  function nutritionOverview(plan) {
+    const bd = (plan.micros && plan.micros.breakdown) || {};
+    const keys = MICRO_KEYS.filter((k) => k !== "sodium_mg");
+    const scores = keys.map((k) => {
+      const pct = bd[k] ? bd[k].pct : 0;
+      // Ideal ~100%; score decays away from 100, capped
+      const diff = Math.abs(pct - 100);
+      if (diff <= 20) return 1;
+      if (diff <= 40) return 0.75;
+      if (diff <= 60) return 0.5;
+      if (pct >= 40) return 0.35;
+      return 0.15;
+    });
+    const sodium = bd.sodium_mg ? bd.sodium_mg.pct : 100;
+    // Sodium: at or under target is good
+    let sodiumScore = 1;
+    if (sodium > 130) sodiumScore = 0.3;
+    else if (sodium > 100) sodiumScore = 0.6;
+    const avg = (scores.reduce((a, b) => a + b, 0) + sodiumScore) / (scores.length + 1);
+    const stars = Math.max(1, Math.min(5, Math.round(avg * 5 * 10) / 10));
+    const starInt = Math.round(stars);
+
+    const highlights = [];
+    const fiber = bd.fiber_g;
+    if (fiber && fiber.pct >= 80) {
+      highlights.push("Solid fiber from oats, produce, and beans supports digestion and steady energy.");
+    }
+    const pot = bd.potassium_mg;
+    if (pot && pot.pct >= 70) {
+      highlights.push("Potassium-rich fruit and vegetables help round out the day’s electrolyte picture.");
+    }
+    const vitC = bd.vitC_mg;
+    if (vitC && vitC.pct >= 80) {
+      highlights.push("Vitamin C from fruit and veg is in a strong range for daily immune support.");
+    }
+    const iron = bd.iron_mg;
+    if (iron && iron.pct >= 70) {
+      highlights.push("Iron from lean proteins and greens helps cover a key micronutrient for energy.");
+    }
+    const cal = bd.calcium_mg;
+    if (cal && cal.pct >= 70) {
+      highlights.push("Dairy or fortified options in the plan contribute meaningful calcium.");
+    }
+    if (!highlights.length) {
+      highlights.push("This plan balances macros while covering a spread of produce and proteins for micronutrient variety.");
+    }
+    // Prefer 2 short sentences
+    const blurb = highlights.slice(0, 2).join(" ");
+    return { stars: starInt, starsExact: stars, blurb };
+  }
+
   /* ── UI ── */
 
   function createOnboarding(root) {
@@ -1999,7 +2056,8 @@
       weightLbs: null,
       weightGoal: null,
       activity: null,
-      macros: null,
+      macros: "maintenance",
+      customMacros: null,
       mealOption: null,
       meals: 3,
       snacks: 0,
@@ -2013,8 +2071,9 @@
       const list = ["budget", "cadence", "calorieMode"];
       if (answers.calorieMode === "known") list.push("calories");
       if (answers.calorieMode === "help") list.push("calorieHelp");
-      list.push("macros", "meals");
-      if (answers.mealOption === "custom") list.push("mealsCustom");
+      list.push("macros");
+      if (answers.macros === "custom") list.push("macrosCustom");
+      list.push("meals");
       list.push("daysPerWeek");
       return list;
     }
@@ -2149,7 +2208,7 @@
 
       if (id === "cadence") {
         ask(
-          "How often do you want to get groceries?",
+          "How often do you prefer to order groceries?",
           radioGroup(
             "cadence",
             [
@@ -2246,24 +2305,54 @@
       }
 
       if (id === "macros") {
+        const macroOpts = Object.entries(MACRO_PRESETS).map(([value, m]) => ({ value, label: m.label }));
+        macroOpts.push({ value: "custom", label: "Custom" });
         ask(
-          "What are your macro goals?",
-          radioGroup(
-            "macros",
-            Object.entries(MACRO_PRESETS).map(([value, m]) => ({ value, label: m.label })),
-            answers.macros
-          ),
+          "What are your macronutrient targets?",
+          radioGroup("macros", macroOpts, answers.macros || "maintenance"),
           () => {
             const v = selectedRadio("macros");
-            if (!v) return "Pick a macro preset.";
+            if (!v) return "Pick a macro option.";
             answers.macros = v;
+          }
+        );
+      }
+
+      if (id === "macrosCustom") {
+        const cm = answers.customMacros || { p: 30, c: 40, f: 30 };
+        ask(
+          "Custom macronutrient targets",
+          el(
+            `<div class="mp-row">
+              <div>
+                <label class="mp-label">Protein %</label>
+                <input class="mp-input" id="customP" type="number" min="10" max="60" value="${cm.p}" />
+              </div>
+              <div>
+                <label class="mp-label">Carbs %</label>
+                <input class="mp-input" id="customC" type="number" min="10" max="70" value="${cm.c}" />
+              </div>
+              <div>
+                <label class="mp-label">Fat %</label>
+                <input class="mp-input" id="customF" type="number" min="10" max="60" value="${cm.f}" />
+              </div>
+            </div>
+            <p class="mp-hint">Percentages should add up to 100.</p>`
+          ),
+          () => {
+            const p = Number(root.querySelector("#customP").value);
+            const c = Number(root.querySelector("#customC").value);
+            const f = Number(root.querySelector("#customF").value);
+            if (![p, c, f].every((n) => n > 0)) return "Enter protein, carbs, and fat percentages.";
+            if (Math.abs(p + c + f - 100) > 1) return "Macros must add up to about 100%.";
+            answers.customMacros = { p, c, f, label: p + " p | " + c + " c | " + f + " f (custom)" };
           }
         );
       }
 
       if (id === "meals") {
         ask(
-          "How many meals per day?",
+          "How many meals do you like per day?",
           radioGroup(
             "meals",
             Object.entries(MEAL_OPTIONS).map(([value, m]) => ({ value, label: m.label })),
@@ -2273,35 +2362,8 @@
             const v = selectedRadio("meals");
             if (!v) return "Pick a meal structure.";
             answers.mealOption = v;
-            if (v !== "custom") {
-              answers.meals = MEAL_OPTIONS[v].meals;
-              answers.snacks = MEAL_OPTIONS[v].snacks;
-            }
-          }
-        );
-      }
-
-      if (id === "mealsCustom") {
-        ask(
-          "Custom meals & snacks",
-          el(
-            `<div class="mp-row">
-              <div>
-                <label class="mp-label">Meals</label>
-                <input class="mp-input" id="customMeals" type="number" min="1" max="8" value="${answers.meals}" />
-              </div>
-              <div>
-                <label class="mp-label">Snacks</label>
-                <input class="mp-input" id="customSnacks" type="number" min="0" max="6" value="${answers.snacks}" />
-              </div>
-            </div>`
-          ),
-          () => {
-            const meals = Number(root.querySelector("#customMeals").value);
-            const snacks = Number(root.querySelector("#customSnacks").value);
-            if (!meals || meals < 1) return "Need at least one meal.";
-            answers.meals = meals;
-            answers.snacks = snacks || 0;
+            answers.meals = MEAL_OPTIONS[v].meals;
+            answers.snacks = MEAL_OPTIONS[v].snacks;
           }
         );
       }
@@ -2360,14 +2422,33 @@
 
       const c = plan.compliance;
       const g = plan.grocery;
-      const microRows = MICRO_KEYS.map((k) => {
+      const overview = nutritionOverview(plan);
+      const starStr = "★".repeat(overview.stars) + "☆".repeat(5 - overview.stars);
+      const microPies = MICRO_KEYS.map((k) => {
+        const m = plan.micros.breakdown[k];
+        const pct = Math.min(100, Math.max(0, m.pct));
+        const pie = "conic-gradient(var(--moss) 0 " + pct + "%, var(--linen) " + pct + "% 100%)";
+        const sodiumNote = k === "sodium_mg"
+          ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
+          : "";
+        return `<div class="mp-micro-pie-card" data-micro="${k}">
+          <div class="mp-micro-pie" style="background:${pie}"><span>${m.pct}%</span></div>
+          <div class="mp-micro-pie-label">${m.label}</div>
+          ${sodiumNote}
+        </div>`;
+      }).join("");
+      const microBars = MICRO_KEYS.map((k) => {
         const m = plan.micros.breakdown[k];
         const pctW = Math.min(100, Math.max(0, m.pct));
         const barCls = m.status === "ok" ? "ok" : m.status === "mid" ? "mid" : m.status === "high" ? "high" : "low";
+        const sodiumNote = k === "sodium_mg"
+          ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
+          : "";
         return `<div class="mp-micro-row">
           <div class="mp-micro-meta">
             <span class="mp-micro-label">${m.label}</span>
             <span class="mp-micro-amt">${m.amount}${m.unit} · ${m.pct}% of ${m.target}${m.unit}</span>
+            ${sodiumNote}
           </div>
           <div class="mp-micro-bar"><span class="${barCls}" style="width:${pctW}%"></span></div>
           <span class="mp-badge ${m.status === "ok" ? "ok" : "warn"}">${m.pct}%</span>
@@ -2415,9 +2496,18 @@
         <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Snacks ≈ half a meal (±75); meals within ±150.</p>
         <h2>Meals &amp; snacks</h2>
         <div class="mp-slots"></div>
+        <h2>Nutrition overview</h2>
+        <div class="mp-goal mp-nutrition-overview">
+          <div class="mp-stars" aria-label="${overview.stars} out of 5 stars">${starStr}</div>
+          <p class="mp-overview-blurb">${overview.blurb}</p>
+        </div>
         <h2>Micronutrients</h2>
-        <p class="mp-hint">Day’s food vs adult RDA/DRI targets. <em>Sodium value does not include added salt/seasoning.</em></p>
-        <div class="mp-micros">${microRows}</div>
+        <p class="mp-hint">Each chart shows % of suggested daily intake. Expand for the full breakdown.</p>
+        <div class="mp-micro-pies">${microPies}</div>
+        <details class="mp-micro-expand">
+          <summary>Full micronutrient breakdown</summary>
+          <div class="mp-micros">${microBars}</div>
+        </details>
         <h2>Grocery list</h2>
         <p class="mp-hint">${g.priceNote} · shopping window: <strong>${g.planDays} plan-days</strong> (${g.cadenceLabel} × ${g.daysPerWeek} days/week)</p>
         <div class="mp-card mp-grocery">
@@ -2557,6 +2647,7 @@
     evaluateCompliance,
     lookupPrice,
     aggregateDayMicros,
+    nutritionOverview,
     buildGroceryList,
     shoppingPlanDays,
     budgetTier,
