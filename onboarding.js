@@ -16,10 +16,17 @@
   };
 
   const MACRO_PRESETS = {
-    cutting: { p: 33, c: 42, f: 25, label: "33 p | 42 c | 25 f (recommended for weight loss)" },
-    maintenance: { p: 28, c: 42, f: 30, label: "28 p | 42 c | 30 f (recommended for weight maintenance)" },
-    bulking: { p: 25, c: 45, f: 30, label: "25 p | 45 c | 30 f (recommended for weight gain)" },
+    loss: { p: 33, c: 42, f: 25, label: "33 p | 42 c | 25 f (weight loss)" },
+    maintenance: { p: 28, c: 42, f: 30, label: "28 p | 42 c | 30 f (weight maintenance)" },
+    gain: { p: 25, c: 45, f: 30, label: "25 p | 45 c | 30 f (weight gain)" },
   };
+
+  /** Map questionnaire weightGoal → macro preset (default maintain). */
+  function macrosFromWeightGoal(weightGoal) {
+    const map = { lose: "loss", maintain: "maintenance", gain: "gain" };
+    const key = map[weightGoal] || "maintenance";
+    return MACRO_PRESETS[key] || MACRO_PRESETS.maintenance;
+  }
 
   const MEAL_OPTIONS = {
     "2m1s": { meals: 2, snacks: 1, label: "2 meals, 1 snack" },
@@ -140,12 +147,14 @@
     brown_rice_cup: { name: "cooked brown rice", unit: "cup", kcal: 215, p: 5, c: 45, f: 1.6, m: M({ fiber_g: 3.5, magnesium_mg: 84, zinc_mg: 1.2, iron_mg: 0.8, potassium_mg: 154, calcium_mg: 20 }) },
     potato_oz: { name: "potato", unit: "oz", kcal: 25, p: 0.6, c: 5.7, f: 0, m: M({ fiber_g: 0.6, potassium_mg: 120, vitC_mg: 5.5, magnesium_mg: 6, iron_mg: 0.1, calcium_mg: 3 }) },
     sweet_potato_oz: { name: "sweet potato", unit: "oz", kcal: 24, p: 0.4, c: 5.6, f: 0, m: M({ fiber_g: 0.8, vitA_mcg: 250, vitC_mg: 3.5, potassium_mg: 95, magnesium_mg: 5, calcium_mg: 8, iron_mg: 0.15 }) },
+    quinoa_cup: { name: "cooked quinoa", unit: "cup", kcal: 222, p: 8.1, c: 39.4, f: 3.6, m: M({ fiber_g: 5.2, magnesium_mg: 118, iron_mg: 2.8, zinc_mg: 2, potassium_mg: 318, calcium_mg: 31, phosphorus_mg: 281, folate_mcg: 78, manganese_mg: 1.2 }) },
     broccoli_cup: { name: "broccoli", unit: "cup", kcal: 55, p: 3.7, c: 11, f: 0.6, m: M({ fiber_g: 5.1, vitC_mg: 81, vitA_mcg: 57, calcium_mg: 62, potassium_mg: 457, iron_mg: 1, magnesium_mg: 30, zinc_mg: 0.6, vitK_mcg: 90, folate_mcg: 60, vitE_mg: 0.8, manganese_mg: 0.2, phosphorus_mg: 60, choline_mg: 19, thiamin_mg: 0.07, riboflavin_mg: 0.1, niacin_mg: 0.6, vitB6_mg: 0.2, selenium_mcg: 2.5}) },
     peppers_cup: { name: "bell peppers", unit: "cup", kcal: 30, p: 1, c: 7, f: 0.2, m: M({ fiber_g: 2.5, vitC_mg: 152, vitA_mcg: 117, potassium_mg: 251, calcium_mg: 10, magnesium_mg: 14, iron_mg: 0.5 }) },
     cauliflower_cup: { name: "cauliflower", unit: "cup", kcal: 27, p: 2, c: 5, f: 0.3, m: M({ fiber_g: 2.1, vitC_mg: 51, potassium_mg: 320, calcium_mg: 24, magnesium_mg: 16, iron_mg: 0.4, zinc_mg: 0.3 }) },
     carrots_cup: { name: "carrots", unit: "cup", kcal: 50, p: 1.1, c: 12, f: 0.3, m: M({ fiber_g: 3.6, vitA_mcg: 1069, vitC_mg: 7.6, potassium_mg: 410, calcium_mg: 42, magnesium_mg: 15, iron_mg: 0.4 }) },
     mixed_veg_cup: { name: "mixed vegetables", unit: "cup", kcal: 60, p: 2.5, c: 12, f: 0.5, m: M({ fiber_g: 4, vitA_mcg: 400, vitC_mg: 15, potassium_mg: 280, calcium_mg: 35, iron_mg: 0.8, magnesium_mg: 25 }) },
     asparagus_cup: { name: "asparagus", unit: "cup", kcal: 40, p: 4.3, c: 7.4, f: 0.4, m: M({ fiber_g: 3.6, vitA_mcg: 90, vitC_mg: 10, folate: 0, potassium_mg: 270, calcium_mg: 32, iron_mg: 2, magnesium_mg: 18, zinc_mg: 0.7 }) },
+    zucchini_cup: { name: "zucchini", unit: "cup", kcal: 21, p: 1.5, c: 3.9, f: 0.4, m: M({ fiber_g: 1.2, vitC_mg: 22, vitA_mcg: 12, potassium_mg: 325, calcium_mg: 20, magnesium_mg: 22, iron_mg: 0.5, folate_mcg: 30, vitK_mcg: 5 }) },
     evoo_tsp: { name: "extra virgin olive oil", unit: "tsp", kcal: 40, p: 0, c: 0, f: 4.5, m: M({ vitA_mcg: 0 }) },
     almonds_oz: { name: "almonds", unit: "oz", kcal: 164, p: 6, c: 6.1, f: 14.2, m: M({ fiber_g: 3.5, magnesium_mg: 76, calcium_mg: 76, iron_mg: 1.1, zinc_mg: 0.9, potassium_mg: 208, vitE: 7.3, vitE_mg: 7.3, manganese_mg: 0.6, copper_mg: 0.3, phosphorus_mg: 136, riboflavin_mg: 0.3, choline_mg: 15, thiamin_mg: 0.05, niacin_mg: 1, vitB6_mg: 0.04, folate_mcg: 12, selenium_mcg: 1}) },
     peanuts_oz: { name: "peanuts", unit: "oz", kcal: 161, p: 7.3, c: 4.6, f: 14, m: M({ fiber_g: 2.4, magnesium_mg: 50, zinc_mg: 0.9, iron_mg: 0.6, potassium_mg: 200, calcium_mg: 26 }) },
@@ -173,9 +182,9 @@
     beef_oz: 28, turkey_oz: 28, chicken_oz: 28, chicken_thigh_oz: 28, salmon_oz: 28, cod_oz: 28, shrimp_oz: 28,
     lettuce_cup: 36, kale_cup: 67, mixed_greens_cup: 40, cherry_tomato_cup: 149, cucumber_cup: 104,
     onion_cup: 160, corn_cup: 164, black_beans_cup: 172, feta_oz: 28, parmesan_oz: 28,
-    rice_cup: 158, brown_rice_cup: 195, potato_oz: 28, sweet_potato_oz: 28,
+    rice_cup: 158, brown_rice_cup: 195, potato_oz: 28, sweet_potato_oz: 28, quinoa_cup: 185,
     broccoli_cup: 91, peppers_cup: 149, cauliflower_cup: 100, carrots_cup: 128,
-    mixed_veg_cup: 140, asparagus_cup: 134, evoo_tsp: 4.5,
+    mixed_veg_cup: 140, asparagus_cup: 134, zucchini_cup: 124, evoo_tsp: 4.5,
     almonds_oz: 28, peanuts_oz: 28, cashews_oz: 28, pistachios_oz: 28,
     greek_nonfat_cup: 245, greek_2pct_cup: 245, cottage_lf_cup: 226,
     pineapple_cup: 165, peach_cup: 154,
@@ -277,12 +286,14 @@
     brown_rice_cup: { product: "Brown rice", packageQty: 10, packageUnit: "cup", packagePrice: 2.98 },
     potato_oz: { product: "Russet potatoes", packageQty: 80, packageUnit: "oz", packagePrice: 3.98 },
     sweet_potato_oz: { product: "Sweet potatoes", packageQty: 48, packageUnit: "oz", packagePrice: 2.98 },
+    quinoa_cup: { product: "Quinoa", packageQty: 8, packageUnit: "cup", packagePrice: 4.98 },
     broccoli_cup: { product: "Broccoli florets (frozen)", packageQty: 6, packageUnit: "cup", packagePrice: 1.98 },
     peppers_cup: { product: "Bell peppers", packageQty: 4, packageUnit: "cup", packagePrice: 2.98 },
     cauliflower_cup: { product: "Cauliflower (frozen)", packageQty: 6, packageUnit: "cup", packagePrice: 1.98 },
     carrots_cup: { product: "Baby carrots", packageQty: 6, packageUnit: "cup", packagePrice: 1.48 },
     mixed_veg_cup: { product: "Mixed vegetables (frozen)", packageQty: 6, packageUnit: "cup", packagePrice: 1.68 },
     asparagus_cup: { product: "Asparagus", packageQty: 3, packageUnit: "cup", packagePrice: 3.48 },
+    zucchini_cup: { product: "Zucchini", packageQty: 4, packageUnit: "cup", packagePrice: 1.98 },
     evoo_tsp: { product: "Extra virgin olive oil", packageQty: 100, packageUnit: "tsp", packagePrice: 6.98 },
     almonds_oz: { product: "Raw almonds", packageQty: 16, packageUnit: "oz", packagePrice: 5.98 },
     peanuts_oz: { product: "Roasted peanuts", packageQty: 16, packageUnit: "oz", packagePrice: 3.48 },
@@ -714,6 +725,7 @@
     carrots_cup: "orange_root",
     mixed_veg_cup: "mixed_veg",
     asparagus_cup: "asparagus",
+    zucchini_cup: "summer_squash",
     spinach_cup: "leafy",
     berries_cup: "berry",
     blueberries_cup: "berry",
@@ -734,7 +746,24 @@
     "peppers_cup",
     "asparagus_cup",
     "mixed_veg_cup",
+    "zucchini_cup",
   ];
+
+  /** Bowl carb options from Meal Templates (prefer cheap rice on low budget). */
+  const BOWL_CARB_KEYS = [
+    "rice_cup",
+    "brown_rice_cup",
+    "potato_oz",
+    "sweet_potato_oz",
+    "quinoa_cup",
+  ];
+
+  function pickBowlCarbKey(tier, seed) {
+    if (tier && tier.id === "low") return "rice_cup";
+    const keys = BOWL_CARB_KEYS;
+    const i = ((Number(seed) || 0) % keys.length + keys.length) % keys.length;
+    return keys[i];
+  }
 
   const SNACK_FRUIT_TO_KEY = {
     pineapple: "pineapple_cup",
@@ -1027,9 +1056,16 @@
     // Carb to hit meal carb target + always a veg
     let used = sumIngredients(ings);
     const carbNeed = Math.max(0, targetGrams.c - used.c - 12); // leave room for veg carbs
-    const carbKey = tier.id === "low" ? "rice_cup" : (options.carbKey || "rice_cup");
-    let riceCups = clamp(snapCupFraction(carbNeed / FOOD[carbKey].c), 0.5, 2);
-    ings.push(qtyLine(carbKey, riceCups));
+    const carbKey = options.carbKey || pickBowlCarbKey(tier, options.carbSeed || 0);
+    const carbFood = FOOD[carbKey];
+    if (carbFood.unit === "cup") {
+      const cups = clamp(snapCupFraction(carbNeed / carbFood.c), 0.5, 2);
+      ings.push(qtyLine(carbKey, cups));
+    } else {
+      // potato / sweet potato measured in oz
+      const oz = clamp(Math.round((carbNeed / Math.max(0.1, carbFood.c)) * 2) / 2, 4, 16);
+      ings.push(qtyLine(carbKey, oz));
+    }
     // Low budget: smaller veg portion to cut price/variety
     const vegQty = tier.reduceVariety ? 1 : 1.5;
     ings.push(qtyLine(vegKey, vegQty));
@@ -1366,8 +1402,11 @@
     // bowl (default)
     const prot = pick(bowlProteins, Math.floor(seed / 2));
     const vegKey = pick(BOWL_VEG_KEYS, seed);
+    const carbKey = pickBowlCarbKey(tier, seed);
     return buildBowlSlot(prot, calories, tg, {
       vegKey,
+      carbKey,
+      carbSeed: seed,
       budget: planOptions.budget,
       tier,
       fatStyle: pick(fatStyles, seed),
@@ -1568,7 +1607,7 @@
                 variant,
               });
             } else {
-              suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
+              suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, carbKey: pickBowlCarbKey(tier, variant + bowlI), carbSeed: variant + bowlI, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
             }
             bowlI += 1;
           } else {
@@ -1610,7 +1649,7 @@
               variant: variant + bowlI,
             });
           } else {
-            suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
+            suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, carbKey: pickBowlCarbKey(tier, variant + bowlI), carbSeed: variant + bowlI, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
           }
           bowlI += 1;
         }
@@ -2217,14 +2256,7 @@
     if (answers.calorieMode === "help") {
       calories = estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity);
     }
-    let macro;
-    if (answers.macros === "custom" && answers.customMacros) {
-      macro = answers.customMacros;
-    } else if (typeof answers.macros === "string") {
-      macro = MACRO_PRESETS[answers.macros] || MACRO_PRESETS.maintenance;
-    } else {
-      macro = answers.macros || MACRO_PRESETS.maintenance;
-    }
+    const macro = macrosFromWeightGoal(answers.weightGoal);
 
     let meals = answers.meals;
     let snacks = answers.snacks;
@@ -2392,8 +2424,7 @@
       answers.calorieMode === "help"
         ? estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity)
         : answers.calories;
-    const macro =
-      answers.macros === "custom" && answers.customMacros ? answers.customMacros : (typeof answers.macros === "string" ? (MACRO_PRESETS[answers.macros] || MACRO_PRESETS.maintenance) : (answers.macros || MACRO_PRESETS.maintenance));
+    const macro = macrosFromWeightGoal(answers.weightGoal);
     const macroPct = { p: macro.p, c: macro.c, f: macro.f };
     const dailyGrams = gramsFromPct(calories, macroPct);
     const actualRaw = schedule.reduce(
@@ -2766,8 +2797,6 @@
       weightLbs: null,
       weightGoal: null,
       activity: null,
-      macros: "maintenance",
-      customMacros: null,
       mealOption: "3m2s",
       meals: 3,
       snacks: 2,
@@ -2784,10 +2813,12 @@
 
     function steps() {
       const list = ["budget", "cadence", "calorieMode"];
-      if (answers.calorieMode === "known") list.push("calories");
+      if (answers.calorieMode === "known") {
+        list.push("calories");
+        // Weight (+ goal) only when not already collected in calorie help path
+        list.push("weight");
+      }
       if (answers.calorieMode === "help") list.push("calorieHelp");
-      list.push("macros");
-      if (answers.macros === "custom") list.push("macrosCustom");
       list.push("meals");
       list.push("daysPerWeek");
       return list;
@@ -3022,55 +3053,55 @@
         });
       }
 
-      if (id === "macros") {
-        const macroOpts = Object.entries(MACRO_PRESETS).map(([value, m]) => ({ value, label: m.label }));
-        macroOpts.push({ value: "custom", label: "Custom" });
-        ask(
-          "What are your macronutrient targets?",
-          radioGroup("macros", macroOpts, answers.macros || "maintenance"),
-          () => {
-            const v = selectedRadio("macros");
-            if (!v) return "Pick a macro option.";
-            answers.macros = v;
-          }
-        );
-      }
-
-      if (id === "macrosCustom") {
-        const cm = answers.customMacros || { p: 30, c: 40, f: 30 };
-        ask(
-          "Custom macronutrient targets",
+      if (id === "weight") {
+        const needGoal = !answers.weightGoal;
+        const goalRadios = needGoal
+          ? radioGroup(
+              "weightGoal",
+              [
+                { value: "lose", label: "Lose" },
+                { value: "maintain", label: "Maintain" },
+                { value: "gain", label: "Gain" },
+              ],
+              answers.weightGoal || "maintain"
+            )
+          : el(`<p class="mp-hint">Weight goal already set (${answers.weightGoal}).</p>`);
+        const body = el(`<div></div>`);
+        body.appendChild(
           el(
-            `<div class="mp-row">
-              <div>
-                <label class="mp-label">Protein %</label>
-                <input class="mp-input" id="customP" type="number" min="10" max="60" value="${cm.p}" />
-              </div>
-              <div>
-                <label class="mp-label">Carbs %</label>
-                <input class="mp-input" id="customC" type="number" min="10" max="70" value="${cm.c}" />
-              </div>
-              <div>
-                <label class="mp-label">Fat %</label>
-                <input class="mp-input" id="customF" type="number" min="10" max="60" value="${cm.f}" />
-              </div>
-            </div>
-            <p class="mp-hint">Percentages should add up to 100.</p>`
-          ),
-          () => {
-            const p = Number(root.querySelector("#customP").value);
-            const c = Number(root.querySelector("#customC").value);
-            const f = Number(root.querySelector("#customF").value);
-            if (![p, c, f].every((n) => n > 0)) return "Enter protein, carbs, and fat percentages.";
-            if (Math.abs(p + c + f - 100) > 1) return "Macros must add up to about 100%.";
-            answers.customMacros = { p, c, f, label: p + " p | " + c + " c | " + f + " f (custom)" };
-          }
+            `<div>
+              <label class="mp-label">Weight (lbs)</label>
+              <input class="mp-input" id="weightLbs" type="number" min="50" max="800" step="0.1"
+                value="${answers.weightLbs ?? ""}" placeholder="e.g. 160" />
+            </div>`
+          )
         );
+        if (needGoal) {
+          body.appendChild(el(`<label class="mp-label">Weight goal</label>`));
+          body.appendChild(goalRadios);
+          body.appendChild(
+            el(
+              `<p class="mp-hint">Macro targets are set from your weight goal (loss 33/42/25, maintain 28/42/30, gain 25/45/30).</p>`
+            )
+          );
+        } else {
+          body.appendChild(goalRadios);
+        }
+        ask("What is your weight?", body, () => {
+          const weightLbs = Number(root.querySelector("#weightLbs").value);
+          if (!weightLbs || weightLbs < 50) return "Enter your weight in pounds.";
+          answers.weightLbs = weightLbs;
+          if (needGoal) {
+            const v = selectedRadio("weightGoal");
+            if (!v) return "Pick a weight goal.";
+            answers.weightGoal = v;
+          }
+        });
       }
 
       if (id === "meals") {
         ask(
-          "How many meals do you like per day?",
+          "How many meals do you prefer per day?",
           radioGroup(
             "meals",
             Object.entries(MEAL_OPTIONS).map(([value, m]) => ({ value, label: m.label })),
@@ -3107,7 +3138,7 @@
           box.appendChild(row);
         });
         ask(
-          "Which days of the week will you follow your plan?",
+          "How many days per week will you follow your plan?",
           box,
           () => {
             const checked = Array.from(root.querySelectorAll('input[name="planDay"]:checked')).map(
@@ -3212,7 +3243,7 @@
             </div>
           </div>
         </div>
-        <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Snacks ≈ half a meal (±75); meals within ±150.</p>
+        <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Macro targets follow weight goal (${answers.weightGoal || "maintain"}). Snacks ≈ half a meal (±75); meals within ±150.</p>
         <h2>Meals &amp; snacks</h2>
         <div class="mp-slots"></div>
         <h2>Nutrition overview</h2>
@@ -3343,9 +3374,13 @@
 
   global.MealPlanOnboarding = {
     MACRO_PRESETS,
+    macrosFromWeightGoal,
     MEAL_OPTIONS,
     ACTIVITY_FACTOR,
     FOOD,
+    BOWL_VEG_KEYS,
+    BOWL_CARB_KEYS,
+    pickBowlCarbKey,
     MICRO_TARGETS,
     MICRO_KEYS,
     PRICE_CATALOG,

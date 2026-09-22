@@ -1,9 +1,24 @@
-Onboarding questionnaire (synced)
+Onboarding questionnaire (synced from Drive)
 
-Defaults: #1 monthly grocery budget 400; #2 every other week; #3 daily calories 2000;
-#4 2nd macro option (28 p | 42 c | 30 f maintenance) + exact option labels;
+Notes defaults only: #1 monthly grocery budget 400; #2 every other week;
 #5 3 meals, 2 snacks; #6 Monday–Saturday.
+(Known-calories input still defaults to 2000 for UX; no longer a Notes item.)
 
-Results: target | actual macros side-by-side; meal list with exact curated meal calories;
-per-slot + all-day reroll (free meal types on per-slot reroll); nutrition overview 3–5 sentences;
-collapsed micronutrient pies with hover amounts + sodium note; grocery list; Save & close.
+Input order:
+1. Monthly grocery budget
+2. Grocery cadence (Weekly / every other week / monthly)
+3. Daily caloric goal — known path OR Help me find out (Weight, Weight goal lose/maintain/gain, Activity)
+4. What is your weight? — skipped if already given in calorie help; when shown, also collects weight goal (macros need it)
+5. Meals per day (2m1s, 3 meals, 3m2s, 4 meals, 5 meals) — default 3m2s
+6. Days per week checkboxes — default Mon–Sat
+
+REMOVED: dedicated macronutrient targets question / Custom macros UI.
+Macros derived automatically from weight goal:
+  lose → 33 p | 42 c | 25 f
+  maintain → 28 p | 42 c | 30 f
+  gain → 25 p | 45 c | 30 f
+(default maintain if missing)
+
+Output: target|actual side-by-side pies; meal list with curated cals + per-ingredient macros;
+reroll; nutrition 3–5 sentences; collapsed micro pies + hover + sodium note; grocery list;
+Save & close / return to dashboard. Macro targets noted as following weight goal.

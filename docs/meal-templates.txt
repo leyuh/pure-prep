@@ -13,6 +13,8 @@ Meal Templates (synced from Drive)
 - Do not repeat ingredients in the same meal (merge tsp/tbsp of same food)
 - Meal 1 default: smoothie or oatmeal on initial plan
 - Oatmeal milk: 4 oz per each ½ cup oats (omit if daily cals would exceed goal by >100)
+- Bowl carbs: white rice, brown rice, potatoes, sweet potatoes, or quinoa (prefer cheap rice on low budget)
+- Bowl vegetables: broccoli, bell peppers, cauliflower, carrots, mixed vegetables, stir fry, asparagus, or zucchini
 - Salad jar protein: lean ground beef, turkey, chicken breast, chicken thighs, salmon, cod, shrimp (+ optional ¼–½ beans). No eggs/egg whites (bowls may still use eggs)
 - Salad jar greens: 2–3 cups lettuce + optional spinach / kale / mixed greens; 1–3 veg portions; optional rice; fat: EVOO / avocado / hard boiled egg / feta / parmesan
 - Bowl protein may include eggs/egg whites; free meal types on per-slot reroll
