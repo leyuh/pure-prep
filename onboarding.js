@@ -2166,7 +2166,12 @@
       selectedDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
     };
     let step = 0;
-    let planVariant = 0;
+    // Random seed so each questionnaire run gets a different meal mix
+    // (assignSuggestions picks proteins/flavors from this variant).
+    function randomPlanVariant() {
+      return Math.floor(Math.random() * 64);
+    }
+    let planVariant = randomPlanVariant();
 
     function steps() {
       const list = ["budget", "cadence", "calorieMode"];
@@ -2258,6 +2263,9 @@
         const refreshed = steps();
         const idx = refreshed.indexOf(id);
         if (idx + 1 >= refreshed.length) {
+          planVariant = randomPlanVariant();
+          answers.__lockedPlan = null;
+          answers._slotVariants = [];
           showResult();
           return;
         }
