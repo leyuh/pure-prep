@@ -1,14 +1,13 @@
 Onboarding questionnaire
 
-Interactive form that prompts the user for input beginning with question 1 and so on.
+Notes (defaults):
+#1 budget 400
+#2 every other week
+#3 calories 2000
+#4 maintenance macros (2nd option) + exact labels; Custom allowed
+#5 3 meals, 2 snacks
+#6 Monday–Saturday
 
-#4 - 2nd option default; exact macro labels as written.
-
-Input: budget, grocery cadence, calories (+ help), macros (loss/maintenance/gain/Custom), meals/day (no Custom), weekday checkboxes.
-
-Output:
-- Day’s total caloric and macronutrient targets AND actuals. Targets on the left, actual on the right. Each: calories on the left + pie chart macro distribution on the right.
-- Meal/snack list from Meal Templates; macros close to #4; ingredient macros + meal totals; per-slot reroll. Show exact curated calories.
-- Nutrition overview: short paragraph (3–5 sentences) on best nutritional aspects. No star rating.
-- Micronutrients: collapsed expandable tab until clicked. Inside: small pie charts for vitamins/minerals with % in center; hover swaps to amount (g/mg). Sodium note under sodium.
-- Grocery list for cadence × plan days with prices. Save & close → Dashboard.
+Input + Output as in Drive doc: dual target/actual macro pies, meal list with rerolls,
+3–5 sentence nutrition overview, collapsed micronutrient pies with hover amounts,
+sodium note, grocery list, save & close.

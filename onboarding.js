@@ -2126,20 +2126,20 @@
 
   function createOnboarding(root) {
     const answers = {
-      budget: null,
-      cadence: null,
-      calorieMode: null,
-      calories: null,
+      budget: 400,
+      cadence: "every_other_week",
+      calorieMode: "known",
+      calories: 2000,
       weightLbs: null,
       weightGoal: null,
       activity: null,
       macros: "maintenance",
       customMacros: null,
-      mealOption: null,
+      mealOption: "3m2s",
       meals: 3,
-      snacks: 0,
-      daysPerWeek: null,
-      selectedDays: [],
+      snacks: 2,
+      daysPerWeek: 6,
+      selectedDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
     };
     let step = 0;
     let planVariant = 0;
@@ -2271,7 +2271,7 @@
           el(
             `<div>
               <input class="mp-input" id="budget" type="number" min="1" step="1"
-                placeholder="e.g. 400" value="${answers.budget ?? ""}" />
+                placeholder="e.g. 400" value="${answers.budget ?? 400}" />
               <p class="mp-hint">USD per month</p>
             </div>`
           ),
@@ -2328,7 +2328,7 @@
           el(
             `<div>
               <input class="mp-input" id="calories" type="number" min="800" max="10000" step="10"
-                placeholder="e.g. 2400" value="${answers.calories ?? ""}" />
+                placeholder="e.g. 2000" value="${answers.calories ?? 2000}" />
               <p class="mp-hint">Calories per day</p>
             </div>`
           ),
