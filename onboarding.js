@@ -2548,7 +2548,7 @@
           `<article class="mp-card" data-slot-index="${slotIndex}">
             <header class="mp-card-head">
               <div>
-                <strong>${slot.name}: ${slot.calories} cal</strong>
+                <strong>${slot.name}: ${t.kcal} cal</strong>
                 <span class="mp-suggest"> — ${s.title}</span>
               </div>
               <button type="button" class="mp-reroll mp-reroll-slot" data-slot="${slotIndex}">Reroll</button>
