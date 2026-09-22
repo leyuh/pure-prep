@@ -1,20 +1,19 @@
-Home screen is default. Each screen should have a icon button in the nav bar on the screen.
+Dashboard (synced)
+
+Home screen is default. Each screen should have an icon button in the nav bar.
 
 Home screen:
-Start with a welcome message that greets user based on time of day.
-
-"Week at a glance" panel with the following information (if the onboarding questionnaire has not been filled out, prompt user to do so):
-- Daily calorie goal & macro split — hollow pie chart for macro distribution with total calories in middle.
-- Number of days a week to follow plan
-- Daily meal plan that shows each meal/snack name and calories. Calories should be the exact calories of the curated meal, not the general target.
-  - Clicking on meal/snack name expands it to view ingredients and total meal macros
-
-"Inventory" panel that initially is empty. Once the questionnaire is filled, prompt the user to order the groceries they need for the time frame indicated.
-
-"Schedule" panel that says the next date groceries need to be ordered.
+- Welcome greeting based on time of day
+- "Week at a glance" (prompt onboarding if incomplete):
+  - Daily calorie goal & macro split — hollow pie with total calories in middle
+  - Number of days a week to follow plan
+  - Daily meal plan with meal/snack name and exact curated meal calories (not general target)
+  - Expand meal/snack for ingredients and total meal macros
+- Inventory panel (empty until questionnaire filled; then prompt to order groceries for the cadence)
+- Schedule panel with next grocery order date
 
 Inventory:
-Display list of user’s grocery inventory. Empty until questionnaire completed and groceries confirmed ordered. Each real day depletes inventory based on the meal plan (unless a non-plan day).
+List of grocery inventory; depletes each plan day unless a non-plan day.
 
 Schedule:
-Show current calendar month. Arrows to switch months. Highlight current day. Mark grocery coverage window and next order date.
+Current calendar month; arrows to switch months; highlight today; mark grocery coverage window and next order date.

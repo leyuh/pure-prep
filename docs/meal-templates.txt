@@ -1,13 +1,18 @@
-Meal Templates (synced)
+Meal Templates (synced from Drive)
 
-- Day cal ±100; macros ±2%
-- Snacks ~ half a meal; meals ±150; snacks ±75
-- Produce diversity; budget sacrifice order
-- The meal plan should cost no more than the budget allows: the lower the budget is, the more sacrifices should be made (order = sacrifice first):
+- Day cal ±100 of target; macros ±2% of target split
+- Snacks ~ half a meal; meals give-or-take 150 cal; snacks give-or-take 75 cal
+- Produce diversity across the day
+- Budget sacrifice order (sacrifice first → last):
   1. Do not require organic items
   2. Reduce overall ingredient count and variety in meals and micronutrients (if that lowers the price)
-  3. Cheaper items should be used (ex: bananas and raisins over fresh berries, ground beef over salmon) where possible.
-- Grams + cup fractions; condense tsp→tbsp
+  3. Cheaper items should be used (ex: bananas and raisins over fresh berries, ground beef over salmon) where possible
+- Always include weight in grams; condense units (e.g. 2 tbsp instead of 6 tsp)
+- Cup items as standard fractions (⅛, ¼, ⅓, ½) or whole + fraction
+- Tablespoons and teaspoons should never have decimals — opt for 4 tsp over 1.3 tbsp
 - Do not repeat ingredients in the same meal (merge tsp/tbsp of same food)
-- Oatmeal milk: 4oz per each ½ cup oats
-- Salad jar greens: 2–3 cups lettuce + optional other greens
+- Meal 1 default: smoothie or oatmeal on initial plan
+- Oatmeal milk: 4 oz per each ½ cup oats (omit if daily cals would exceed goal by >100)
+- Salad jar protein: lean ground beef, turkey, chicken breast, chicken thighs, salmon, cod, shrimp (+ optional ¼–½ beans). No eggs/egg whites (bowls may still use eggs)
+- Salad jar greens: 2–3 cups lettuce + optional spinach / kale / mixed greens; 1–3 veg portions; optional rice; fat: EVOO / avocado / hard boiled egg / feta / parmesan
+- Bowl protein may include eggs/egg whites; free meal types on per-slot reroll

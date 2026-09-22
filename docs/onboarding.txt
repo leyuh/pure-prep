@@ -1,8 +1,9 @@
-Onboarding questionnaire
+Onboarding questionnaire (synced)
 
-Notes: #1 400, #2 every other week, #3 2000, #4 maintenance default + exact labels,
-#5 3m2s, #6 Mon–Sat.
+Defaults: #1 monthly grocery budget 400; #2 every other week; #3 daily calories 2000;
+#4 2nd macro option (28 p | 42 c | 30 f maintenance) + exact option labels;
+#5 3 meals, 2 snacks; #6 Monday–Saturday.
 
-Output includes dual target/actual macro pies, meal list with ingredient macros,
-per-slot + all-day reroll (maximize different options), nutrition overview 3–5 sentences,
-collapsed micronutrient pies with hover amounts, grocery list, Save & close.
+Results: target | actual macros side-by-side; meal list with exact curated meal calories;
+per-slot + all-day reroll (free meal types on per-slot reroll); nutrition overview 3–5 sentences;
+collapsed micronutrient pies with hover amounts + sodium note; grocery list; Save & close.

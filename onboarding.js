@@ -419,24 +419,31 @@
     return String(tenths);
   }
 
-  /** Condense tsp → tbsp when divisible by 3 (e.g. 6 tsp → 2 tbsp). */
+  /** Condense tsp → tbsp only when divisible by 3 (e.g. 6 tsp → 2 tbsp). Prefer integer tsp (4 tsp over 1.3 tbsp). */
   function condenseTsp(foodKey, qty) {
-    const tbspMap = { chia_tsp: "chia_tbsp", hemp_tsp: "hemp_tbsp", walnuts_tsp: "walnuts_tbsp", pb_tsp: "pb_tbsp", evoo_tsp: null };
-    if (!(foodKey in tbspMap) && foodKey !== "evoo_tsp" && foodKey !== "maple_tsp" && foodKey !== "honey_tsp" && foodKey !== "cacao_tsp") {
+    const tbspMap = { chia_tsp: "chia_tbsp", hemp_tsp: "hemp_tbsp", walnuts_tsp: "walnuts_tbsp", pb_tsp: "pb_tbsp" };
+    const tspOnly = { evoo_tsp: 1, maple_tsp: 1, honey_tsp: 1, cacao_tsp: 1 };
+    // If already tbsp with non-integer / non-clean qty, bounce back to integer tsp
+    if (foodKey.endsWith("_tbsp") && FOOD[foodKey] && FOOD[foodKey].unit === "tbsp") {
+      const asTsp = Math.max(1, Math.round(Number(qty) * 3));
+      if (asTsp % 3 === 0) return { key: foodKey, qty: asTsp / 3 };
+      const tspKey = foodKey.replace(/_tbsp$/, "_tsp");
+      if (FOOD[tspKey]) return { key: tspKey, qty: asTsp };
+      return { key: foodKey, qty: Math.max(1, Math.round(Number(qty))) };
+    }
+    if (!(foodKey in tbspMap) && !(foodKey in tspOnly)) {
       return { key: foodKey, qty };
     }
-    if (qty >= 3 && Math.abs(qty % 3) < 0.05) {
-      const tbspQty = qty / 3;
-      if (foodKey === "chia_tsp") return { key: "chia_tbsp", qty: tbspQty };
-      if (foodKey === "hemp_tsp") return { key: "hemp_tbsp", qty: tbspQty };
-      if (foodKey === "walnuts_tsp") return { key: "walnuts_tbsp", qty: tbspQty };
-      if (foodKey === "pb_tsp") return { key: "pb_tbsp", qty: tbspQty };
-      // evoo/maple/honey/cacao stay as tsp unless we invent tbsp entries — display as tbsp text
+    const tsp = Math.max(1, Math.round(Number(qty)));
+    if (tsp >= 3 && tsp % 3 === 0) {
+      const tbspQty = tsp / 3;
+      if (foodKey in tbspMap) return { key: tbspMap[foodKey], qty: tbspQty };
+      // evoo/maple/honey: display as whole tbsp text, keep tsp macros
       if (foodKey === "evoo_tsp" || foodKey === "maple_tsp" || foodKey === "honey_tsp") {
-        return { key: foodKey, qty, displayUnit: "tbsp", displayQty: tbspQty };
+        return { key: foodKey, qty: tsp, displayUnit: "tbsp", displayQty: tbspQty };
       }
     }
-    return { key: foodKey, qty };
+    return { key: foodKey, qty: tsp };
   }
 
   function gramsFor(foodKey, qty) {
@@ -467,6 +474,10 @@
     } else if (f0 && f0.unit === "scoop") {
       q = Math.max(0.5, Math.round(q * 2) / 2);
       key = foodKey;
+    } else if (f0 && (f0.unit === "tsp" || f0.unit === "tbsp")) {
+      // Always whole integers for tsp/tbsp display + macros
+      q = Math.max(1, Math.round(q));
+      if (displayQty != null) displayQty = Math.max(1, Math.round(displayQty));
     }
     // Prefer condensed food key for macros when tsp→tbsp mapped
     let macroKey = key;
@@ -526,7 +537,7 @@
   }
 
   function preferredKeyForFamily(family, totalTspEquiv) {
-    // Prefer tbsp when qty is a multiple of 3 tsp for spoon foods
+    // Prefer integer tsp; tbsp only when tsp count is divisible by 3 (never 1.3 tbsp)
     const spoon = {
       chia: { tsp: "chia_tsp", tbsp: "chia_tbsp" },
       hemp: { tsp: "hemp_tsp", tbsp: "hemp_tbsp" },
@@ -534,11 +545,11 @@
       pb: { tsp: "pb_tsp", tbsp: "pb_tbsp" },
     };
     if (spoon[family]) {
-      if (totalTspEquiv >= 3) {
-        // One line in tbsp (may be fractional) — never tsp+tbsp of the same food
-        return { key: spoon[family].tbsp, qty: Math.round((totalTspEquiv / 3) * 4) / 4 };
+      const tsp = Math.max(1, Math.round(totalTspEquiv));
+      if (tsp >= 3 && tsp % 3 === 0) {
+        return { key: spoon[family].tbsp, qty: tsp / 3 };
       }
-      return { key: spoon[family].tsp, qty: totalTspEquiv };
+      return { key: spoon[family].tsp, qty: tsp };
     }
     return { key: family, qty: totalTspEquiv };
   }
@@ -578,7 +589,7 @@
       if (spoonFamilies[fam]) {
         let tsp = 0;
         for (const ing of list) tsp += qtyToTspEquiv(ing._key, ing._qty || 0);
-        tsp = Math.round(tsp * 4) / 4;
+        tsp = Math.max(0, Math.round(tsp));
         if (tsp <= 0) continue;
         const pref = preferredKeyForFamily(fam, tsp);
         merged.push(qtyLine(pref.key, pref.qty));
@@ -1057,26 +1068,24 @@
     const tier = options.tier || budgetTier(options.budget || 300);
     const proteinKey = {
       beef: "beef_oz", turkey: "turkey_oz", chicken: "chicken_oz", chicken_thigh: "chicken_thigh_oz",
-      salmon: "salmon_oz", cod: "cod_oz", eggs: "egg", egg_whites: "egg_white", shrimp: "shrimp_oz",
+      salmon: "salmon_oz", cod: "cod_oz", shrimp: "shrimp_oz",
     }[protein];
     const titles = {
       beef: "Ground beef salad jar", turkey: "Turkey salad jar", chicken: "Chicken salad jar",
       chicken_thigh: "Chicken thigh salad jar", salmon: "Salmon salad jar", cod: "Cod salad jar",
-      eggs: "Egg salad jar", egg_whites: "Egg white salad jar", shrimp: "Shrimp salad jar",
+      shrimp: "Shrimp salad jar",
     };
+    if (!proteinKey) {
+      // Eggs are bowl-only; fall back to chicken for salad jars
+      return buildSaladJarSlot("chicken", targetCal, targetGrams, options);
+    }
     const greensKey = options.greensKey || "lettuce_cup";
     const vegKeys = options.vegKeys || ["carrots_cup", "cucumber_cup", "cherry_tomato_cup"];
     const fatStyle = options.fatStyle || "evoo";
     const ings = [];
 
-    if (protein === "eggs" || protein === "egg_whites") {
-      const per = FOOD[proteinKey].p;
-      let count = clamp(Math.round(proteinQtyForTarget(per, targetGrams.p, 3, 8, 1)), 2, 8);
-      ings.push(qtyLine(proteinKey, count));
-    } else {
-      const oz = proteinQtyForTarget(FOOD[proteinKey].p, targetGrams.p, 3, 10, 0.5);
-      ings.push(qtyLine(proteinKey, oz));
-    }
+    const oz = proteinQtyForTarget(FOOD[proteinKey].p, targetGrams.p, 3, 10, 0.5);
+    ings.push(qtyLine(proteinKey, oz));
 
     // Optional beans 1/4–1/2 cup
     if (options.addBeans) {
@@ -1268,10 +1277,15 @@
     const tier =
       planOptions.tier || budgetTier(planOptions.budget || 300, planOptions.tierOverrides);
     const cheapProteins = ["beef", "chicken", "turkey", "chicken_thigh", "eggs", "egg_whites"];
+    const cheapSaladProteins = ["beef", "chicken", "turkey", "chicken_thigh"];
     const priceyProteins = ["salmon", "shrimp", "cod"];
     const bowlProteins = tier.preferCheapProtein
       ? cheapProteins.slice()
       : cheapProteins.concat(priceyProteins);
+    // Salad jars: no eggs/egg whites (bowls may still use them)
+    const saladProteins = tier.preferCheapProtein
+      ? cheapSaladProteins.slice()
+      : cheapSaladProteins.concat(priceyProteins);
     const breakfastFlavors = tier.preferCheapProduce
       ? tier.reduceVariety
         ? ["banana_bread", "pumpkin_spice", "pb_banana"]
@@ -1297,7 +1311,7 @@
         ? ["pineapple", "peach"]
         : ["pineapple", "peach", "mango", "berries"]
       : ["pineapple", "peach", "mango", "berries"];
-    return { tier, bowlProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
+    return { tier, bowlProteins, saladProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
   }
 
   /**
@@ -1323,7 +1337,7 @@
       return buildOatmealSlot(fl, calories, tg, true);
     }
     if (type === "salad_jar") {
-      const prot = pick(bowlProteins, Math.floor(seed / 2));
+      const prot = pick(pools.saladProteins || bowlProteins.filter((p) => p !== "eggs" && p !== "egg_whites"), Math.floor(seed / 2));
       const greenOpts = ["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"];
       const vegPool = [
         "carrots_cup",
@@ -1417,10 +1431,15 @@
 
     // Cheap proteins first; exclude seafood when preferCheapProtein
     const cheapProteins = ["beef", "chicken", "turkey", "chicken_thigh", "eggs", "egg_whites"];
+    const cheapSaladProteins = ["beef", "chicken", "turkey", "chicken_thigh"];
     const priceyProteins = ["salmon", "shrimp", "cod"];
     const bowlProteins = tier.preferCheapProtein
       ? cheapProteins.slice()
       : cheapProteins.concat(priceyProteins);
+    // Salad jars: no eggs/egg whites (bowls may still use them)
+    const saladProteins = tier.preferCheapProtein
+      ? cheapSaladProteins.slice()
+      : cheapSaladProteins.concat(priceyProteins);
     const breakfastFlavors = tier.preferCheapProduce
       ? tier.reduceVariety
         ? ["banana_bread", "pumpkin_spice", "pb_banana"]
@@ -1527,8 +1546,10 @@
           } else if (mealCount === 2) {
             const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
             const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
-            const prot = bowlProteins[Math.floor(variant / 2) % bowlProteins.length];
+            const saladPool = saladProteins;
+            const protBowl = bowlProteins[Math.floor(variant / 2) % bowlProteins.length];
             if (variant % 2 === 1) {
+              const prot = saladPool[Math.floor(variant / 2) % saladPool.length];
               const greenOpts = ["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"];
               const greens = greenOpts[variant % greenOpts.length];
               const vegPool = ["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"];
@@ -1547,7 +1568,7 @@
                 variant,
               });
             } else {
-              suggestion = buildBowlSlot(prot, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
+              suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[variant % fatStyles.length] });
             }
             bowlI += 1;
           } else {
@@ -1569,9 +1590,11 @@
           breakfastI += 1;
         } else {
           const vegKey = pickDiverseKey(BOWL_VEG_KEYS, usedProduce, variant + bowlI);
-          const prot = bowlProteins[bowlI % bowlProteins.length];
+          const protBowl = bowlProteins[bowlI % bowlProteins.length];
+          const saladPool = saladProteins;
           const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
           if ((variant + bowlI) % 2 === 1) {
+            const prot = saladPool[bowlI % saladPool.length];
             const greens = pickDiverseKey(["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"], usedProduce, variant + bowlI);
             const vegKeys = [
               pickDiverseKey(["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"], usedProduce, variant + bowlI),
@@ -1587,7 +1610,7 @@
               variant: variant + bowlI,
             });
           } else {
-            suggestion = buildBowlSlot(prot, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
+            suggestion = buildBowlSlot(protBowl, slot.calories, tg, { vegKey, budget: planOptions.budget, tier, fatStyle: fatStyles[(variant + bowlI) % fatStyles.length] });
           }
           bowlI += 1;
         }

@@ -1,3 +1,5 @@
+Overview (synced)
+
 Idea: App that allows busy users to keep their diet aligned with their nutritional, fitness, and financial goals by creating a meal plan and grocery list. All plans can be prepped one day a week and require little to no preparation when it's time to eat. Walmart API will be used to tell users exactly what products to buy and exactly what macro and micronutrients their meal plan will provide. Grocery inventory is tracked and users have option to be notified when it is time to order groceries.
 
 Documents:
