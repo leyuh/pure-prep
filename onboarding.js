@@ -469,6 +469,115 @@
     return { label, kcal, p, c, f: fat, _key: macroKey, _qty: macroQty, _grams: grams };
   }
 
+
+  /** Map tsp/tbsp variants of the same food to one family key. */
+  function ingredientFamily(key) {
+    if (!key) return key;
+    const map = {
+      chia_tsp: "chia",
+      chia_tbsp: "chia",
+      hemp_tsp: "hemp",
+      hemp_tbsp: "hemp",
+      walnuts_tsp: "walnuts",
+      walnuts_tbsp: "walnuts",
+      pb_tsp: "pb",
+      pb_tbsp: "pb",
+      hard_boiled_egg: "egg",
+      egg: "egg",
+    };
+    return map[key] || key;
+  }
+
+  function preferredKeyForFamily(family, totalTspEquiv) {
+    // Prefer tbsp when qty is a multiple of 3 tsp for spoon foods
+    const spoon = {
+      chia: { tsp: "chia_tsp", tbsp: "chia_tbsp" },
+      hemp: { tsp: "hemp_tsp", tbsp: "hemp_tbsp" },
+      walnuts: { tsp: "walnuts_tsp", tbsp: "walnuts_tbsp" },
+      pb: { tsp: "pb_tsp", tbsp: "pb_tbsp" },
+    };
+    if (spoon[family]) {
+      if (totalTspEquiv >= 3) {
+        // One line in tbsp (may be fractional) — never tsp+tbsp of the same food
+        return { key: spoon[family].tbsp, qty: Math.round((totalTspEquiv / 3) * 4) / 4 };
+      }
+      return { key: spoon[family].tsp, qty: totalTspEquiv };
+    }
+    return { key: family, qty: totalTspEquiv };
+  }
+
+  function qtyToTspEquiv(key, qty) {
+    if (key.endsWith("_tbsp")) return qty * 3;
+    return qty;
+  }
+
+  /**
+   * Meal Templates: do not repeat ingredients in the same meal
+   * (e.g. no 2 tbsp walnuts + 2 tsp walnuts). Merge by food family.
+   */
+  function dedupeIngredients(ings) {
+    if (!ings || !ings.length) return ings || [];
+    const notes = ings.filter((i) => i && i._note);
+    const real = ings.filter((i) => i && !i._note && i._key);
+    const other = ings.filter((i) => i && !i._note && !i._key);
+    const groups = new Map();
+    const order = [];
+    for (const ing of real) {
+      const fam = ingredientFamily(ing._key);
+      if (!groups.has(fam)) {
+        groups.set(fam, []);
+        order.push(fam);
+      }
+      groups.get(fam).push(ing);
+    }
+    const merged = [];
+    for (const fam of order) {
+      const list = groups.get(fam);
+      if (list.length === 1 && ingredientFamily(list[0]._key) === list[0]._key) {
+        // Exact same key only once — still merge identical keys by summing qty
+      }
+      // Sum tsp-equivalent for spoon foods; otherwise sum qty on canonical key
+      const spoonFamilies = { chia: 1, hemp: 1, walnuts: 1, pb: 1 };
+      if (spoonFamilies[fam]) {
+        let tsp = 0;
+        for (const ing of list) tsp += qtyToTspEquiv(ing._key, ing._qty || 0);
+        tsp = Math.round(tsp * 4) / 4;
+        if (tsp <= 0) continue;
+        const pref = preferredKeyForFamily(fam, tsp);
+        merged.push(qtyLine(pref.key, pref.qty));
+      } else if (fam === "egg") {
+        // Prefer hard_boiled_egg if any, else egg; sum counts
+        let qty = list.reduce((a, i) => a + (i._qty || 0), 0);
+        qty = Math.round(qty);
+        if (qty <= 0) continue;
+        const preferHb = list.some((i) => i._key === "hard_boiled_egg");
+        merged.push(qtyLine(preferHb ? "hard_boiled_egg" : "egg", qty));
+      } else {
+        // Same FOOD key family: sum quantities onto first key seen
+        const key = list[0]._key;
+        let qty = list.reduce((a, i) => a + (i._qty || 0), 0);
+        // Snap cups
+        if (FOOD[key] && FOOD[key].unit === "cup") qty = snapCupFraction(qty);
+        else if (FOOD[key] && (FOOD[key].unit === "oz" || FOOD[key].unit === "scoop")) {
+          qty = Math.round(qty * 4) / 4;
+        } else {
+          qty = Math.round(qty * 10) / 10;
+        }
+        if (qty <= 0) continue;
+        merged.push(qtyLine(key, qty));
+      }
+    }
+    return merged.concat(other).concat(notes);
+  }
+
+  function finalizeSuggestion(suggestion) {
+    if (!suggestion || !suggestion.ingredients) return suggestion;
+    suggestion.ingredients = dedupeIngredients(suggestion.ingredients);
+    suggestion.totals = roundMacros(sumIngredients(suggestion.ingredients));
+    return suggestion;
+  }
+
+
   function noteLine(text) {
     return { label: text, kcal: 0, p: 0, c: 0, f: 0, _note: true };
   }
@@ -780,8 +889,9 @@
     }
 
     // Milk: 4oz per 1 serving oats — omit if caller says so (day budget)
+    // Meal Templates: 4oz milk for each ½ cup oats
     if (includeMilk !== false) {
-      const milkOz = Math.round(oatCups * 4);
+      const milkOz = Math.max(0, Math.round((oatCups / 0.5) * 4));
       if (milkOz > 0) {
         ings.push(qtyLine("almond_milk_oz", milkOz, milkOz + " oz unsweetened almond milk"));
       }
@@ -936,16 +1046,22 @@
       ings.push(qtyLine("black_beans_cup", snapCupFraction(0.25 + (options.variant || 0) % 2 * 0.25)));
     }
 
-    // Greens 2–4 cups
+    // Greens: 2–3 cups lettuce, plus optional spinach/kale/mixed greens
     let used = sumIngredients(ings);
-    const greensCups = clamp(snapCupFraction(tier.reduceVariety ? 2 : 2.5 + ((options.variant || 0) % 3) * 0.5), 2, 4);
-    ings.push(qtyLine(greensKey, greensCups));
+    const lettuceCups = clamp(snapCupFraction(tier.reduceVariety ? 2 : 2 + ((options.variant || 0) % 2) * 0.5), 2, 3);
+    ings.push(qtyLine("lettuce_cup", lettuceCups));
+    if (!tier.reduceVariety && greensKey && greensKey !== "lettuce_cup") {
+      ings.push(qtyLine(greensKey, snapCupFraction(0.5 + ((options.variant || 0) % 2) * 0.5)));
+    }
 
-    // 1–3 veg portions
+    // 1–3 distinct veg portions (no repeated vegetable)
     const nVeg = tier.reduceVariety ? 1 : Math.min(3, vegKeys.length);
-    for (let i = 0; i < nVeg; i++) {
-      const vk = vegKeys[i % vegKeys.length];
-      const qty = snapCupFraction(0.25 + (i % 3) * 0.25);
+    const usedVeg = new Set();
+    for (let i = 0; i < vegKeys.length && usedVeg.size < nVeg; i++) {
+      const vk = vegKeys[i];
+      if (usedVeg.has(vk)) continue;
+      usedVeg.add(vk);
+      const qty = snapCupFraction(0.25 + (usedVeg.size % 3) * 0.25);
       ings.push(qtyLine(vk, clamp(qty, 0.25, 1)));
     }
 
@@ -1648,6 +1764,9 @@
       if (!changed) break;
     }
 
+    for (const r of results) {
+      if (r && r.suggestion) finalizeSuggestion(r.suggestion);
+    }
     return results;
   }
 
@@ -2754,6 +2873,8 @@
     lookupPrice,
     aggregateDayMicros,
     nutritionOverview,
+    dedupeIngredients,
+    finalizeSuggestion,
     macroPieHtml,
     buildGroceryList,
     shoppingPlanDays,
