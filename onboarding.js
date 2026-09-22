@@ -192,11 +192,48 @@
     { id: "sun", label: "Sunday", short: "Sun" },
   ];
 
-  function budgetTier(monthlyBudget) {
+  /**
+   * Meal Templates budget sacrifice order:
+   * 1) never require organic
+   * 2) reduce variety / micros when that lowers price
+   * 3) prefer cheaper items (produce + protein)
+   * Callers may merge `overrides` (used by fitPlanToBudget).
+   */
+  function budgetTier(monthlyBudget, overrides) {
     const b = Number(monthlyBudget) || 0;
-    if (b < 200) return { id: "low", label: "Low", requireOrganic: false, reduceVariety: true, preferCheapProduce: true };
-    if (b <= 400) return { id: "mid", label: "Mid", requireOrganic: false, reduceVariety: false, preferCheapProduce: false };
-    return { id: "high", label: "High", requireOrganic: false, reduceVariety: false, preferCheapProduce: false };
+    let tier;
+    if (b < 250) {
+      tier = {
+        id: "low",
+        label: "Low",
+        requireOrganic: false,
+        reduceVariety: true,
+        preferCheapProduce: true,
+        preferCheapProtein: true,
+      };
+    } else if (b <= 500) {
+      tier = {
+        id: "mid",
+        label: "Mid",
+        requireOrganic: false,
+        reduceVariety: false,
+        preferCheapProduce: true,
+        preferCheapProtein: true,
+      };
+    } else {
+      tier = {
+        id: "high",
+        label: "High",
+        requireOrganic: false,
+        reduceVariety: false,
+        preferCheapProduce: false,
+        preferCheapProtein: false,
+      };
+    }
+    if (overrides && typeof overrides === "object") {
+      tier = Object.assign({}, tier, overrides);
+    }
+    return tier;
   }
 
   /**
@@ -1229,15 +1266,22 @@
   function assignSuggestions(slots, macroPct, dailyCalories, variant, planOptions) {
     variant = Math.max(0, Number(variant) || 0);
     planOptions = planOptions || {};
-    const tier = budgetTier(planOptions.budget || 300);
+    const tier = budgetTier(planOptions.budget || 300, planOptions.tierOverrides);
     const fatStyles = ["evoo", "avocado", "hbe"];
     const mealSlots = slots.filter((s) => s.kind === "meal");
     const snackSlots = slots.filter((s) => s.kind === "snack");
     const is3m2s = mealSlots.length === 3 && snackSlots.length === 2;
 
-    const bowlProteins = ["beef", "chicken", "turkey", "salmon", "chicken_thigh", "cod", "eggs", "egg_whites", "shrimp"];
+    // Cheap proteins first; exclude seafood when preferCheapProtein
+    const cheapProteins = ["beef", "chicken", "turkey", "chicken_thigh", "eggs", "egg_whites"];
+    const priceyProteins = ["salmon", "shrimp", "cod"];
+    const bowlProteins = tier.preferCheapProtein
+      ? cheapProteins.slice()
+      : cheapProteins.concat(priceyProteins);
     const breakfastFlavors = tier.preferCheapProduce
-      ? ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
+      ? tier.reduceVariety
+        ? ["banana_bread", "pumpkin_spice", "pb_banana"]
+        : ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
       : [
           "berry_banana",
           "pumpkin_spice",
@@ -1246,9 +1290,20 @@
           "chocolate_cherry",
         ];
     const smoothieSafeFlavors = breakfastFlavors.filter((f) => f !== "pumpkin_spice" && f !== "banana_bread");
-    const nutKeys = ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
+    // Peanuts first on budget tiers; pricey nuts mainly on high
+    const nutKeys =
+      tier.preferCheapProduce || tier.preferCheapProtein
+        ? tier.reduceVariety
+          ? ["peanuts_oz"]
+          : ["peanuts_oz", "almonds_oz"]
+        : ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
     const leanKinds = ["cottage", "greek"];
-    const fruits = ["pineapple", "peach", "mango", "berries"];
+    // Cheap lean fruits: pineapple over peach/mango/berries when budget-tight
+    const fruits = tier.preferCheapProduce
+      ? tier.reduceVariety
+        ? ["pineapple", "peach"]
+        : ["pineapple", "peach", "mango", "berries"]
+      : ["pineapple", "peach", "mango", "berries"];
 
     const pick = (arr, i) => arr[((i % arr.length) + arr.length) % arr.length];
     const usedProduce = new Set(); // produce families used across the day
@@ -1854,13 +1909,13 @@
    * Grocery list for shopping window = cadence × days/week.
    * Uses lookupPrice() (Walmart-style estimates; API-ready).
    */
-  function buildGroceryList(schedule, answers) {
+  function buildGroceryList(schedule, answers, tierOverride) {
     const daysPerWeek =
       (Array.isArray(answers.selectedDays) && answers.selectedDays.length) ||
       Number(answers.daysPerWeek) ||
       7;
     const planDays = shoppingPlanDays(answers.cadence, daysPerWeek);
-    const tier = budgetTier(answers.budget);
+    const tier = tierOverride || budgetTier(answers.budget, answers._tierOverrides);
     const agg = {};
     for (const slot of schedule) {
       for (const ing of slot.suggestion.ingredients) {
@@ -1927,12 +1982,17 @@
       monthlyFactor,
       budget,
       overBudget,
-      priceNote: "Estimated Walmart prices (API not connected yet)" +
-        (tier.id === "low"
-          ? " · budget: non-organic & cheaper staples"
-          : tier.id === "high"
-            ? " · budget: full produce variety"
-            : " · budget: mid tier"),
+      priceNote: (function () {
+        const parts = ["Estimated Walmart prices (API not connected yet)"];
+        const sac = [];
+        if (!tier.requireOrganic) sac.push("non-organic");
+        if (tier.reduceVariety) sac.push("reduced variety");
+        if (tier.preferCheapProduce) sac.push("cheaper produce");
+        if (tier.preferCheapProtein) sac.push("cheaper protein");
+        if (sac.length) parts.push("budget: " + sac.join(", "));
+        else parts.push("budget: full produce variety");
+        return parts.join(" · ");
+      })(),
     };
   }
 
@@ -1975,7 +2035,8 @@
     };
   }
 
-  function buildPlan(answers, options) {
+  /** Single-pass plan build (no budget fit loop). */
+  function buildPlanOnce(answers, options) {
     options = options || {};
     const variant = Math.max(0, Number(options.variant) || 0);
     let calories = answers.calories;
@@ -2000,12 +2061,14 @@
 
     const macroPct = { p: macro.p, c: macro.c, f: macro.f };
     const dailyGrams = gramsFromPct(calories, macroPct);
+    const tierOverrides = options.tierOverrides || null;
+    const tier = budgetTier(answers.budget, tierOverrides);
     const schedule = assignSuggestions(
       buildSchedule(calories, meals, snacks),
       macroPct,
       calories,
       variant,
-      { budget: answers.budget }
+      { budget: answers.budget, tierOverrides: tierOverrides }
     );
 
     const actualRaw = schedule.reduce(
@@ -2021,7 +2084,6 @@
 
     const selectedDays = Array.isArray(answers.selectedDays) ? answers.selectedDays.slice() : [];
     const daysPerWeek = selectedDays.length || Number(answers.daysPerWeek) || 0;
-    const tier = budgetTier(answers.budget);
     const plan = {
       variant,
       budget: answers.budget,
@@ -2041,8 +2103,109 @@
     };
     plan.compliance = evaluateCompliance(plan);
     plan.micros = aggregateDayMicros(schedule);
-    plan.grocery = buildGroceryList(schedule, answers);
+    plan.grocery = buildGroceryList(schedule, answers, tier);
     return plan;
+  }
+
+  /**
+   * Progressive Meal Templates sacrifices + variant search until monthly
+   * estimate is under budget (or closest feasible). Calls buildPlanOnce only.
+   */
+  function fitPlanToBudget(answers, options) {
+    options = options || {};
+    const budget = Number(answers.budget) || 0;
+    const baseVariant = Math.max(0, Number(options.variant) || 0);
+    const baseOverrides = options.tierOverrides || null;
+
+    const first = buildPlanOnce(answers, options);
+    if (!budget || !first.grocery.overBudget) return first;
+
+    // Sacrifice order (doc): organic already off → cheap items → reduce variety
+    const sacrificeSteps = [
+      Object.assign({}, baseOverrides, {
+        requireOrganic: false,
+        preferCheapProduce: true,
+        preferCheapProtein: true,
+      }),
+      Object.assign({}, baseOverrides, {
+        requireOrganic: false,
+        preferCheapProduce: true,
+        preferCheapProtein: true,
+        reduceVariety: true,
+      }),
+    ];
+
+    let best = first;
+    const variantCount = 40;
+
+    function consider(trial) {
+      if (!trial || !trial.grocery) return;
+      const est = trial.grocery.monthlyEstimate;
+      const over = trial.grocery.overBudget;
+      const bestOver = best.grocery.overBudget;
+      const bestEst = best.grocery.monthlyEstimate;
+      const compliant = trial.compliance && trial.compliance.withinTolerances;
+      const bestCompliant = best.compliance && best.compliance.withinTolerances;
+
+      if (!over) {
+        if (bestOver) {
+          best = trial;
+          return;
+        }
+        // Both under: prefer compliance, then cheaper, then closer to seed variant
+        if (compliant && !bestCompliant) {
+          best = trial;
+          return;
+        }
+        if (compliant === bestCompliant && est < bestEst) {
+          best = trial;
+          return;
+        }
+      } else if (bestOver && est < bestEst) {
+        best = trial;
+      }
+    }
+
+    for (const overrides of sacrificeSteps) {
+      for (let i = 0; i < variantCount; i++) {
+        const trialVariant = baseVariant + i * 5 + ((i * 7) % 13);
+        const trial = buildPlanOnce(answers, {
+          variant: trialVariant,
+          tierOverrides: overrides,
+        });
+        consider(trial);
+        if (!best.grocery.overBudget && best.compliance && best.compliance.withinTolerances) {
+          // Early exit once we have a compliant under-budget plan at this sacrifice level
+          if (i >= 8) return best;
+        }
+      }
+      if (!best.grocery.overBudget) return best;
+    }
+
+    // Extra cheap-first sweep across a wider variant space (best-effort)
+    for (let i = 0; i < 48; i++) {
+      const trialVariant = baseVariant + i * 3 + 17;
+      const trial = buildPlanOnce(answers, {
+        variant: trialVariant,
+        tierOverrides: Object.assign({}, baseOverrides, {
+          requireOrganic: false,
+          preferCheapProduce: true,
+          preferCheapProtein: true,
+          reduceVariety: true,
+        }),
+      });
+      consider(trial);
+      if (!best.grocery.overBudget && best.compliance && best.compliance.withinTolerances) {
+        return best;
+      }
+    }
+    return best;
+  }
+
+  function buildPlan(answers, options) {
+    options = options || {};
+    if (options.skipFit) return buildPlanOnce(answers, options);
+    return fitPlanToBudget(answers, options);
   }
 
 
@@ -2067,7 +2230,7 @@
     const actual = roundMacros(actualRaw);
     const selectedDays = Array.isArray(answers.selectedDays) ? answers.selectedDays.slice() : [];
     const daysPerWeek = selectedDays.length || Number(answers.daysPerWeek) || 0;
-    const tier = budgetTier(answers.budget);
+    const tier = budgetTier(answers.budget, answers._tierOverrides);
     const plan = {
       variant: variant || 0,
       budget: answers.budget,
@@ -2088,7 +2251,7 @@
     };
     plan.compliance = evaluateCompliance(plan);
     plan.micros = aggregateDayMicros(schedule);
-    plan.grocery = buildGroceryList(schedule, answers);
+    plan.grocery = buildGroceryList(schedule, answers, tier);
     return plan;
   }
 
@@ -2126,7 +2289,7 @@
     for (let i = 1; i <= 96; i++) {
       // Irregular stride explores more of the variant space than +1 each time
       const trialVariant = base + i * 7 + slotIndex * 13 + ((i * 3) % 11);
-      const trial = buildPlan(answers, { variant: trialVariant });
+      const trial = buildPlan(answers, { variant: trialVariant, skipFit: true });
       if (!trial.schedule[slotIndex]) continue;
       const cand = trial.schedule[slotIndex].suggestion;
       const newTitle = cand.title;
@@ -2143,6 +2306,7 @@
       let score = calDelta;
       if (!rebuilt.compliance.withinTolerances) score += 400;
       if (calDelta > 150) score += 200;
+      if (rebuilt.grocery && rebuilt.grocery.overBudget) score += 600;
 
       const fp = suggestionFingerprint(cand);
       if (newTitle === prevTitle) score += 500;
@@ -2196,7 +2360,7 @@
     let best = null;
     for (let i = 1; i <= 64; i++) {
       const trialVariant = base + i * 5 + ((i * 9) % 17);
-      const trial = buildPlan(answers, { variant: trialVariant });
+      const trial = buildPlan(answers, { variant: trialVariant, skipFit: true });
       const titles = trial.schedule.map((s) => s.suggestion.title);
       let different = 0;
       for (let j = 0; j < titles.length; j++) {
@@ -2205,6 +2369,7 @@
       const calDelta = Math.abs(trial.actual.kcal - trial.daily.calories);
       let score = -different * 100 + calDelta;
       if (!trial.compliance.withinTolerances) score += 300;
+      if (trial.grocery && trial.grocery.overBudget) score += 600;
       // Prefer not reusing the exact same set of titles
       const sameSet =
         titles.slice().sort().join("|") === prevTitles.slice().sort().join("|");
@@ -2948,6 +3113,8 @@
     estimateCalories,
     buildSchedule,
     buildPlan,
+    buildPlanOnce,
+    fitPlanToBudget,
     gramsFromPct,
     createOnboarding,
     evaluateCompliance,

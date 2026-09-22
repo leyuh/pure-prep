@@ -3,6 +3,10 @@ Meal Templates (synced)
 - Day cal ±100; macros ±2%
 - Snacks ~ half a meal; meals ±150; snacks ±75
 - Produce diversity; budget sacrifice order
+- The meal plan should cost no more than the budget allows: the lower the budget is, the more sacrifices should be made (order = sacrifice first):
+  1. Do not require organic items
+  2. Reduce overall ingredient count and variety in meals and micronutrients (if that lowers the price)
+  3. Cheaper items should be used (ex: bananas and raisins over fresh berries, ground beef over salmon) where possible.
 - Grams + cup fractions; condense tsp→tbsp
 - Do not repeat ingredients in the same meal (merge tsp/tbsp of same food)
 - Oatmeal milk: 4oz per each ½ cup oats
