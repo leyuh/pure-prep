@@ -15,3 +15,6 @@ Snapshots from the Google Drive Meal Plan Project live in `docs/` (`onboarding.t
 Open `index.html` or use GitHub Pages: https://leyuh.github.io/pure-prep/
 
 `onboarding.js` holds planning logic; the page shell is `index.html`.
+
+## Brand
+App icon: Leaf P monogram (`assets/icon.png`, also `assets/logo.png`). Favicons in `assets/`.
