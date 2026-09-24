@@ -819,7 +819,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc21"></script>
+  <script src="onboarding.js?v=doc22"></script>
   <script>
 
 (function () {
@@ -968,8 +968,12 @@
    */
   function upsertPlanBlock(st, weekStarts, plan) {
     if (!st.planBlocks) st.planBlocks = [];
+    // Never mutate planBlocks for weeks whose groceries are already ordered.
+    const covered = {};
+    (st.groceryCoveredWeeks || []).forEach((w) => { covered[w] = true; });
+    weekStarts = (weekStarts || []).filter((w) => !covered[w]);
     const take = {};
-    (weekStarts || []).forEach((w) => { take[w] = true; });
+    weekStarts.forEach((w) => { take[w] = true; });
     st.planBlocks = st.planBlocks
       .map((b) => ({
         weeks: (b.weeks || []).filter((w) => !take[w]),
@@ -1031,6 +1035,13 @@
       if ((byKey[key] || 0) + 1e-9 < need) return false;
     }
     return Object.keys(dailyNeed).length > 0;
+  }
+
+
+  /** True when this week's Sunday is in groceryCoveredWeeks (groceries already ordered). */
+  function isGroceryOrderedForWeek(st, offset) {
+    const ws = weekStartISO(offset);
+    return (st.groceryCoveredWeeks || []).indexOf(ws) !== -1;
   }
 
   function inventoryNoteForWeek(st, offset) {
@@ -1299,6 +1310,10 @@
           <p class="panel-muted" style="margin-top:8px">Either option schedules meals without ordering groceries yet — groceries wait until the next grocery order date.</p>`;
       }
       const invNote = weekScheduled ? inventoryNoteForWeek(state, weekOffset) : "";
+      const weekLocked = weekScheduled && isGroceryOrderedForWeek(state, weekOffset);
+      const lockNote = weekLocked
+        ? `<p class="panel-muted" style="margin-top:8px">This week's plan is locked because groceries are already ordered.</p>`
+        : "";
       weekHtml = `
         <div class="macro-pie-wrap">
           <div class="macro-pie" style="${pieStyle(p.daily.macros)}">
@@ -1318,6 +1333,7 @@
         </div>
         <div style="margin-top:12px">${mealsBody}</div>
         ${invNote ? `<p class="panel-muted" style="margin-top:8px">${invNote}</p>` : ""}
+        ${lockNote}
         <button type="button" class="cta secondary" id="redoOnboard" style="margin-top:12px">Update questionnaire</button>`;
     }
 
@@ -1340,13 +1356,15 @@
           : `<p class="panel-muted">Order groceries before <strong>${formatNice(state.nextOrderDate)}</strong> (plan start).</p>`)
       : `<p class="panel-muted">No order scheduled yet.${state.plan ? " Confirm groceries to set a date." : ""}</p>`;
 
+    const updateLocked = !!(state.plan && isWeekScheduled(state, weekOffset) && isGroceryOrderedForWeek(state, weekOffset));
     root.innerHTML = `
       <p class="welcome">${g} 🌿</p>
       <section class="panel"><h2>Week at a glance</h2>${weekHtml}</section>
       <section class="panel"><h2>Inventory</h2>${invPanel}</section>
       <section class="panel"><h2>Schedule</h2>${schedPanel}
         <button type="button" class="cta secondary" id="goSched">Open calendar</button>
-        <button type="button" class="cta secondary" id="updateMealPlan" style="margin-left:8px" ${state.plan ? "" : "disabled"}>Update meal plan</button>
+        <button type="button" class="cta secondary" id="updateMealPlan" style="margin-left:8px" ${state.plan && !updateLocked ? "" : "disabled"}>Update meal plan</button>
+        ${updateLocked ? `<p class="panel-muted" style="margin-top:8px">Meal plan updates are disabled for this week — groceries are already ordered.</p>` : ""}
       </section>`;
 
     const start = root.querySelector("#startOnboard");
@@ -1369,14 +1387,17 @@
     if (updateMeal) {
       updateMeal.onclick = () => {
         if (!state.plan || !state.answers) return;
-        // Next grocery-order window starts at the current week
-        state._pendingScheduleFromOffset = 0;
+        // Covered weeks (groceries already ordered) cannot be updated.
+        if (isGroceryOrderedForWeek(state, weekOffset)) return;
+        // Schedule the update window from the week being viewed.
+        state._pendingScheduleFromOffset = weekOffset;
         saveState(state);
         setScreen("onboard", {
           startAt: "results",
           answers: state.answers,
-          plan: state.plan,
+          plan: planForOffset(state, weekOffset) || state.plan,
           inventory: state.inventory || [],
+          mealPlanLocked: false,
         });
       };
     }
@@ -1524,13 +1545,23 @@
       const prevDepleted = state.lastDepletedDate;
       const nWeeks = cadenceWeeks(state.answers && state.answers.cadence);
       const newWeeks = buildWeekStarts(fromOffset, nWeeks);
+      // Never overwrite planBlocks for weeks whose groceries are already ordered.
+      const coveredSet = {};
+      prevCovered.forEach((w) => { coveredSet[w] = true; });
+      const writableWeeks = newWeeks.filter((w) => !coveredSet[w]);
+      if (!writableWeeks.length) {
+        state._pendingScheduleFromOffset = null;
+        saveState(state);
+        setScreen(d.screen || "home");
+        return;
+      }
       const isAppend = fromOffset > 0 && ((state.planBlocks && state.planBlocks.length) || (state.scheduledWeeks && state.scheduledWeeks.length));
 
       state.answers = d.answers || state.answers;
       state.plan = d.plan; // active/latest plan (grocery list & current confirm target)
       state.groceryList = d.plan.grocery || state.groceryList;
       state._pendingScheduleFromOffset = null;
-      upsertPlanBlock(state, newWeeks, d.plan);
+      upsertPlanBlock(state, writableWeeks, d.plan);
 
       if (isAppend) {
         // Pick-new / advance schedule: keep prior blocks, inventory, coverage, next order.
@@ -1547,9 +1578,9 @@
         state.groceriesConfirmed = false;
         state.lastOrderedAt = null;
         state.lastDepletedDate = null;
-        // Drop coverage only for weeks being replaced; keep unrelated future coverage out.
+        // Drop coverage only for weeks being replaced; never clear still-covered weeks.
         const take = {};
-        newWeeks.forEach((w) => { take[w] = true; });
+        writableWeeks.forEach((w) => { take[w] = true; });
         state.groceryCoveredWeeks = prevCovered.filter((w) => !take[w]);
         state.nextOrderDate = weekStartISO(fromOffset);
       }

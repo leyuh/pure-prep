@@ -3310,7 +3310,7 @@
               <div>
                 <strong>${slot.name}: ${t.kcal} cal - ${s.title}</strong>
               </div>
-              <button type="button" class="mp-reroll mp-reroll-slot" data-slot="${slotIndex}">Reroll</button>
+              ${opts.mealPlanLocked ? "" : `<button type="button" class="mp-reroll mp-reroll-slot" data-slot="${slotIndex}">Reroll</button>`}
             </header>
             <ul class="mp-ingredients">
               ${lis}
@@ -3326,23 +3326,29 @@
       });
 
       const nav = section.querySelector(".mp-nav");
+      const lockedNote = opts.mealPlanLocked
+        ? `<p class="mp-note" style="margin:8px 0">This week's plan is locked because groceries are already ordered.</p>`
+        : "";
       nav.innerHTML = `
+          ${lockedNote}
           <button type="button" class="mp-back" id="toDash">← Dashboard</button>
-          <button type="button" class="mp-reroll" id="reroll">Reroll all meals</button>
-          <button type="button" class="mp-next" id="saveClose">Save &amp; close</button>`;
+          ${opts.mealPlanLocked ? "" : `<button type="button" class="mp-reroll" id="reroll">Reroll all meals</button>`}
+          <button type="button" class="mp-next" id="saveClose">${opts.mealPlanLocked ? "Close" : "Save &amp; close"}</button>`;
 
       root.appendChild(section);
 
       function finishToDashboard() {
+        // When locked (groceries already ordered), do not save plan mutations.
+        const shouldSave = !opts.mealPlanLocked;
         const detail = {
           plan: currentPlan,
           answers: Object.assign({}, answers),
-          save: true,
+          save: shouldSave,
         };
         root.dispatchEvent(new CustomEvent("onboarding-complete", { detail, bubbles: true }));
         root.dispatchEvent(
           new CustomEvent("pureprep-goto", {
-            detail: { screen: "home", save: true, plan: currentPlan, answers: Object.assign({}, answers) },
+            detail: { screen: "home", save: shouldSave, plan: currentPlan, answers: Object.assign({}, answers) },
             bubbles: true,
           })
         );
@@ -3350,6 +3356,7 @@
 
       section.querySelectorAll(".mp-reroll-slot").forEach((btn) => {
         btn.onclick = () => {
+          if (opts.mealPlanLocked) return;
           const idx = Number(btn.getAttribute("data-slot"));
           const from =
             (currentPlan._slotVariants && currentPlan._slotVariants[idx]) || planVariant;
@@ -3361,15 +3368,19 @@
         };
       });
 
-      section.querySelector("#reroll").onclick = () => {
-        answers.__lockedPlan = null;
-        answers._rerollHistory = {};
-        const next = rerollDay(answers, currentPlan, planVariant);
-        planVariant = next.variant || planVariant + 1;
-        answers._slotVariants = next._slotVariants ? next._slotVariants.slice() : [];
-        answers.__lockedPlan = next;
-        showResult();
-      };
+      const rerollAll = section.querySelector("#reroll");
+      if (rerollAll) {
+        rerollAll.onclick = () => {
+          if (opts.mealPlanLocked) return;
+          answers.__lockedPlan = null;
+          answers._rerollHistory = {};
+          const next = rerollDay(answers, currentPlan, planVariant);
+          planVariant = next.variant || planVariant + 1;
+          answers._slotVariants = next._slotVariants ? next._slotVariants.slice() : [];
+          answers.__lockedPlan = next;
+          showResult();
+        };
+      }
       section.querySelector("#saveClose").onclick = finishToDashboard;
       section.querySelector("#toDash").onclick = finishToDashboard;
     }
