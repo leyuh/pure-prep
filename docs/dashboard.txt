@@ -26,6 +26,7 @@ Home screen:
 
 Inventory:
 List of grocery inventory; depletes each plan day unless a non-plan day.
+(Depletion waits until the meal plan's scheduled start Sunday when groceries were ordered early.)
 
 Schedule:
 Current calendar month; arrows to switch months; highlight today; mark grocery coverage window and next order date.

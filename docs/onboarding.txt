@@ -19,7 +19,10 @@ Macros derived from weight goal (#4):
 (default maintain if missing)
 Meal/snack macro split must be very close to targets from #4.
 
+First meal plan begins on the soonest Sunday. If groceries are ordered before that
+week starts, inventory must not deplete until the meal plan is scheduled to start.
+
 Output: target|actual side-by-side pies; meal list with curated cals + per-ingredient macros;
 reroll (max variety); nutrition 3–5 sentences; collapsed micro pies + hover + sodium note;
-grocery list (cadence × days/week, inventory-aware, estimated Walmart prices);
+grocery list (cadence × days/week, inventory-aware leftovers credit, estimated Walmart prices);
 Save & close / return to dashboard.

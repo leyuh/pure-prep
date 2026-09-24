@@ -2138,12 +2138,25 @@
       }
     }
 
+    // Drive Onboarding: credit leftover inventory (e.g. 4 leftover eggs → order 4 fewer).
+    const onHand = {};
+    const inv = (answers && answers._inventory) || [];
+    inv.forEach((it) => {
+      if (!it || !it.key) return;
+      onHand[it.key] = (onHand[it.key] || 0) + (Number(it.qtyRemaining) || 0);
+    });
+    let creditedKeys = 0;
+
     const items = [];
     let grandTotal = 0;
     Object.keys(agg)
       .sort()
       .forEach((key) => {
-        const rawQty = agg[key];
+        const need = agg[key];
+        const credit = onHand[key] || 0;
+        const rawQty = Math.max(0, need - credit);
+        if (credit > 0 && rawQty < need - 1e-9) creditedKeys += 1;
+        if (rawQty <= 1e-9) return; // fully covered by leftovers
         const buyQty = roundBuyQty(key, rawQty);
         const price = lookupPrice(key);
         // Package-friendly: buy enough packages to cover buyQty
@@ -2204,8 +2217,10 @@
         if (tier.preferCheapProtein) sac.push("cheaper protein");
         if (sac.length) parts.push("budget: " + sac.join(", "));
         else parts.push("budget: full produce variety");
+        if (creditedKeys) parts.push("inventory leftovers credited");
         return parts.join(" · ");
       })(),
+      inventoryCredited: creditedKeys > 0,
     };
   }
 
@@ -2813,7 +2828,22 @@
     let planVariant = randomPlanVariant();
 
     if (opts.answers) Object.assign(answers, opts.answers);
-    if (opts.plan) answers.__lockedPlan = opts.plan;
+    if (opts.inventory && opts.inventory.length) {
+      answers._inventory = opts.inventory.map((it) => Object.assign({}, it));
+    }
+    if (opts.plan) {
+      answers.__lockedPlan = opts.plan;
+      // Refresh grocery so leftover inventory is credited on Update / Pick new.
+      if (answers._inventory && answers._inventory.length && opts.plan.schedule) {
+        answers.__lockedPlan = Object.assign({}, opts.plan, {
+          grocery: buildGroceryList(
+            opts.plan.schedule,
+            answers,
+            opts.plan.budgetTier
+          ),
+        });
+      }
+    }
 
     function steps() {
       const list = ["budget", "cadence", "calorieMode"];

@@ -818,7 +818,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc18"></script>
+  <script src="onboarding.js?v=doc19"></script>
   <script>
 
 (function () {
@@ -873,6 +873,17 @@
     if (cadence === "every_other_week") return 2;
     if (cadence === "monthly") return 4;
     return 1;
+  }
+
+  /** Drive Onboarding: first meal plan begins on the soonest Sunday (today if Sunday, else next). */
+  function soonestSundayWeekOffset() {
+    return new Date().getDay() === 0 ? 0 : 1;
+  }
+
+  function earliestScheduledWeek(st) {
+    const weeks = (st && st.scheduledWeeks) || [];
+    if (!weeks.length) return weekStartISO(soonestSundayWeekOffset());
+    return weeks.slice().sort()[0];
   }
 
   function weekStartISO(offset) {
@@ -993,8 +1004,13 @@
         dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
       });
     });
+    const planStart = earliestScheduledWeek(state);
     let changed = false;
     while (cursor <= today) {
+      if (cursor < planStart) {
+        cursor = addDays(cursor, 1);
+        continue;
+      }
       const d = new Date(cursor + "T12:00:00");
       if (isPlanWeekday(selected, d)) {
         state.inventory = state.inventory.map((item) => {
@@ -1016,23 +1032,41 @@
     const list = (state.plan && state.plan.grocery) || state.groceryList;
     if (!list) return state;
     const now = todayISO();
-    state.inventory = list.items.map((it) => ({
-      key: it.key,
-      name: it.name,
-      unit: it.unit,
-      qtyRemaining: it.qty,
-      qtyLabel: it.qtyLabel,
-      initialQty: it.qty,
-    }));
+    // Merge newly ordered qty onto leftover inventory (grocery list already subtracted on-hand).
+    const byKey = {};
+    (state.inventory || []).forEach((it) => {
+      if (!it || !it.key) return;
+      byKey[it.key] = Object.assign({}, it);
+    });
+    (list.items || []).forEach((it) => {
+      const prevQty = byKey[it.key] ? Number(byKey[it.key].qtyRemaining) || 0 : 0;
+      const added = Number(it.qty) || 0;
+      const newQty = Math.round((prevQty + added) * 100) / 100;
+      byKey[it.key] = {
+        key: it.key,
+        name: it.name,
+        unit: it.unit,
+        qtyRemaining: newQty,
+        qtyLabel: it.qtyLabel,
+        initialQty: newQty,
+      };
+    });
+    state.inventory = Object.keys(byKey).map((k) => byKey[k]);
     state.groceryList = list;
     state.lastOrderedAt = now;
-    state.lastDepletedDate = now;
     state.groceriesConfirmed = true;
     state.groceryCoveredWeeks = (state.scheduledWeeks && state.scheduledWeeks.length)
       ? state.scheduledWeeks.slice()
-      : buildWeekStarts(0, cadenceWeeks(state.answers && state.answers.cadence));
+      : buildWeekStarts(soonestSundayWeekOffset(), cadenceWeeks(state.answers && state.answers.cadence));
+    const planStart = earliestScheduledWeek(state);
+    // Drive: if groceries are ordered before the plan week starts, do not deplete until then.
+    if (planStart > now) {
+      state.lastDepletedDate = addDays(planStart, -1);
+    } else {
+      state.lastDepletedDate = now;
+    }
     const span = cadenceDays(state.answers && state.answers.cadence);
-    state.nextOrderDate = addDays(now, span);
+    state.nextOrderDate = addDays(planStart, span);
     saveState(state);
     return state;
   }
@@ -1216,6 +1250,7 @@
           startAt: "results",
           answers: state.answers,
           plan: state.plan,
+          inventory: state.inventory || [],
         });
       };
     }
@@ -1248,6 +1283,7 @@
           startAt: "results",
           answers: state.answers,
           plan: state.plan,
+          inventory: state.inventory || [],
         });
       };
     }
@@ -1296,6 +1332,9 @@
     const ordered = state.lastOrderedAt;
     const next = state.nextOrderDate;
     const coverageEnd = next ? addDays(next, -1) : null;
+    const coverageStart = state.scheduledWeeks && state.scheduledWeeks.length
+      ? state.scheduledWeeks.slice().sort()[0]
+      : ordered;
 
     let cells = "";
     for (let i = 0; i < firstDow; i++) cells += `<div class="cal-cell muted"></div>`;
@@ -1304,7 +1343,7 @@
       const cls = ["cal-cell"];
       if (iso === today) cls.push("today");
       if (iso === next) cls.push("order-day");
-      else if (ordered && coverageEnd && iso >= ordered && iso <= coverageEnd) cls.push("coverage");
+      else if (coverageStart && coverageEnd && iso >= coverageStart && iso <= coverageEnd) cls.push("coverage");
       cells += `<div class="${cls.join(" ")}" title="${iso}">${day}</div>`;
     }
 
@@ -1312,7 +1351,7 @@
       <section class="panel">
         <h2>Schedule</h2>
         <p class="panel-muted">Next order: <strong>${formatNice(next)}</strong>
-          ${ordered ? " · groceries last from " + formatNice(ordered) + " through " + formatNice(coverageEnd) : ""}</p>
+          ${coverageStart && coverageEnd ? " · groceries last from " + formatNice(coverageStart) + " through " + formatNice(coverageEnd) : ""}</p>
         <div class="cal-head">
           <button type="button" id="prevM" aria-label="Previous month">←</button>
           <strong>${monthName}</strong>
@@ -1338,13 +1377,18 @@
   document.getElementById("app-root").addEventListener("pureprep-goto", (e) => {
     const d = e.detail || {};
     if (d.save && d.plan) {
-      const fromOffset = state._pendingScheduleFromOffset != null ? state._pendingScheduleFromOffset : 0;
+      // First plan (no pending offset): begin on soonest Sunday per Onboarding Drive doc.
+      const fromOffset = state._pendingScheduleFromOffset != null
+        ? state._pendingScheduleFromOffset
+        : soonestSundayWeekOffset();
       const prevNextOrder = state.nextOrderDate;
+      const prevInventory = state.inventory || [];
       state.plan = d.plan;
       state.answers = d.answers || state.answers;
       state.groceryList = d.plan.grocery || state.groceryList;
       state.groceriesConfirmed = false;
-      state.inventory = [];
+      // Keep leftovers so the next grocery list can credit them; pause depletion until re-confirm.
+      state.inventory = prevInventory;
       state.lastOrderedAt = null;
       state.nextOrderDate = null;
       state.lastDepletedDate = null;
