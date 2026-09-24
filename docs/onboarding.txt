@@ -12,13 +12,14 @@ Input order:
 5. Meals per day (2m1s, 3 meals, 3m2s, 4 meals, 5 meals) — default 3m2s
 6. Days per week checkboxes — default Mon–Sat
 
-REMOVED: dedicated macronutrient targets question / Custom macros UI.
-Macros derived automatically from weight goal:
+Macros derived from weight goal (#4):
   lose → 33 p | 42 c | 25 f
   maintain → 28 p | 42 c | 30 f
   gain → 25 p | 45 c | 30 f
 (default maintain if missing)
+Meal/snack macro split must be very close to targets from #4.
 
 Output: target|actual side-by-side pies; meal list with curated cals + per-ingredient macros;
-reroll; nutrition 3–5 sentences; collapsed micro pies + hover + sodium note; grocery list;
-Save & close / return to dashboard. Macro targets noted as following weight goal.
+reroll (max variety); nutrition 3–5 sentences; collapsed micro pies + hover + sodium note;
+grocery list (cadence × days/week, inventory-aware, estimated Walmart prices);
+Save & close / return to dashboard.

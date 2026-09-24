@@ -10,6 +10,11 @@ Home screen:
   - Daily meal plan with meal/snack name and exact curated meal calories (not general target)
   - Expand meal/snack for ingredients and total meal macros
   - Toggle between weeks (prev/next week range)
+  - Meal plan is only scheduled for N weeks from grocery cadence
+    (weekly=1, every other week=2, monthly=4)
+  - If toggled week has no meal plan: "nothing scheduled" message, plus
+    · Repeat previous meal plan (same N weeks from cadence)
+    · Pick new meals (onboarding output / results)
 - Inventory panel (empty until questionnaire filled; then prompt to order groceries for the cadence)
 - Schedule panel with next grocery order date
   - Open calendar button

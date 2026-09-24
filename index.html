@@ -818,7 +818,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc16"></script>
+  <script src="onboarding.js?v=doc17"></script>
   <script>
 
 (function () {
@@ -846,6 +846,8 @@
       groceryList: null,
       groceriesConfirmed: false,
       lastDepletedDate: null,
+      scheduledWeeks: [],
+      _pendingScheduleFromOffset: null,
     };
   }
   function saveState(state) {
@@ -863,6 +865,46 @@
     if (cadence === "every_other_week") return 14;
     if (cadence === "monthly") return 28;
     return 7;
+  }
+
+  /** Grocery cadence → how many weeks the current meal plan covers. */
+  function cadenceWeeks(cadence) {
+    if (cadence === "every_other_week") return 2;
+    if (cadence === "monthly") return 4;
+    return 1;
+  }
+
+  function weekStartISO(offset) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    start.setDate(start.getDate() - start.getDay()); // Sunday start
+    start.setDate(start.getDate() + offset * 7);
+    const y = start.getFullYear();
+    const m = String(start.getMonth() + 1).padStart(2, "0");
+    const day = String(start.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function buildWeekStarts(fromOffset, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(weekStartISO(fromOffset + i));
+    return out;
+  }
+
+  function isWeekScheduled(st, offset) {
+    const weeks = (st && st.scheduledWeeks) || [];
+    if (!weeks.length && st && st.plan) {
+      // Migrate older saves: cover N weeks from current week
+      return offset >= 0 && offset < cadenceWeeks(st.answers && st.answers.cadence);
+    }
+    return weeks.indexOf(weekStartISO(offset)) !== -1;
+  }
+
+  function ensureScheduledWeeks(st) {
+    if (st.plan && (!st.scheduledWeeks || !st.scheduledWeeks.length)) {
+      st.scheduledWeeks = buildWeekStarts(0, cadenceWeeks(st.answers && st.answers.cadence));
+    }
+    return st;
   }
 
   function addDays(iso, n) {
@@ -962,7 +1004,7 @@
     );
   }
 
-  let state = depleteInventory(loadState());
+  let state = ensureScheduledWeeks(depleteInventory(loadState()));
   let screen = "home";
   let calCursor = new Date();
   calCursor.setDate(1);
@@ -1022,24 +1064,33 @@
           return d ? d.short : id;
         })
         .join(", ");
-      const meals = (p.schedule || [])
-        .map((slot) => {
-          const s = slot.suggestion;
-          const lis = (s.ingredients || [])
-            .map((ing) => {
-              return `<li><span class="ing-name">${ing.label}</span><span class="ing-macros">${ing.kcal} kcal · ${Math.round(ing.p)}p / ${Math.round(ing.c)}c / ${Math.round(ing.f)}f</span></li>`;
-            })
-            .join("");
-          return `<details class="meal-row">
-            <summary><span>${slot.name}: ${s.title}</span><span class="cal-chip">${s.totals.kcal} cal</span></summary>
-            <div class="detail">
-              <ul class="mp-ingredients">${lis}
-                <li class="totals"><span class="ing-name">Meal total</span><span class="ing-macros">${s.totals.kcal} kcal · ${s.totals.p}p / ${s.totals.c}c / ${s.totals.f}f</span></li>
-              </ul>
-            </div>
-          </details>`;
-        })
-        .join("");
+      const weekScheduled = isWeekScheduled(state, weekOffset);
+      let mealsBody = "";
+      if (weekScheduled) {
+        mealsBody = (p.schedule || [])
+          .map((slot) => {
+            const s = slot.suggestion;
+            const lis = (s.ingredients || [])
+              .map((ing) => {
+                return `<li><span class="ing-name">${ing.label}</span><span class="ing-macros">${ing.kcal} kcal · ${Math.round(ing.p)}p / ${Math.round(ing.c)}c / ${Math.round(ing.f)}f</span></li>`;
+              })
+              .join("");
+            return `<details class="meal-row">
+              <summary><span>${slot.name}: ${s.title}</span><span class="cal-chip">${s.totals.kcal} cal</span></summary>
+              <div class="detail">
+                <ul class="mp-ingredients">${lis}
+                  <li class="totals"><span class="ing-name">Meal total</span><span class="ing-macros">${s.totals.kcal} kcal · ${s.totals.p}p / ${s.totals.c}c / ${s.totals.f}f</span></li>
+                </ul>
+              </div>
+            </details>`;
+          })
+          .join("");
+      } else {
+        mealsBody = `
+          <p class="panel-muted">Nothing scheduled for this week.</p>
+          <button type="button" class="cta" id="repeatMealPlan">Repeat previous meal plan</button>
+          <button type="button" class="cta secondary" id="pickNewMeals" style="margin-left:8px">Pick new meals</button>`;
+      }
       weekHtml = `
         <div class="macro-pie-wrap">
           <div class="macro-pie" style="${pieStyle(p.daily.macros)}">
@@ -1057,7 +1108,7 @@
           <strong style="flex:1;text-align:center">${weekRangeLabel(weekOffset)}</strong>
           <button type="button" class="cta secondary" id="nextWeek" aria-label="Next week">→</button>
         </div>
-        <div style="margin-top:12px">${meals}</div>
+        <div style="margin-top:12px">${mealsBody}</div>
         <button type="button" class="cta secondary" id="redoOnboard" style="margin-top:12px">Update questionnaire</button>`;
     }
 
@@ -1088,9 +1139,15 @@
       </section>`;
 
     const start = root.querySelector("#startOnboard");
-    if (start) start.onclick = () => setScreen("onboard");
+    if (start) start.onclick = () => {
+      state._pendingScheduleFromOffset = null;
+      setScreen("onboard");
+    };
     const redo = root.querySelector("#redoOnboard");
-    if (redo) redo.onclick = () => setScreen("onboard");
+    if (redo) redo.onclick = () => {
+      state._pendingScheduleFromOffset = 0; // full re-questionnaire → schedule from current week
+      setScreen("onboard");
+    };
     const conf = root.querySelector("#confirmGroceries");
     if (conf) conf.onclick = () => { state = confirmGroceries(state); renderHome(); };
     const goInv = root.querySelector("#goInv") || root.querySelector("#viewInv");
@@ -1101,6 +1158,9 @@
     if (updateMeal) {
       updateMeal.onclick = () => {
         if (!state.plan || !state.answers) return;
+        // Next grocery-order window starts at the current week
+        state._pendingScheduleFromOffset = 0;
+        saveState(state);
         setScreen("onboard", {
           startAt: "results",
           answers: state.answers,
@@ -1112,6 +1172,36 @@
     if (prevWeek) prevWeek.onclick = () => { weekOffset -= 1; renderHome(); };
     const nextWeek = root.querySelector("#nextWeek");
     if (nextWeek) nextWeek.onclick = () => { weekOffset += 1; renderHome(); };
+    const repeatPlan = root.querySelector("#repeatMealPlan");
+    if (repeatPlan) {
+      repeatPlan.onclick = () => {
+        const n = cadenceWeeks(state.answers && state.answers.cadence);
+        const add = buildWeekStarts(weekOffset, n);
+        const set = {};
+        (state.scheduledWeeks || []).forEach((w) => { set[w] = true; });
+        add.forEach((w) => { set[w] = true; });
+        state.scheduledWeeks = Object.keys(set).sort();
+        // Advance next order estimate to cover the extended window
+        if (state.answers && state.answers.cadence) {
+          state.nextOrderDate = addDays(weekStartISO(weekOffset), cadenceDays(state.answers.cadence));
+        }
+        saveState(state);
+        renderHome();
+      };
+    }
+    const pickNew = root.querySelector("#pickNewMeals");
+    if (pickNew) {
+      pickNew.onclick = () => {
+        if (!state.plan || !state.answers) return;
+        state._pendingScheduleFromOffset = weekOffset;
+        saveState(state);
+        setScreen("onboard", {
+          startAt: "results",
+          answers: state.answers,
+          plan: state.plan,
+        });
+      };
+    }
   }
 
   function renderInventory() {
@@ -1207,9 +1297,13 @@
       state.lastOrderedAt = null;
       state.nextOrderDate = null;
       state.lastDepletedDate = null;
+      const fromOffset = state._pendingScheduleFromOffset != null ? state._pendingScheduleFromOffset : 0;
+      state._pendingScheduleFromOffset = null;
+      const nWeeks = cadenceWeeks(state.answers && state.answers.cadence);
+      state.scheduledWeeks = buildWeekStarts(fromOffset, nWeeks);
       // seed next order estimate from cadence without confirming
       if (state.answers && state.answers.cadence) {
-        state.nextOrderDate = addDays(todayISO(), cadenceDays(state.answers.cadence));
+        state.nextOrderDate = addDays(weekStartISO(fromOffset), cadenceDays(state.answers.cadence));
       }
       saveState(state);
     }
