@@ -818,7 +818,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc15"></script>
+  <script src="onboarding.js?v=doc16"></script>
   <script>
 
 (function () {
@@ -966,6 +966,7 @@
   let screen = "home";
   let calCursor = new Date();
   calCursor.setDate(1);
+  let weekOffset = 0;
 
   const els = {
     home: document.getElementById("screen-home"),
@@ -975,7 +976,7 @@
     onboardRoot: document.getElementById("onboard-root"),
   };
 
-  function setScreen(name) {
+  function setScreen(name, opts) {
     screen = name;
     ["home", "inventory", "schedule", "onboard"].forEach((k) => {
       els[k].classList.toggle("screen-hidden", k !== name);
@@ -986,7 +987,23 @@
     if (name === "home") renderHome();
     if (name === "inventory") renderInventory();
     if (name === "schedule") renderSchedule();
-    if (name === "onboard") startOnboarding();
+    if (name === "onboard") startOnboarding(opts || {});
+  }
+
+
+  function startOfWeek(d) {
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - x.getDay()); // Sunday start
+    return x;
+  }
+  function weekRangeLabel(offset) {
+    const start = startOfWeek(new Date());
+    start.setDate(start.getDate() + offset * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const fmt = (dt) => dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    const year = end.getFullYear() !== start.getFullYear() ? ", " + end.getFullYear() : "";
+    return fmt(start) + " – " + fmt(end) + year;
   }
 
   function renderHome() {
@@ -1035,6 +1052,11 @@
             <div style="margin-top:6px"><span class="pill">${p.daysPerWeek} days/week</span> ${daysLabel ? "· " + daysLabel : ""}</div>
           </div>
         </div>
+        <div class="week-toggle" style="display:flex;align-items:center;gap:8px;margin-top:12px">
+          <button type="button" class="cta secondary" id="prevWeek" aria-label="Previous week">←</button>
+          <strong style="flex:1;text-align:center">${weekRangeLabel(weekOffset)}</strong>
+          <button type="button" class="cta secondary" id="nextWeek" aria-label="Next week">→</button>
+        </div>
         <div style="margin-top:12px">${meals}</div>
         <button type="button" class="cta secondary" id="redoOnboard" style="margin-top:12px">Update questionnaire</button>`;
     }
@@ -1062,6 +1084,7 @@
       <section class="panel"><h2>Inventory</h2>${invPanel}</section>
       <section class="panel"><h2>Schedule</h2>${schedPanel}
         <button type="button" class="cta secondary" id="goSched">Open calendar</button>
+        <button type="button" class="cta secondary" id="updateMealPlan" style="margin-left:8px" ${state.plan ? "" : "disabled"}>Update meal plan</button>
       </section>`;
 
     const start = root.querySelector("#startOnboard");
@@ -1074,6 +1097,21 @@
     if (goInv) goInv.onclick = () => setScreen("inventory");
     const goSched = root.querySelector("#goSched");
     if (goSched) goSched.onclick = () => setScreen("schedule");
+    const updateMeal = root.querySelector("#updateMealPlan");
+    if (updateMeal) {
+      updateMeal.onclick = () => {
+        if (!state.plan || !state.answers) return;
+        setScreen("onboard", {
+          startAt: "results",
+          answers: state.answers,
+          plan: state.plan,
+        });
+      };
+    }
+    const prevWeek = root.querySelector("#prevWeek");
+    if (prevWeek) prevWeek.onclick = () => { weekOffset -= 1; renderHome(); };
+    const nextWeek = root.querySelector("#nextWeek");
+    if (nextWeek) nextWeek.onclick = () => { weekOffset += 1; renderHome(); };
   }
 
   function renderInventory() {
@@ -1153,9 +1191,9 @@
   }
 
   let onboardingApi = null;
-  function startOnboarding() {
+  function startOnboarding(opts) {
     els.onboardRoot.innerHTML = "";
-    onboardingApi = M.createOnboarding(els.onboardRoot);
+    onboardingApi = M.createOnboarding(els.onboardRoot, opts || {});
   }
 
   document.getElementById("app-root").addEventListener("pureprep-goto", (e) => {

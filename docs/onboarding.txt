@@ -8,7 +8,7 @@ Input order:
 1. Monthly grocery budget
 2. Grocery cadence (Weekly / every other week / monthly)
 3. Daily caloric goal — known path OR Help me find out (Weight, Weight goal lose/maintain/gain, Activity)
-4. What is your weight? — skipped if already given in calorie help; when shown, also collects weight goal (macros need it)
+4. What is your weight goal? — do not ask if already given in Help me find out (known path only; macros need it)
 5. Meals per day (2m1s, 3 meals, 3m2s, 4 meals, 5 meals) — default 3m2s
 6. Days per week checkboxes — default Mon–Sat
 

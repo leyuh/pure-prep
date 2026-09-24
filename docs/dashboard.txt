@@ -1,4 +1,4 @@
-Dashboard (synced)
+Dashboard (synced from Drive)
 
 Home screen is default. Each screen should have an icon button in the nav bar.
 
@@ -9,8 +9,11 @@ Home screen:
   - Number of days a week to follow plan
   - Daily meal plan with meal/snack name and exact curated meal calories (not general target)
   - Expand meal/snack for ingredients and total meal macros
+  - Toggle between weeks (prev/next week range)
 - Inventory panel (empty until questionnaire filled; then prompt to order groceries for the cadence)
 - Schedule panel with next grocery order date
+  - Open calendar button
+  - Update meal plan button → shows onboarding output (reroll meals/snacks for next grocery order)
 
 Inventory:
 List of grocery inventory; depletes each plan day unless a non-plan day.

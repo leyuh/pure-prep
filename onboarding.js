@@ -2788,7 +2788,8 @@
 
   /* ── UI ── */
 
-  function createOnboarding(root) {
+  function createOnboarding(root, opts) {
+    opts = opts || {};
     const answers = {
       budget: 400,
       cadence: "every_other_week",
@@ -2811,12 +2812,15 @@
     }
     let planVariant = randomPlanVariant();
 
+    if (opts.answers) Object.assign(answers, opts.answers);
+    if (opts.plan) answers.__lockedPlan = opts.plan;
+
     function steps() {
       const list = ["budget", "cadence", "calorieMode"];
       if (answers.calorieMode === "known") {
         list.push("calories");
-        // Weight (+ goal) only when not already collected in calorie help path
-        list.push("weight");
+        // Drive: ask weight goal after calories (skip if already given via Help me find out)
+        list.push("weightGoal");
       }
       if (answers.calorieMode === "help") list.push("calorieHelp");
       list.push("meals");
@@ -3053,49 +3057,28 @@
         });
       }
 
-      if (id === "weight") {
-        const needGoal = !answers.weightGoal;
-        const goalRadios = needGoal
-          ? radioGroup(
-              "weightGoal",
-              [
-                { value: "lose", label: "Lose" },
-                { value: "maintain", label: "Maintain" },
-                { value: "gain", label: "Gain" },
-              ],
-              answers.weightGoal || "maintain"
-            )
-          : el(`<p class="mp-hint">Weight goal already set (${answers.weightGoal}).</p>`);
+      if (id === "weightGoal") {
         const body = el(`<div></div>`);
         body.appendChild(
-          el(
-            `<div>
-              <label class="mp-label">Weight (lbs)</label>
-              <input class="mp-input" id="weightLbs" type="number" min="50" max="800" step="0.1"
-                value="${answers.weightLbs ?? ""}" placeholder="e.g. 160" />
-            </div>`
+          radioGroup(
+            "weightGoal",
+            [
+              { value: "lose", label: "Lose" },
+              { value: "maintain", label: "Maintain" },
+              { value: "gain", label: "Gain" },
+            ],
+            answers.weightGoal || "maintain"
           )
         );
-        if (needGoal) {
-          body.appendChild(el(`<label class="mp-label">Weight goal</label>`));
-          body.appendChild(goalRadios);
-          body.appendChild(
-            el(
-              `<p class="mp-hint">Macro targets are set from your weight goal (loss 33/42/25, maintain 28/42/30, gain 25/45/30).</p>`
-            )
-          );
-        } else {
-          body.appendChild(goalRadios);
-        }
-        ask("What is your weight?", body, () => {
-          const weightLbs = Number(root.querySelector("#weightLbs").value);
-          if (!weightLbs || weightLbs < 50) return "Enter your weight in pounds.";
-          answers.weightLbs = weightLbs;
-          if (needGoal) {
-            const v = selectedRadio("weightGoal");
-            if (!v) return "Pick a weight goal.";
-            answers.weightGoal = v;
-          }
+        body.appendChild(
+          el(
+            `<p class="mp-hint">Macro targets follow your weight goal (loss 33/42/25, maintain 28/42/30, gain 25/45/30). Weight is only needed when using Help me find out for calories.</p>`
+          )
+        );
+        ask("What is your weight goal?", body, () => {
+          const v = selectedRadio("weightGoal");
+          if (!v) return "Pick a weight goal.";
+          answers.weightGoal = v;
         });
       }
 
@@ -3361,10 +3344,14 @@
       section.querySelector("#toDash").onclick = finishToDashboard;
     }
 
-    render();
+    if (opts.startAt === "results" && (answers.__lockedPlan || answers.calories)) {
+      showResult();
+    } else {
+      render();
+    }
     return {
       getAnswers: () => Object.assign({}, answers),
-      buildPlan: (opts) => buildPlan(answers, opts),
+      buildPlan: (o) => buildPlan(answers, o),
       reroll: () => {
         planVariant += 1;
         showResult();
