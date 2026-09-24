@@ -225,6 +225,7 @@
       border: 1px solid var(--border);
     }
     .mp-back:disabled { opacity: 0.35; cursor: not-allowed; }
+    .cta:disabled { opacity: 0.35; cursor: not-allowed; }
     .mp-next {
       background: linear-gradient(180deg, #6b8f62, var(--accent-deep));
       color: #f7faf5;
@@ -818,7 +819,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc20"></script>
+  <script src="onboarding.js?v=doc21"></script>
   <script>
 
 (function () {
@@ -885,6 +886,29 @@
     const weeks = (st && st.scheduledWeeks) || [];
     if (!weeks.length) return weekStartISO(soonestSundayWeekOffset());
     return weeks.slice().sort()[0];
+  }
+
+  /** Offset (relative to this week's Sunday) for a weekStartISO string. */
+  function offsetFromWeekISO(weekISO) {
+    if (!weekISO) return soonestSundayWeekOffset();
+    const now = new Date();
+    const currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    currentStart.setDate(currentStart.getDate() - currentStart.getDay());
+    const parts = String(weekISO).split("-");
+    const target = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    return Math.round((target - currentStart) / (7 * 24 * 60 * 60 * 1000));
+  }
+
+  /**
+   * Earliest weekOffset the week-at-a-glance toggle may show.
+   * Once a plan is scheduled, never go earlier than that first plan week.
+   * With no scheduled weeks yet, use soonest Sunday (product default) or 0.
+   */
+  function minWeekOffset(st) {
+    const weeks = (st && st.scheduledWeeks) || [];
+    if (weeks.length) return offsetFromWeekISO(weeks.slice().sort()[0]);
+    if (st && st.plan) return soonestSundayWeekOffset();
+    return 0;
   }
 
   function weekStartISO(offset) {
@@ -1231,6 +1255,8 @@
   function renderHome() {
     const root = els.home;
     const g = greeting();
+    const minOff = minWeekOffset(state);
+    if (weekOffset < minOff) weekOffset = minOff;
     let weekHtml = "";
     if (!state.plan) {
       weekHtml = `
@@ -1286,7 +1312,7 @@
           </div>
         </div>
         <div class="week-toggle" style="display:flex;align-items:center;gap:8px;margin-top:12px">
-          <button type="button" class="cta secondary" id="prevWeek" aria-label="Previous week">←</button>
+          <button type="button" class="cta secondary" id="prevWeek" aria-label="Previous week"${weekOffset <= minOff ? " disabled" : ""}>←</button>
           <strong style="flex:1;text-align:center">${weekRangeLabel(weekOffset)}</strong>
           <button type="button" class="cta secondary" id="nextWeek" aria-label="Next week">→</button>
         </div>
@@ -1355,7 +1381,14 @@
       };
     }
     const prevWeek = root.querySelector("#prevWeek");
-    if (prevWeek) prevWeek.onclick = () => { weekOffset -= 1; renderHome(); };
+    if (prevWeek) {
+      prevWeek.onclick = () => {
+        const floor = minWeekOffset(state);
+        if (weekOffset <= floor) return;
+        weekOffset -= 1;
+        renderHome();
+      };
+    }
     const nextWeek = root.querySelector("#nextWeek");
     if (nextWeek) nextWeek.onclick = () => { weekOffset += 1; renderHome(); };
     const repeatPlan = root.querySelector("#repeatMealPlan");
@@ -1521,6 +1554,8 @@
         state.nextOrderDate = weekStartISO(fromOffset);
       }
       saveState(state);
+      // Land on the (first) week just scheduled — never earlier than minWeekOffset.
+      weekOffset = Math.max(fromOffset, minWeekOffset(state));
     }
     setScreen(d.screen || "home");
   });
