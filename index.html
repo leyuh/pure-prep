@@ -818,7 +818,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc19"></script>
+  <script src="onboarding.js?v=doc20"></script>
   <script>
 
 (function () {
@@ -840,6 +840,7 @@
     return {
       answers: null,
       plan: null,
+      planBlocks: [],
       inventory: [],
       lastOrderedAt: null,
       nextOrderDate: null,
@@ -912,10 +913,70 @@
     return weeks.indexOf(weekStartISO(offset)) !== -1;
   }
 
-  function ensureScheduledWeeks(st) {
-    if (st.plan && (!st.scheduledWeeks || !st.scheduledWeeks.length)) {
-      st.scheduledWeeks = buildWeekStarts(0, cadenceWeeks(st.answers && st.answers.cadence));
+  function rebuildScheduledWeeks(st) {
+    const set = {};
+    (st.planBlocks || []).forEach((b) => {
+      (b.weeks || []).forEach((w) => { set[w] = true; });
+    });
+    st.scheduledWeeks = Object.keys(set).sort();
+    return st.scheduledWeeks;
+  }
+
+  /** Plan assigned to a Sunday week ISO, or null. */
+  function planForWeekISO(st, weekISO) {
+    const blocks = (st && st.planBlocks) || [];
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (b && b.plan && b.weeks && b.weeks.indexOf(weekISO) !== -1) return b.plan;
     }
+    // Legacy single-plan fallback
+    if (st && st.plan && (st.scheduledWeeks || []).indexOf(weekISO) !== -1) return st.plan;
+    return null;
+  }
+
+  function planForOffset(st, offset) {
+    return planForWeekISO(st, weekStartISO(offset));
+  }
+
+  /**
+   * Assign plan to weekStarts. Removes those weeks from other blocks (so a week
+   * has at most one plan). Does not delete unrelated earlier/later blocks.
+   */
+  function upsertPlanBlock(st, weekStarts, plan) {
+    if (!st.planBlocks) st.planBlocks = [];
+    const take = {};
+    (weekStarts || []).forEach((w) => { take[w] = true; });
+    st.planBlocks = st.planBlocks
+      .map((b) => ({
+        weeks: (b.weeks || []).filter((w) => !take[w]),
+        plan: b.plan,
+      }))
+      .filter((b) => b.weeks && b.weeks.length && b.plan);
+    const weeks = (weekStarts || []).slice().sort();
+    if (weeks.length && plan) {
+      st.planBlocks.push({ weeks: weeks, plan: plan });
+    }
+    rebuildScheduledWeeks(st);
+    return st;
+  }
+
+  /** Copy an existing plan onto additional weeks (Repeat previous). */
+  function extendPlanToWeeks(st, weekStarts, plan) {
+    return upsertPlanBlock(st, weekStarts, plan || st.plan);
+  }
+
+  function ensureScheduledWeeks(st) {
+    if (!st.planBlocks) st.planBlocks = [];
+    // Migrate older saves: one global plan + scheduledWeeks → planBlocks
+    if (st.plan && (!st.planBlocks || !st.planBlocks.length)) {
+      if (st.scheduledWeeks && st.scheduledWeeks.length) {
+        st.planBlocks = [{ weeks: st.scheduledWeeks.slice().sort(), plan: st.plan }];
+      } else {
+        const n = cadenceWeeks(st.answers && st.answers.cadence);
+        st.planBlocks = [{ weeks: buildWeekStarts(0, n), plan: st.plan }];
+      }
+    }
+    rebuildScheduledWeeks(st);
     // Older saves: groceries confirmed ⇒ those scheduled weeks were covered
     if (st.groceriesConfirmed && st.scheduledWeeks && st.scheduledWeeks.length &&
         (!st.groceryCoveredWeeks || !st.groceryCoveredWeeks.length)) {
@@ -926,12 +987,13 @@
   }
 
   /** True when inventory qty covers one full plan week of daily ingredient needs. */
-  function inventoryCoversPlanWeek(st) {
-    if (!st.groceriesConfirmed || !st.inventory || !st.inventory.length || !st.plan) return false;
-    const selected = (st.answers && st.answers.selectedDays) || st.plan.selectedDays || [];
-    const days = selected.length || st.plan.daysPerWeek || 6;
+  function inventoryCoversPlanWeek(st, planOpt) {
+    const plan = planOpt || st.plan;
+    if (!st.groceriesConfirmed || !st.inventory || !st.inventory.length || !plan) return false;
+    const selected = (st.answers && st.answers.selectedDays) || plan.selectedDays || [];
+    const days = selected.length || plan.daysPerWeek || 6;
     const dailyNeed = {};
-    (st.plan.schedule || []).forEach((slot) => {
+    (plan.schedule || []).forEach((slot) => {
       (slot.suggestion.ingredients || []).forEach((ing) => {
         if (!ing._key || ing._note) return;
         dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
@@ -948,16 +1010,20 @@
   }
 
   function inventoryNoteForWeek(st, offset) {
-    if (!st.plan || !isWeekScheduled(st, offset)) return "";
+    const weekPlan = planForOffset(st, offset);
+    if (!weekPlan || !isWeekScheduled(st, offset)) return "";
     const ws = weekStartISO(offset);
     const covered = (st.groceryCoveredWeeks || []).indexOf(ws) !== -1;
     if (!st.groceriesConfirmed || !covered) {
+      // First-save nextOrderDate is the plan-start Sunday — order BEFORE that day.
       const next = st.nextOrderDate
-        ? " Groceries will be ordered on " + formatNice(st.nextOrderDate) + "."
+        ? (st.groceriesConfirmed
+            ? " Groceries will be ordered on " + formatNice(st.nextOrderDate) + "."
+            : " Order groceries before " + formatNice(st.nextOrderDate) + " (plan start).")
         : " Groceries have not been ordered yet.";
       return "Inventory does not have the groceries required for this week." + next;
     }
-    if (inventoryCoversPlanWeek(st)) {
+    if (inventoryCoversPlanWeek(st, weekPlan)) {
       return "Inventory has the groceries required for this week.";
     }
     return "Inventory does not have all the groceries required for this week.";
@@ -991,19 +1057,12 @@
 
   /** Deplete inventory for each elapsed plan day since lastDepletedDate / lastOrderedAt. */
   function depleteInventory(state) {
-    if (!state.groceriesConfirmed || !state.inventory || !state.inventory.length || !state.plan) return state;
+    if (!state.groceriesConfirmed || !state.inventory || !state.inventory.length) return state;
+    if (!state.plan && !(state.planBlocks && state.planBlocks.length)) return state;
     const start = state.lastDepletedDate || state.lastOrderedAt;
     if (!start) return state;
-    const selected = (state.answers && state.answers.selectedDays) || state.plan.selectedDays || [];
     const today = todayISO();
     let cursor = addDays(start, 1); // deplete for days after last marked
-    const dailyNeed = {};
-    (state.plan.schedule || []).forEach((slot) => {
-      (slot.suggestion.ingredients || []).forEach((ing) => {
-        if (!ing._key || ing._note) return;
-        dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
-      });
-    });
     const planStart = earliestScheduledWeek(state);
     let changed = false;
     while (cursor <= today) {
@@ -1011,8 +1070,28 @@
         cursor = addDays(cursor, 1);
         continue;
       }
+      // Sunday of the week containing cursor
       const d = new Date(cursor + "T12:00:00");
+      const sun = new Date(d);
+      sun.setDate(d.getDate() - d.getDay());
+      const y = sun.getFullYear();
+      const mo = String(sun.getMonth() + 1).padStart(2, "0");
+      const da = String(sun.getDate()).padStart(2, "0");
+      const weekISO = y + "-" + mo + "-" + da;
+      const weekPlan = planForWeekISO(state, weekISO);
+      if (!weekPlan) {
+        cursor = addDays(cursor, 1);
+        continue;
+      }
+      const selected = (state.answers && state.answers.selectedDays) || weekPlan.selectedDays || [];
       if (isPlanWeekday(selected, d)) {
+        const dailyNeed = {};
+        (weekPlan.schedule || []).forEach((slot) => {
+          (slot.suggestion.ingredients || []).forEach((ing) => {
+            if (!ing._key || ing._note) return;
+            dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
+          });
+        });
         state.inventory = state.inventory.map((item) => {
           const need = dailyNeed[item.key] || 0;
           if (need <= 0) return item;
@@ -1055,10 +1134,29 @@
     state.groceryList = list;
     state.lastOrderedAt = now;
     state.groceriesConfirmed = true;
-    state.groceryCoveredWeeks = (state.scheduledWeeks && state.scheduledWeeks.length)
-      ? state.scheduledWeeks.slice()
-      : buildWeekStarts(soonestSundayWeekOffset(), cadenceWeeks(state.answers && state.answers.cadence));
-    const planStart = earliestScheduledWeek(state);
+    // Cover only the weeks belonging to the plan being ordered (active block), union prior coverage.
+    let activeWeeks = [];
+    (state.planBlocks || []).forEach((b) => {
+      if (b && b.plan === state.plan) activeWeeks = (b.weeks || []).slice();
+    });
+    if (!activeWeeks.length) {
+      // Fallback: find block whose plan grocery matches, else cadence window from earliest.
+      (state.planBlocks || []).forEach((b) => {
+        if (b && b.plan && state.plan && b.plan.grocery === state.plan.grocery) {
+          activeWeeks = (b.weeks || []).slice();
+        }
+      });
+    }
+    if (!activeWeeks.length) {
+      activeWeeks = (state.scheduledWeeks && state.scheduledWeeks.length)
+        ? state.scheduledWeeks.slice()
+        : buildWeekStarts(soonestSundayWeekOffset(), cadenceWeeks(state.answers && state.answers.cadence));
+    }
+    const coveredSet = {};
+    (state.groceryCoveredWeeks || []).forEach((w) => { coveredSet[w] = true; });
+    activeWeeks.forEach((w) => { coveredSet[w] = true; });
+    state.groceryCoveredWeeks = Object.keys(coveredSet).sort();
+    const planStart = activeWeeks.slice().sort()[0] || earliestScheduledWeek(state);
     // Drive: if groceries are ordered before the plan week starts, do not deplete until then.
     if (planStart > now) {
       state.lastDepletedDate = addDays(planStart, -1);
@@ -1139,16 +1237,16 @@
         <p class="panel-muted">No meal plan yet. Fill out the onboarding questionnaire to grow your week of simple meals.</p>
         <button type="button" class="cta" id="startOnboard">Start questionnaire</button>`;
     } else {
-      const p = state.plan;
+      const weekScheduled = isWeekScheduled(state, weekOffset);
+      const p = (weekScheduled && planForOffset(state, weekOffset)) || state.plan;
       const daysLabel = (p.selectedDays || [])
         .map((id) => {
           const d = M.DAYS_OF_WEEK.find((x) => x.id === id);
           return d ? d.short : id;
         })
         .join(", ");
-      const weekScheduled = isWeekScheduled(state, weekOffset);
       let mealsBody = "";
-      if (weekScheduled) {
+      if (weekScheduled && p) {
         mealsBody = (p.schedule || [])
           .map((slot) => {
             const s = slot.suggestion;
@@ -1211,7 +1309,9 @@
     }
 
     const schedPanel = state.nextOrderDate
-      ? `<p class="panel-muted">Next grocery order: <strong>${formatNice(state.nextOrderDate)}</strong></p>`
+      ? (state.groceriesConfirmed
+          ? `<p class="panel-muted">Next grocery order: <strong>${formatNice(state.nextOrderDate)}</strong></p>`
+          : `<p class="panel-muted">Order groceries before <strong>${formatNice(state.nextOrderDate)}</strong> (plan start).</p>`)
       : `<p class="panel-muted">No order scheduled yet.${state.plan ? " Confirm groceries to set a date." : ""}</p>`;
 
     root.innerHTML = `
@@ -1263,12 +1363,14 @@
       repeatPlan.onclick = () => {
         const n = cadenceWeeks(state.answers && state.answers.cadence);
         const add = buildWeekStarts(weekOffset, n);
-        const set = {};
-        (state.scheduledWeeks || []).forEach((w) => { set[w] = true; });
-        add.forEach((w) => { set[w] = true; });
-        state.scheduledWeeks = Object.keys(set).sort();
-        // Doc: new schedule from Repeat does not order groceries; keep existing nextOrderDate
-        // and do not add these weeks to groceryCoveredWeeks.
+        // Copy the most recent prior plan onto the new cadence window without dropping old blocks.
+        let priorPlan = state.plan;
+        const priorWeeks = (state.scheduledWeeks || []).filter((w) => w < weekStartISO(weekOffset)).sort();
+        if (priorWeeks.length) {
+          priorPlan = planForWeekISO(state, priorWeeks[priorWeeks.length - 1]) || state.plan;
+        }
+        extendPlanToWeeks(state, add, priorPlan);
+        // Doc: Repeat does not order groceries; keep nextOrderDate & groceryCoveredWeeks unchanged.
         saveState(state);
         renderHome();
       };
@@ -1383,25 +1485,40 @@
         : soonestSundayWeekOffset();
       const prevNextOrder = state.nextOrderDate;
       const prevInventory = state.inventory || [];
-      state.plan = d.plan;
-      state.answers = d.answers || state.answers;
-      state.groceryList = d.plan.grocery || state.groceryList;
-      state.groceriesConfirmed = false;
-      // Keep leftovers so the next grocery list can credit them; pause depletion until re-confirm.
-      state.inventory = prevInventory;
-      state.lastOrderedAt = null;
-      state.nextOrderDate = null;
-      state.lastDepletedDate = null;
-      state.groceryCoveredWeeks = [];
-      state._pendingScheduleFromOffset = null;
+      const prevConfirmed = state.groceriesConfirmed;
+      const prevCovered = (state.groceryCoveredWeeks || []).slice();
+      const prevOrderedAt = state.lastOrderedAt;
+      const prevDepleted = state.lastDepletedDate;
       const nWeeks = cadenceWeeks(state.answers && state.answers.cadence);
-      state.scheduledWeeks = buildWeekStarts(fromOffset, nWeeks);
-      // Pick-new from an empty future week: keep existing next order date (groceries wait).
-      // Otherwise seed an estimate from cadence without confirming.
-      if (fromOffset > 0 && prevNextOrder) {
-        state.nextOrderDate = prevNextOrder;
-      } else if (state.answers && state.answers.cadence) {
-        state.nextOrderDate = addDays(weekStartISO(fromOffset), cadenceDays(state.answers.cadence));
+      const newWeeks = buildWeekStarts(fromOffset, nWeeks);
+      const isAppend = fromOffset > 0 && ((state.planBlocks && state.planBlocks.length) || (state.scheduledWeeks && state.scheduledWeeks.length));
+
+      state.answers = d.answers || state.answers;
+      state.plan = d.plan; // active/latest plan (grocery list & current confirm target)
+      state.groceryList = d.plan.grocery || state.groceryList;
+      state._pendingScheduleFromOffset = null;
+      upsertPlanBlock(state, newWeeks, d.plan);
+
+      if (isAppend) {
+        // Pick-new / advance schedule: keep prior blocks, inventory, coverage, next order.
+        state.inventory = prevInventory;
+        state.groceriesConfirmed = prevConfirmed;
+        state.groceryCoveredWeeks = prevCovered;
+        state.lastOrderedAt = prevOrderedAt;
+        state.lastDepletedDate = prevDepleted;
+        state.nextOrderDate = prevNextOrder || state.nextOrderDate;
+      } else {
+        // First save or update of the current window: require a new grocery order
+        // BEFORE the plan-start Sunday (not at the end of the cadence window).
+        state.inventory = prevInventory; // keep leftovers for grocery-list credit
+        state.groceriesConfirmed = false;
+        state.lastOrderedAt = null;
+        state.lastDepletedDate = null;
+        // Drop coverage only for weeks being replaced; keep unrelated future coverage out.
+        const take = {};
+        newWeeks.forEach((w) => { take[w] = true; });
+        state.groceryCoveredWeeks = prevCovered.filter((w) => !take[w]);
+        state.nextOrderDate = weekStartISO(fromOffset);
       }
       saveState(state);
     }

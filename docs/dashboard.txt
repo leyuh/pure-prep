@@ -12,14 +12,16 @@ Home screen:
   - Toggle between weeks (prev/next week range)
   - Meal plan is only scheduled for N weeks from grocery cadence
     (weekly=1, every other week=2, monthly=4)
+  - Multiple plan blocks may exist (weekStartISO → plan); viewing a week shows that week's plan
   - If toggled week has no meal plan: "nothing scheduled" message, plus
     · Repeat previous meal plan (same N weeks from cadence)
     · Pick new meals (onboarding output / results)
   - New meal plan from Repeat / Pick new will not have groceries ordered yet
-    (orders at the next grocery order date)
+    (orders at the next grocery order date) and must not wipe earlier plan blocks
   - Under the week meal plan: note whether inventory has the groceries
     required for that week
 - Inventory panel (empty until questionnaire filled; then prompt to order groceries for the cadence)
+  - After first save, indicate groceries need to be ordered BEFORE the plan-start Sunday
 - Schedule panel with next grocery order date
   - Open calendar button
   - Update meal plan button → shows onboarding output (reroll meals/snacks for next grocery order)
@@ -27,6 +29,7 @@ Home screen:
 Inventory:
 List of grocery inventory; depletes each plan day unless a non-plan day.
 (Depletion waits until the meal plan's scheduled start Sunday when groceries were ordered early.)
+Depletion uses the plan assigned to that calendar week (planBlocks).
 
 Schedule:
 Current calendar month; arrows to switch months; highlight today; mark grocery coverage window and next order date.
