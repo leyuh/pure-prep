@@ -818,7 +818,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc17"></script>
+  <script src="onboarding.js?v=doc18"></script>
   <script>
 
 (function () {
@@ -847,6 +847,7 @@
       groceriesConfirmed: false,
       lastDepletedDate: null,
       scheduledWeeks: [],
+      groceryCoveredWeeks: [],
       _pendingScheduleFromOffset: null,
     };
   }
@@ -904,7 +905,51 @@
     if (st.plan && (!st.scheduledWeeks || !st.scheduledWeeks.length)) {
       st.scheduledWeeks = buildWeekStarts(0, cadenceWeeks(st.answers && st.answers.cadence));
     }
+    // Older saves: groceries confirmed ⇒ those scheduled weeks were covered
+    if (st.groceriesConfirmed && st.scheduledWeeks && st.scheduledWeeks.length &&
+        (!st.groceryCoveredWeeks || !st.groceryCoveredWeeks.length)) {
+      st.groceryCoveredWeeks = st.scheduledWeeks.slice();
+    }
+    if (!st.groceryCoveredWeeks) st.groceryCoveredWeeks = [];
     return st;
+  }
+
+  /** True when inventory qty covers one full plan week of daily ingredient needs. */
+  function inventoryCoversPlanWeek(st) {
+    if (!st.groceriesConfirmed || !st.inventory || !st.inventory.length || !st.plan) return false;
+    const selected = (st.answers && st.answers.selectedDays) || st.plan.selectedDays || [];
+    const days = selected.length || st.plan.daysPerWeek || 6;
+    const dailyNeed = {};
+    (st.plan.schedule || []).forEach((slot) => {
+      (slot.suggestion.ingredients || []).forEach((ing) => {
+        if (!ing._key || ing._note) return;
+        dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
+      });
+    });
+    const byKey = {};
+    st.inventory.forEach((it) => { byKey[it.key] = it.qtyRemaining; });
+    for (const key of Object.keys(dailyNeed)) {
+      const need = dailyNeed[key] * days;
+      if (!need) continue;
+      if ((byKey[key] || 0) + 1e-9 < need) return false;
+    }
+    return Object.keys(dailyNeed).length > 0;
+  }
+
+  function inventoryNoteForWeek(st, offset) {
+    if (!st.plan || !isWeekScheduled(st, offset)) return "";
+    const ws = weekStartISO(offset);
+    const covered = (st.groceryCoveredWeeks || []).indexOf(ws) !== -1;
+    if (!st.groceriesConfirmed || !covered) {
+      const next = st.nextOrderDate
+        ? " Groceries will be ordered on " + formatNice(st.nextOrderDate) + "."
+        : " Groceries have not been ordered yet.";
+      return "Inventory does not have the groceries required for this week." + next;
+    }
+    if (inventoryCoversPlanWeek(st)) {
+      return "Inventory has the groceries required for this week.";
+    }
+    return "Inventory does not have all the groceries required for this week.";
   }
 
   function addDays(iso, n) {
@@ -983,6 +1028,9 @@
     state.lastOrderedAt = now;
     state.lastDepletedDate = now;
     state.groceriesConfirmed = true;
+    state.groceryCoveredWeeks = (state.scheduledWeeks && state.scheduledWeeks.length)
+      ? state.scheduledWeeks.slice()
+      : buildWeekStarts(0, cadenceWeeks(state.answers && state.answers.cadence));
     const span = cadenceDays(state.answers && state.answers.cadence);
     state.nextOrderDate = addDays(now, span);
     saveState(state);
@@ -1089,8 +1137,10 @@
         mealsBody = `
           <p class="panel-muted">Nothing scheduled for this week.</p>
           <button type="button" class="cta" id="repeatMealPlan">Repeat previous meal plan</button>
-          <button type="button" class="cta secondary" id="pickNewMeals" style="margin-left:8px">Pick new meals</button>`;
+          <button type="button" class="cta secondary" id="pickNewMeals" style="margin-left:8px">Pick new meals</button>
+          <p class="panel-muted" style="margin-top:8px">Either option schedules meals without ordering groceries yet — groceries wait until the next grocery order date.</p>`;
       }
+      const invNote = weekScheduled ? inventoryNoteForWeek(state, weekOffset) : "";
       weekHtml = `
         <div class="macro-pie-wrap">
           <div class="macro-pie" style="${pieStyle(p.daily.macros)}">
@@ -1109,6 +1159,7 @@
           <button type="button" class="cta secondary" id="nextWeek" aria-label="Next week">→</button>
         </div>
         <div style="margin-top:12px">${mealsBody}</div>
+        ${invNote ? `<p class="panel-muted" style="margin-top:8px">${invNote}</p>` : ""}
         <button type="button" class="cta secondary" id="redoOnboard" style="margin-top:12px">Update questionnaire</button>`;
     }
 
@@ -1181,10 +1232,8 @@
         (state.scheduledWeeks || []).forEach((w) => { set[w] = true; });
         add.forEach((w) => { set[w] = true; });
         state.scheduledWeeks = Object.keys(set).sort();
-        // Advance next order estimate to cover the extended window
-        if (state.answers && state.answers.cadence) {
-          state.nextOrderDate = addDays(weekStartISO(weekOffset), cadenceDays(state.answers.cadence));
-        }
+        // Doc: new schedule from Repeat does not order groceries; keep existing nextOrderDate
+        // and do not add these weeks to groceryCoveredWeeks.
         saveState(state);
         renderHome();
       };
@@ -1289,6 +1338,8 @@
   document.getElementById("app-root").addEventListener("pureprep-goto", (e) => {
     const d = e.detail || {};
     if (d.save && d.plan) {
+      const fromOffset = state._pendingScheduleFromOffset != null ? state._pendingScheduleFromOffset : 0;
+      const prevNextOrder = state.nextOrderDate;
       state.plan = d.plan;
       state.answers = d.answers || state.answers;
       state.groceryList = d.plan.grocery || state.groceryList;
@@ -1297,12 +1348,15 @@
       state.lastOrderedAt = null;
       state.nextOrderDate = null;
       state.lastDepletedDate = null;
-      const fromOffset = state._pendingScheduleFromOffset != null ? state._pendingScheduleFromOffset : 0;
+      state.groceryCoveredWeeks = [];
       state._pendingScheduleFromOffset = null;
       const nWeeks = cadenceWeeks(state.answers && state.answers.cadence);
       state.scheduledWeeks = buildWeekStarts(fromOffset, nWeeks);
-      // seed next order estimate from cadence without confirming
-      if (state.answers && state.answers.cadence) {
+      // Pick-new from an empty future week: keep existing next order date (groceries wait).
+      // Otherwise seed an estimate from cadence without confirming.
+      if (fromOffset > 0 && prevNextOrder) {
+        state.nextOrderDate = prevNextOrder;
+      } else if (state.answers && state.answers.cadence) {
         state.nextOrderDate = addDays(weekStartISO(fromOffset), cadenceDays(state.answers.cadence));
       }
       saveState(state);

@@ -15,6 +15,10 @@ Home screen:
   - If toggled week has no meal plan: "nothing scheduled" message, plus
     · Repeat previous meal plan (same N weeks from cadence)
     · Pick new meals (onboarding output / results)
+  - New meal plan from Repeat / Pick new will not have groceries ordered yet
+    (orders at the next grocery order date)
+  - Under the week meal plan: note whether inventory has the groceries
+    required for that week
 - Inventory panel (empty until questionnaire filled; then prompt to order groceries for the cadence)
 - Schedule panel with next grocery order date
   - Open calendar button
