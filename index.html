@@ -818,17 +818,6 @@
       font-size: 0.86rem;
       line-height: 1.45;
     }
-    .profile-summary { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
-    .profile-summary li {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 6px 0;
-      border-bottom: 1px dashed rgba(217, 208, 189, 0.85);
-    }
-    .profile-summary li:last-child { border-bottom: none; }
-    .profile-summary li span:first-child { color: var(--muted); }
-    .profile-summary li span:last-child { font-weight: 600; color: var(--accent-deep); text-align: right; }
     .profile-actions {
       display: flex;
       align-items: center;
@@ -870,6 +859,54 @@
     .pp-notice p { margin: 0 0 6px; color: var(--text); line-height: 1.5; font-size: 0.93rem; }
     .pp-notice p.pp-notice-sub { color: var(--muted); font-size: 0.85rem; }
     .pp-notice .cta { margin-top: 12px; }
+    .stock-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 0;
+      padding: 6px 12px 6px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(79, 122, 72, 0.35);
+      background: rgba(90, 122, 82, 0.1);
+      color: var(--ok);
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+    .stock-ok .stock-check {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--ok);
+      color: #f7faf5;
+    }
+    .stock-ok .stock-check svg { width: 13px; height: 13px; }
+    .order-dates {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 4px 0 12px;
+    }
+    .order-date {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow-soft);
+    }
+    .order-date span {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--moss);
+      margin-bottom: 2px;
+    }
+    .order-date strong { color: var(--accent-deep); font-size: 0.98rem; }
+    .order-date.next { border-color: rgba(196, 120, 90, 0.45); background: rgba(196, 120, 90, 0.07); }
+    .order-date.next span { color: var(--terracotta); }
   </style>
 </head>
 <body>
@@ -920,7 +957,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc24"></script>
+  <script src="onboarding.js?v=doc25"></script>
   <script>
 
 (function () {
@@ -1303,6 +1340,11 @@
     return (st.groceryCoveredWeeks || []).indexOf(ws) !== -1;
   }
 
+  const STOCK_OK_NOTE = "Groceries in stock";
+  function stockOkHtml() {
+    return `<p class="stock-ok" id="stockOk"><span class="stock-check" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>${STOCK_OK_NOTE}</p>`;
+  }
+
   function inventoryNoteForWeek(st, offset) {
     const weekPlan = planForOffset(st, offset);
     if (!weekPlan || !isWeekScheduled(st, offset)) return "";
@@ -1318,7 +1360,7 @@
       return "Inventory does not have the groceries required for this week." + next;
     }
     if (inventoryCoversPlanWeek(st, weekPlan)) {
-      return "Inventory has the groceries required for this week.";
+      return STOCK_OK_NOTE;
     }
     return "Inventory does not have all the groceries required for this week.";
   }
@@ -1593,10 +1635,6 @@
           <p class="panel-muted" style="margin-top:8px">Either option schedules meals without ordering groceries yet — groceries wait until the next grocery order date.</p>`;
       }
       const invNote = weekScheduled ? inventoryNoteForWeek(state, weekOffset) : "";
-      const weekLocked = weekScheduled && isGroceryOrderedForWeek(state, weekOffset);
-      const lockNote = weekLocked
-        ? `<p class="panel-muted" style="margin-top:8px">This week's plan is locked because groceries are already ordered.</p>`
-        : "";
       weekHtml = `
         <div class="macro-pie-wrap">
           <div class="macro-pie" style="${pieStyle(p.daily.macros)}">
@@ -1615,9 +1653,7 @@
           <button type="button" class="cta secondary" id="nextWeek" aria-label="Next week">→</button>
         </div>
         <div style="margin-top:12px">${mealsBody}</div>
-        ${invNote ? `<p class="panel-muted" style="margin-top:8px">${invNote}</p>` : ""}
-        ${lockNote}
-        <button type="button" class="cta secondary" id="editProfile" style="margin-top:12px">Edit profile</button>`;
+        ${invNote === STOCK_OK_NOTE ? stockOkHtml() : (invNote ? `<p class="panel-muted" style="margin-top:8px">${invNote}</p>` : "")}`;
     }
 
     let invPanel = "";
@@ -1655,9 +1691,6 @@
       state._pendingScheduleFromOffset = null;
       setScreen("onboard");
     };
-    // The questionnaire runs once; afterwards answers are edited on the Profile screen.
-    const editProfile = root.querySelector("#editProfile");
-    if (editProfile) editProfile.onclick = () => setScreen("profile");
     const conf = root.querySelector("#confirmGroceries");
     if (conf) conf.onclick = () => { state = confirmGroceries(state); renderHome(); };
     const goInv = root.querySelector("#goInv") || root.querySelector("#viewInv");
@@ -1749,6 +1782,24 @@
     }
   }
 
+  /** Friendly short date, e.g. "Sat, Oct 3" (adds the year when it isn't this year). */
+  function formatShortDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso + "T12:00:00");
+    const o = { weekday: "short", month: "short", day: "numeric" };
+    if (d.getFullYear() !== new Date().getFullYear()) o.year = "numeric";
+    return d.toLocaleDateString(undefined, o);
+  }
+
+  function orderDatesHtml(st) {
+    const last = st.groceriesConfirmed && st.lastOrderedAt ? formatShortDate(st.lastOrderedAt) : "None yet";
+    const next = st.nextOrderDate ? formatShortDate(st.nextOrderDate) : "Not scheduled";
+    return `<div class="order-dates">
+        <div class="order-date" id="lastOrderDate"><span>Last grocery order</span><strong>${last}</strong></div>
+        <div class="order-date next" id="nextOrderDate"><span>Next grocery order</span><strong>${next}</strong></div>
+      </div>`;
+  }
+
   function renderInventory() {
     const root = els.inventory;
     if (!state.plan) {
@@ -1762,6 +1813,7 @@
         `<div class="inv-item"><span>${it.name}<br/><small class="panel-muted">buy ${it.qtyLabel}</small></span><span>$${it.lineTotal.toFixed(2)}</span></div>`
       ).join("");
       root.innerHTML = `<section class="panel"><h2>Suggested groceries</h2>
+        ${orderDatesHtml(state)}
         <p class="panel-muted">Confirm once you've ordered these for your shopping window.</p>
         ${items || "<p class='panel-muted'>No items.</p>"}
         ${items ? `<p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>` : ""}
@@ -1771,11 +1823,11 @@
       return;
     }
     const rows = (state.inventory || []).map((it) => {
-      const pct = it.initialQty ? Math.round((it.qtyRemaining / it.initialQty) * 100) : 0;
-      return `<div class="inv-item"><span>${it.name}<br/><small class="panel-muted">${it.qtyRemaining} ${it.unit} left (${pct}%)</small></span></div>`;
+      return `<div class="inv-item"><span>${it.name}<br/><small class="panel-muted">${it.qtyRemaining} ${it.unit} left</small></span></div>`;
     }).join("");
     root.innerHTML = `<section class="panel"><h2>Your inventory</h2>
-      <p class="panel-muted">Depletes on plan days as calendar days pass (local).</p>
+      ${orderDatesHtml(state)}
+      <p class="panel-muted">Your inventory automatically depletes as your plan days elapse.</p>
       ${rows || "<p class='panel-muted'>Empty.</p>"}
       <button type="button" class="cta secondary" id="reconfirm" style="margin-top:10px">Re-order / reset from grocery list</button>
     </section>`;
@@ -1811,8 +1863,7 @@
     root.innerHTML = `
       <section class="panel">
         <h2>Schedule</h2>
-        <p class="panel-muted">Next order: <strong>${formatNice(next)}</strong>
-          ${coverageStart && coverageEnd ? " · groceries last from " + formatNice(coverageStart) + " through " + formatNice(coverageEnd) : ""}</p>
+        <p class="panel-muted" id="schedNextOrder">Next order: <strong>${next ? formatShortDate(next) : "Not scheduled"}</strong></p>
         <div class="cal-head">
           <button type="button" id="prevM" aria-label="Previous month">←</button>
           <strong>${monthName}</strong>
@@ -1849,7 +1900,6 @@
   }
 
   const CADENCE_LABELS = { weekly: "Weekly", every_other_week: "Every other week", monthly: "Monthly" };
-  const GOAL_LABELS = { lose: "Lose", maintain: "Maintain", gain: "Gain" };
   const ACTIVITY_LABELS = {
     sedentary: "Sedentary (~12 kcal/lb)",
     light: "Lightly active (~13.5)",
@@ -1903,31 +1953,6 @@
       grams = ` · about ${g.p}g protein / ${g.c}g carbs / ${g.f}g fat`;
     }
     return `${calLine}<br/>Macro targets from weight goal: <strong>${macro.p}% p / ${macro.c}% c / ${macro.f}% f</strong>${grams}`;
-  }
-
-  function profileSummaryHtml(saved) {
-    const n = normalizeProfile(saved);
-    const days = (n.selectedDays || []).map((id) => {
-      const d = M.DAYS_OF_WEEK.find((x) => x.id === id);
-      return d ? d.short : id;
-    }).join(", ");
-    const macro = M.macrosFromWeightGoal(n.weightGoal);
-    const rows = [
-      ["Monthly grocery budget", "$" + n.budget],
-      ["Grocery orders", CADENCE_LABELS[n.cadence] || n.cadence],
-      ["Daily caloric goal", CAL_MODE_LABELS[n.calorieMode] || n.calorieMode],
-    ];
-    if (n.calorieMode === "help") {
-      rows.push(["Weight", n.weightLbs + " lbs"]);
-      rows.push(["Activity level", ACTIVITY_LABELS[n.activity] || n.activity]);
-    }
-    rows.push(["Daily calories", String(n.calories)]);
-    rows.push(["Weight goal", GOAL_LABELS[n.weightGoal] || "Maintain"]);
-    rows.push(["Macro targets", macro.p + "% p / " + macro.c + "% c / " + macro.f + "% f"]);
-    rows.push(["Meals per day", (M.MEAL_OPTIONS[n.mealOption] || {}).label || (n.meals + " meals")]);
-    rows.push(["Plan days", n.daysPerWeek + " days/week" + (days ? " (" + days + ")" : "")]);
-    return `<ul class="profile-summary" id="profileSummary">${rows.map((r) =>
-      `<li><span>${escHtml(r[0])}</span><span>${escHtml(r[1])}</span></li>`).join("")}</ul>`;
   }
 
   /** Copy current form values into the in-memory draft (no validation, no persistence). */
@@ -2007,10 +2032,6 @@
           <h2 style="margin:0 0 4px">Your profile</h2>
           <p class="panel-muted">Your questionnaire answers. Edit anything below, then tap <strong>Save profile</strong> at the bottom — nothing changes until you save. Saved changes apply only to meal plans you schedule from now on. ${escHtml(savedAt)}</p>
         </div>
-      </section>
-      <section class="panel">
-        <h2>Saved answers</h2>
-        ${profileSummaryHtml(state.answers)}
       </section>
       <form id="profileForm" novalidate>
         <section class="panel profile-group" data-group="groceries">

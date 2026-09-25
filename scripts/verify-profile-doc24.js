@@ -1,5 +1,5 @@
 /**
- * doc24: Profile replaces the "Plan" tab; onboarding questionnaire runs once.
+ * doc24 (updated doc25): Profile replaces the "Plan" tab; onboarding questionnaire runs once.
  * Headless browser test against the real index.html + onboarding.js.
  *
  * Covers:
@@ -82,7 +82,7 @@ function check(cond, msg) {
   check(navLabels.includes("Profile"), "bottom nav has a 'Profile' button (" + navLabels.join(", ") + ")");
   check(!navLabels.includes("Plan"), "no 'Plan' button remains");
   const scriptSrc = await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src"));
-  check(scriptSrc === "onboarding.js?v=doc24", "cache-bust onboarding.js?v=doc24");
+  check(/^onboarding\.js\?v=doc2[4-9]$/.test(scriptSrc), "cache-bust onboarding.js (" + scriptSrc + ")");
   const fav = await page.$eval('link[rel="icon"][type="image/svg+xml"]', (l) => l.getAttribute("href"));
   check(fav === "assets/favicon.svg?v=leaf8", "favicon stays ?v=leaf8");
   const footer = await page.$$eval(".site-footer nav a", (as) => as.map((a) => a.getAttribute("href")));
@@ -125,8 +125,11 @@ function check(cond, msg) {
   const frozenBefore = frozen(before);
 
   console.log("3) Profile shows answers");
-  const summary = await page.textContent("#profileSummary");
-  check(/\$400/.test(summary) && /Weekly/.test(summary) && /2000/.test(summary) && /Maintain/.test(summary) && /3 meals, 2 snacks/.test(summary) && /6 days\/week/.test(summary), "summary lists budget, cadence, calories, goal, meals, days");
+  // doc25: the "Saved answers" summary was removed; answers show in the editable fields.
+  check(!(await page.$("#profileSummary")) && !/Saved answers/.test(await page.textContent("#screen-profile")), "no 'Saved answers' summary section");
+  check(await page.isChecked('input[name="pf-cadence"][value="weekly"]') && await page.isChecked('input[name="pf-meals"][value="3m2s"]') && await page.isChecked('input[name="pf-calorieMode"][value="known"]'), "cadence, meals, calorie mode prefilled");
+  const dayVals = await page.$$eval('input[name="pf-day"]:checked', (ns) => ns.map((n) => n.value));
+  check(dayVals.join(",") === "mon,tue,wed,thu,fri,sat", "plan days prefilled (" + dayVals.join(",") + ")");
   check(await page.inputValue("#pf-calories") === "2000" && await page.inputValue("#pf-budget") === "400", "inputs prefilled with saved values");
   check(await page.isChecked('input[name="pf-weightGoal"][value="maintain"]'), "weight goal radio prefilled");
   const saveIsLast = await page.evaluate(() => { const f = document.getElementById("profileForm"); const b = document.getElementById("saveProfile"); return !!b && f.lastElementChild.contains(b); });
