@@ -6,7 +6,7 @@ Cozy plant-y meal planning: Dashboard → onboarding questionnaire → daily pla
 - **Home** — welcome by time of day, week-at-a-glance (hollow macro pie), inventory & schedule panels
 - **Inventory** — confirm groceries ordered; depletes on selected plan weekdays
 - **Schedule** — month calendar with coverage + next order date
-- **Plan** — onboarding questionnaire (budget, cadence, calories, macros, meals, **day checkboxes**)
+- **Profile** — your onboarding questionnaire answers (budget, cadence, calories, weight goal/macros, meals, **day checkboxes**), editable with a Save button. The questionnaire itself runs only once (first visit). Saved profile changes apply only to meal plans scheduled afterwards; each scheduled plan block keeps a snapshot of the settings it was generated with.
 
 ## Docs
 Snapshots from the Google Drive Meal Plan Project live in `docs/` (`onboarding.txt`, `meal-templates.txt`, `overview.txt`, `dashboard.txt`).

@@ -794,6 +794,82 @@
       font-style: italic;
       line-height: 1.35;
     }
+
+    /* Profile (questionnaire answers, editable draft) */
+    .profile-intro {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: linear-gradient(135deg, rgba(197, 213, 188, 0.28), rgba(255, 250, 242, 0.9));
+    }
+    .profile-intro .brand-mark { width: 30px; height: 30px; }
+    .profile-intro p { margin: 0; }
+    .profile-group .mp-options { gap: 7px; }
+    .profile-group .mp-option { padding: 10px 14px; }
+    .profile-group .mp-input { margin-bottom: 4px; }
+    .profile-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 7px; }
+    .profile-derived {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px dashed var(--sage);
+      background: var(--sage-soft);
+      color: var(--accent-deep);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+    .profile-summary { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
+    .profile-summary li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(217, 208, 189, 0.85);
+    }
+    .profile-summary li:last-child { border-bottom: none; }
+    .profile-summary li span:first-child { color: var(--muted); }
+    .profile-summary li span:last-child { font-weight: 600; color: var(--accent-deep); text-align: right; }
+    .profile-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 4px 0 14px;
+    }
+    .profile-actions .cta { margin-top: 0; }
+    .profile-dirty { color: var(--terracotta); font-size: 0.82rem; font-weight: 600; }
+    .pp-notice-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(47, 58, 47, 0.28);
+      backdrop-filter: blur(2px);
+    }
+    .pp-notice {
+      width: min(420px, 100%);
+      background:
+        radial-gradient(circle at 92% 8%, rgba(90, 122, 82, 0.1), transparent 34%),
+        linear-gradient(180deg, #fffaf2, var(--paper));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 22px 22px 18px;
+      text-align: center;
+    }
+    .pp-notice .brand-mark { width: 40px; height: 40px; margin: 0 auto 6px; }
+    .pp-notice h3 {
+      font-family: var(--font-display);
+      color: var(--accent-deep);
+      font-size: 1.2rem;
+      margin: 0 0 8px;
+    }
+    .pp-notice p { margin: 0 0 6px; color: var(--text); line-height: 1.5; font-size: 0.93rem; }
+    .pp-notice p.pp-notice-sub { color: var(--muted); font-size: 0.85rem; }
+    .pp-notice .cta { margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -806,6 +882,7 @@
     <div id="screen-home"></div>
     <div id="screen-inventory" class="screen-hidden"></div>
     <div id="screen-schedule" class="screen-hidden"></div>
+    <div id="screen-profile" class="screen-hidden"></div>
     <div id="screen-onboard" class="screen-hidden">
       <div class="shell onboard">
         <div class="brand">
@@ -837,13 +914,13 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M8 3.5V7M16 3.5V7M3.5 10h17"/></svg>
         Schedule
       </button>
-      <button type="button" class="nav-btn" data-screen="onboard" title="Plan">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v16M4 12h16"/><circle cx="12" cy="12" r="9"/></svg>
-        Plan
+      <button type="button" class="nav-btn" data-screen="profile" title="Profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20.5c1.2-3.8 4-5.8 7.5-5.8s6.3 2 7.5 5.8"/></svg>
+        Profile
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc23"></script>
+  <script src="onboarding.js?v=doc24"></script>
   <script>
 
 (function () {
@@ -875,10 +952,142 @@
       scheduledWeeks: [],
       groceryCoveredWeeks: [],
       _pendingScheduleFromOffset: null,
+      profileCompleted: false,
+      profileUpdatedAt: null,
     };
   }
   function saveState(state) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  /* ── Profile (questionnaire answers) ──
+   * state.answers is the live profile: it only drives plans scheduled from now on.
+   * Every planBlock carries its own `profile` snapshot (the settings it was
+   * generated with) and its plan stores its own targets, so editing the profile
+   * never touches weeks that are already scheduled. */
+  const PROFILE_KEYS = [
+    "budget", "cadence", "calorieMode", "calories", "weightLbs", "weightGoal",
+    "activity", "mealOption", "meals", "snacks", "daysPerWeek", "selectedDays",
+  ];
+  const DAY_ORDER = M.DAYS_OF_WEEK.map((d) => d.id);
+
+  function pickProfile(a) {
+    if (!a) return null;
+    const o = {};
+    PROFILE_KEYS.forEach((k) => {
+      if (a[k] === undefined) return;
+      o[k] = Array.isArray(a[k]) ? a[k].slice() : a[k];
+    });
+    return o;
+  }
+
+  /** Normalized copy with derived values filled in (meals/snacks, days, help-path calories). */
+  function normalizeProfile(a) {
+    const n = pickProfile(a) || {};
+    if (n.budget != null && n.budget !== "") n.budget = Number(n.budget);
+    if (n.calories != null && n.calories !== "") n.calories = Number(n.calories);
+    if (n.weightLbs === "" || n.weightLbs == null) n.weightLbs = null;
+    else n.weightLbs = Number(n.weightLbs);
+    if (!n.activity) n.activity = null;
+    if (!n.weightGoal) n.weightGoal = n.calorieMode === "help" ? null : "maintain"; // known path defaults to maintain (same as questionnaire)
+    if (n.mealOption && M.MEAL_OPTIONS[n.mealOption]) {
+      n.meals = M.MEAL_OPTIONS[n.mealOption].meals;
+      n.snacks = M.MEAL_OPTIONS[n.mealOption].snacks;
+    }
+    if (Array.isArray(n.selectedDays)) {
+      n.selectedDays = DAY_ORDER.filter((id) => n.selectedDays.indexOf(id) !== -1);
+      n.daysPerWeek = n.selectedDays.length;
+    }
+    if (n.calorieMode === "help" && n.weightLbs && n.weightGoal && n.activity) {
+      n.calories = M.estimateCalories(n.weightLbs, n.weightGoal, n.activity);
+    }
+    return n;
+  }
+
+  /** Comparable fingerprint (ignores help-path fields while on the known-calories path). */
+  function profileKey(a) {
+    const n = normalizeProfile(a);
+    return JSON.stringify(PROFILE_KEYS.map((k) => {
+      if (n.calorieMode !== "help" && (k === "weightLbs" || k === "activity")) return null;
+      return n[k] === undefined ? null : n[k];
+    }));
+  }
+  function sameProfile(a, b) {
+    return profileKey(a) === profileKey(b);
+  }
+
+  /**
+   * Best-effort profile a plan was generated with: its own stored settings
+   * (budget, cadence, days, meal structure, calories, macro preset) layered on
+   * top of `fallback` for fields a plan does not record.
+   */
+  function profileFromPlan(plan, fallback) {
+    const base = pickProfile(fallback) || {};
+    if (!plan) return base;
+    if (plan.budget != null) base.budget = plan.budget;
+    if (plan.cadence) base.cadence = plan.cadence;
+    if (Array.isArray(plan.selectedDays) && plan.selectedDays.length) {
+      base.selectedDays = plan.selectedDays.slice();
+      base.daysPerWeek = plan.selectedDays.length;
+    }
+    if (Array.isArray(plan.schedule) && plan.schedule.length) {
+      const meals = plan.schedule.filter((s) => s.kind === "meal").length;
+      const snacks = plan.schedule.filter((s) => s.kind === "snack").length;
+      const opt = Object.keys(M.MEAL_OPTIONS).find((k) =>
+        M.MEAL_OPTIONS[k].meals === meals && M.MEAL_OPTIONS[k].snacks === snacks);
+      if (opt) { base.mealOption = opt; base.meals = meals; base.snacks = snacks; }
+    }
+    const macros = plan.daily && plan.daily.macros;
+    if (macros) {
+      const goal = ["lose", "maintain", "gain"].find((g) => {
+        const m = M.macrosFromWeightGoal(g);
+        return m.p === macros.p && m.c === macros.c && m.f === macros.f;
+      });
+      if (goal) base.weightGoal = goal;
+    }
+    const cal = plan.daily && plan.daily.calories;
+    if (cal) {
+      if (base.calorieMode === "help") {
+        const est = (base.weightLbs && base.weightGoal && base.activity)
+          ? M.estimateCalories(base.weightLbs, base.weightGoal, base.activity) : null;
+        if (est !== cal) { base.calorieMode = "known"; base.calories = cal; }
+      } else {
+        base.calories = cal;
+      }
+    }
+    return base;
+  }
+
+  /** True when a plan's stored settings match `profile` (no regeneration needed). */
+  function planMatchesProfile(plan, profile) {
+    if (!plan || !profile) return false;
+    return sameProfile(profileFromPlan(plan, profile), profile);
+  }
+
+  function hasCompletedProfile(st) {
+    return !!(st && st.answers && (st.plan || (st.planBlocks && st.planBlocks.length)));
+  }
+
+  function blockForWeekISO(st, weekISO) {
+    const blocks = (st && st.planBlocks) || [];
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (b && b.plan && b.weeks && b.weeks.indexOf(weekISO) !== -1) return b;
+    }
+    return null;
+  }
+
+  /** Settings snapshot for an already-scheduled week (never the live profile when a snapshot exists). */
+  function profileForWeekISO(st, weekISO) {
+    const b = blockForWeekISO(st, weekISO);
+    if (b && b.profile) return pickProfile(b.profile);
+    if (b && b.plan) return profileFromPlan(b.plan, st.answers);
+    return null;
+  }
+
+  /** Cadence the active (latest) plan was generated with. */
+  function activePlanCadence(st) {
+    return (st.plan && st.plan.cadence) || (st.answers && st.answers.cadence) || "weekly";
   }
 
   function greeting() {
@@ -956,7 +1165,7 @@
     const weeks = (st && st.scheduledWeeks) || [];
     if (!weeks.length && st && st.plan) {
       // Migrate older saves: cover N weeks from current week
-      return offset >= 0 && offset < cadenceWeeks(st.answers && st.answers.cadence);
+      return offset >= 0 && offset < cadenceWeeks(activePlanCadence(st));
     }
     return weeks.indexOf(weekStartISO(offset)) !== -1;
   }
@@ -990,7 +1199,7 @@
    * Assign plan to weekStarts. Removes those weeks from other blocks (so a week
    * has at most one plan). Does not delete unrelated earlier/later blocks.
    */
-  function upsertPlanBlock(st, weekStarts, plan) {
+  function upsertPlanBlock(st, weekStarts, plan, profile) {
     if (!st.planBlocks) st.planBlocks = [];
     // Never mutate planBlocks for weeks whose groceries are already ordered.
     const covered = {};
@@ -999,22 +1208,25 @@
     const take = {};
     weekStarts.forEach((w) => { take[w] = true; });
     st.planBlocks = st.planBlocks
-      .map((b) => ({
-        weeks: (b.weeks || []).filter((w) => !take[w]),
-        plan: b.plan,
-      }))
+      .map((b) => {
+        const nb = { weeks: (b.weeks || []).filter((w) => !take[w]), plan: b.plan };
+        if (b.profile) nb.profile = b.profile; // keep each block's own settings snapshot
+        if (b.scheduledAt) nb.scheduledAt = b.scheduledAt;
+        return nb;
+      })
       .filter((b) => b.weeks && b.weeks.length && b.plan);
     const weeks = (weekStarts || []).slice().sort();
     if (weeks.length && plan) {
-      st.planBlocks.push({ weeks: weeks, plan: plan });
+      const snap = pickProfile(profile) || profileFromPlan(plan, st.answers);
+      st.planBlocks.push({ weeks: weeks, plan: plan, profile: snap, scheduledAt: new Date().toISOString() });
     }
     rebuildScheduledWeeks(st);
     return st;
   }
 
   /** Copy an existing plan onto additional weeks (Repeat previous). */
-  function extendPlanToWeeks(st, weekStarts, plan) {
-    return upsertPlanBlock(st, weekStarts, plan || st.plan);
+  function extendPlanToWeeks(st, weekStarts, plan, profile) {
+    return upsertPlanBlock(st, weekStarts, plan || st.plan, profile);
   }
 
   function ensureScheduledWeeks(st) {
@@ -1035,6 +1247,27 @@
       st.groceryCoveredWeeks = st.scheduledWeeks.slice();
     }
     if (!st.groceryCoveredWeeks) st.groceryCoveredWeeks = [];
+    // Profile migration: snapshot settings into blocks that predate per-block
+    // snapshots (before any profile edit), and mark onboarding as done.
+    let migrated = false;
+    (st.planBlocks || []).forEach((b) => {
+      if (b && b.plan && !b.profile) {
+        b.profile = profileFromPlan(b.plan, st.answers);
+        migrated = true;
+      }
+    });
+    if (hasCompletedProfile(st) && !st.profileCompleted) {
+      st.profileCompleted = true;
+      migrated = true;
+    }
+    if (st.answers) {
+      const clean = pickProfile(st.answers);
+      if (JSON.stringify(clean) !== JSON.stringify(st.answers)) {
+        st.answers = clean; // drop transient questionnaire fields (_inventory, reroll history…)
+        migrated = true;
+      }
+    }
+    if (migrated) saveState(st);
     return st;
   }
 
@@ -1042,7 +1275,9 @@
   function inventoryCoversPlanWeek(st, planOpt) {
     const plan = planOpt || st.plan;
     if (!st.groceriesConfirmed || !st.inventory || !st.inventory.length || !plan) return false;
-    const selected = (st.answers && st.answers.selectedDays) || plan.selectedDays || [];
+    // Use the week's own plan days (snapshot), not the live profile.
+    const selected = (plan.selectedDays && plan.selectedDays.length ? plan.selectedDays : null) ||
+      (st.answers && st.answers.selectedDays) || [];
     const days = selected.length || plan.daysPerWeek || 6;
     const dailyNeed = {};
     (plan.schedule || []).forEach((slot) => {
@@ -1142,7 +1377,9 @@
         cursor = addDays(cursor, 1);
         continue;
       }
-      const selected = (state.answers && state.answers.selectedDays) || weekPlan.selectedDays || [];
+      const weekProfile = profileForWeekISO(state, weekISO);
+      const selected = (weekPlan.selectedDays && weekPlan.selectedDays.length ? weekPlan.selectedDays : null) ||
+        (weekProfile && weekProfile.selectedDays) || [];
       if (isPlanWeekday(selected, d)) {
         const dailyNeed = {};
         (weekPlan.schedule || []).forEach((slot) => {
@@ -1209,7 +1446,7 @@
     if (!activeWeeks.length) {
       activeWeeks = (state.scheduledWeeks && state.scheduledWeeks.length)
         ? state.scheduledWeeks.slice()
-        : buildWeekStarts(soonestSundayWeekOffset(), cadenceWeeks(state.answers && state.answers.cadence));
+        : buildWeekStarts(soonestSundayWeekOffset(), cadenceWeeks(activePlanCadence(state)));
     }
     const coveredSet = {};
     (state.groceryCoveredWeeks || []).forEach((w) => { coveredSet[w] = true; });
@@ -1222,7 +1459,9 @@
     } else {
       state.lastDepletedDate = now;
     }
-    const span = cadenceDays(state.answers && state.answers.cadence);
+    // Cadence of the plan being ordered (its snapshot), not the live profile.
+    const orderedProfile = profileForWeekISO(state, planStart);
+    const span = cadenceDays((orderedProfile && orderedProfile.cadence) || activePlanCadence(state));
     state.nextOrderDate = addDays(planStart, span);
     saveState(state);
     return state;
@@ -1253,22 +1492,42 @@
     home: document.getElementById("screen-home"),
     inventory: document.getElementById("screen-inventory"),
     schedule: document.getElementById("screen-schedule"),
+    profile: document.getElementById("screen-profile"),
     onboard: document.getElementById("screen-onboard"),
     onboardRoot: document.getElementById("onboard-root"),
   };
 
   function setScreen(name, opts) {
+    // Leaving Profile with unsaved edits: confirm, and discard the draft if they leave.
+    if (screen === "profile" && name !== "profile" && profileDirty()) {
+      const leave = window.confirm("You have unsaved profile changes. Leave without saving? Your changes will be discarded.");
+      if (!leave) return false;
+    }
+    if (name !== "profile") profileDraft = null;
+    // Onboarding questionnaire runs once. Returning users edit answers on Profile.
+    if (name === "onboard" && hasCompletedProfile(state) && !(opts && opts.startAt === "results")) {
+      name = "home";
+    }
+    // First-time users: Profile starts the (unchanged) onboarding questionnaire.
+    if (name === "profile" && !hasCompletedProfile(state)) {
+      state._pendingScheduleFromOffset = null;
+      name = "onboard";
+      opts = {};
+    }
     screen = name;
-    ["home", "inventory", "schedule", "onboard"].forEach((k) => {
+    ["home", "inventory", "schedule", "profile", "onboard"].forEach((k) => {
       els[k].classList.toggle("screen-hidden", k !== name);
     });
+    const navName = name === "onboard" ? "profile" : name;
     document.querySelectorAll(".nav-btn").forEach((b) => {
-      b.classList.toggle("active", b.getAttribute("data-screen") === name);
+      b.classList.toggle("active", b.getAttribute("data-screen") === navName);
     });
     if (name === "home") renderHome();
     if (name === "inventory") renderInventory();
     if (name === "schedule") renderSchedule();
+    if (name === "profile") renderProfile();
     if (name === "onboard") startOnboarding(opts || {});
+    return true;
   }
 
 
@@ -1358,7 +1617,7 @@
         <div style="margin-top:12px">${mealsBody}</div>
         ${invNote ? `<p class="panel-muted" style="margin-top:8px">${invNote}</p>` : ""}
         ${lockNote}
-        <button type="button" class="cta secondary" id="redoOnboard" style="margin-top:12px">Update questionnaire</button>`;
+        <button type="button" class="cta secondary" id="editProfile" style="margin-top:12px">Edit profile</button>`;
     }
 
     let invPanel = "";
@@ -1366,7 +1625,7 @@
       invPanel = `<p class="panel-muted">Inventory is empty until you complete onboarding.</p>`;
     } else if (!state.groceriesConfirmed) {
       invPanel = `
-        <p class="panel-muted">Order the groceries for your <strong>${(state.answers && state.answers.cadence) || "weekly"}</strong> shopping window, then confirm below.</p>
+        <p class="panel-muted">Order the groceries for your <strong>${({ weekly: "weekly", every_other_week: "every other week", monthly: "monthly" })[activePlanCadence(state)] || "weekly"}</strong> shopping window, then confirm below.</p>
         <button type="button" class="cta" id="confirmGroceries">Confirm groceries ordered</button>
         <button type="button" class="cta secondary" id="viewInv" style="margin-left:8px">View list</button>`;
     } else {
@@ -1396,11 +1655,9 @@
       state._pendingScheduleFromOffset = null;
       setScreen("onboard");
     };
-    const redo = root.querySelector("#redoOnboard");
-    if (redo) redo.onclick = () => {
-      state._pendingScheduleFromOffset = 0; // full re-questionnaire → schedule from current week
-      setScreen("onboard");
-    };
+    // The questionnaire runs once; afterwards answers are edited on the Profile screen.
+    const editProfile = root.querySelector("#editProfile");
+    if (editProfile) editProfile.onclick = () => setScreen("profile");
     const conf = root.querySelector("#confirmGroceries");
     if (conf) conf.onclick = () => { state = confirmGroceries(state); renderHome(); };
     const goInv = root.querySelector("#goInv") || root.querySelector("#viewInv");
@@ -1416,10 +1673,23 @@
         // Schedule the update window from the week being viewed.
         state._pendingScheduleFromOffset = weekOffset;
         saveState(state);
+        const viewedISO = weekStartISO(weekOffset);
+        const weekPlan = isWeekScheduled(state, weekOffset) ? planForWeekISO(state, viewedISO) : null;
+        let answersForUpdate;
+        let planForUpdate;
+        if (weekPlan) {
+          // Already-scheduled week: rerolls keep that week's own goals/settings snapshot.
+          answersForUpdate = profileForWeekISO(state, viewedISO) || profileFromPlan(weekPlan, state.answers);
+          planForUpdate = weekPlan;
+        } else {
+          // Unscheduled week: this is a new plan, so it follows the current profile.
+          answersForUpdate = pickProfile(state.answers);
+          planForUpdate = planMatchesProfile(state.plan, state.answers) ? state.plan : null;
+        }
         setScreen("onboard", {
           startAt: "results",
-          answers: state.answers,
-          plan: planForOffset(state, weekOffset) || state.plan,
+          answers: answersForUpdate,
+          plan: planForUpdate,
           inventory: state.inventory || [],
           mealPlanLocked: false,
         });
@@ -1439,7 +1709,9 @@
     const repeatPlan = root.querySelector("#repeatMealPlan");
     if (repeatPlan) {
       repeatPlan.onclick = () => {
-        const n = cadenceWeeks(state.answers && state.answers.cadence);
+        // New weeks follow the current profile (cadence, targets, budget…).
+        const profile = pickProfile(state.answers);
+        const n = cadenceWeeks(profile && profile.cadence);
         const add = buildWeekStarts(weekOffset, n);
         // Copy the most recent prior plan onto the new cadence window without dropping old blocks.
         let priorPlan = state.plan;
@@ -1447,7 +1719,13 @@
         if (priorWeeks.length) {
           priorPlan = planForWeekISO(state, priorWeeks[priorWeeks.length - 1]) || state.plan;
         }
-        extendPlanToWeeks(state, add, priorPlan);
+        let planToSchedule = priorPlan;
+        if (profile && priorPlan && !planMatchesProfile(priorPlan, profile)) {
+          // Profile changed since that plan was made: rebuild with the same meal
+          // variant so the repeat keeps its flavor but meets the updated goals.
+          planToSchedule = M.buildPlan(Object.assign({}, profile), { variant: priorPlan.variant || 0 });
+        }
+        extendPlanToWeeks(state, add, planToSchedule, profile);
         // Doc: Repeat does not order groceries; keep nextOrderDate & groceryCoveredWeeks unchanged.
         saveState(state);
         renderHome();
@@ -1459,10 +1737,12 @@
         if (!state.plan || !state.answers) return;
         state._pendingScheduleFromOffset = weekOffset;
         saveState(state);
+        // New weeks follow the current profile; only reuse the latest plan as a
+        // starting point when it was generated with these same settings.
         setScreen("onboard", {
           startAt: "results",
-          answers: state.answers,
-          plan: state.plan,
+          answers: pickProfile(state.answers),
+          plan: planMatchesProfile(state.plan, state.answers) ? state.plan : null,
           inventory: state.inventory || [],
         });
       };
@@ -1555,6 +1835,298 @@
     onboardingApi = M.createOnboarding(els.onboardRoot, opts || {});
   }
 
+  /* ── Profile screen ── */
+  const PROFILE_SAVED_MSG = "Profile saved. Your changes apply to meal plans scheduled from now on. Meal plans and goals already scheduled stay the same.";
+  let profileDraft = null; // in-memory only; never persisted until Save
+
+  function profileDirty() {
+    if (!profileDraft || !state.answers) return false;
+    return profileKey(profileDraft) !== profileKey(state.answers);
+  }
+
+  function escHtml(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  }
+
+  const CADENCE_LABELS = { weekly: "Weekly", every_other_week: "Every other week", monthly: "Monthly" };
+  const GOAL_LABELS = { lose: "Lose", maintain: "Maintain", gain: "Gain" };
+  const ACTIVITY_LABELS = {
+    sedentary: "Sedentary (~12 kcal/lb)",
+    light: "Lightly active (~13.5)",
+    moderate: "Moderately active (~15)",
+    active: "Active (~17)",
+    very_active: "Very active (~19)",
+  };
+  const CAL_MODE_LABELS = { known: "I know my daily caloric goal", help: "Help me find out" };
+
+  /** Same validation rules/messages as the onboarding questionnaire. */
+  function validateProfile(d) {
+    const budget = Number(d.budget);
+    if (!budget || budget <= 0) return "Enter a monthly budget in USD.";
+    if (!d.cadence || !CADENCE_LABELS[d.cadence]) return "Pick how often you order groceries.";
+    if (d.calorieMode !== "known" && d.calorieMode !== "help") return "Pick how to set your daily caloric goal.";
+    if (d.calorieMode === "known") {
+      const cal = Number(d.calories);
+      if (!cal || cal < 800) return "Enter at least 800 calories.";
+      if (!d.weightGoal) return "Pick a weight goal.";
+    } else {
+      if (!Number(d.weightLbs) || !d.weightGoal || !d.activity) return "Fill in weight, weight goal, and activity.";
+    }
+    if (!d.mealOption || !M.MEAL_OPTIONS[d.mealOption]) return "Pick a meal structure.";
+    if (!d.selectedDays || !d.selectedDays.length) return "Select at least one day.";
+    return null;
+  }
+
+  function profileRadio(name, options, selected) {
+    return `<div class="mp-options">${options.map((o) => `
+      <label class="mp-option${selected === o.value ? " selected" : ""}">
+        <input type="radio" name="${name}" value="${escHtml(o.value)}" ${selected === o.value ? "checked" : ""} />
+        <span>${escHtml(o.label)}</span>
+      </label>`).join("")}</div>`;
+  }
+
+  function derivedTargetsHtml(d) {
+    const n = normalizeProfile(d);
+    const macro = M.macrosFromWeightGoal(n.weightGoal);
+    const cals = Number(n.calories) || 0;
+    let calLine;
+    if (n.calorieMode === "help") {
+      calLine = (n.weightLbs && n.weightGoal && n.activity)
+        ? `Estimated daily calories: <strong>${cals}</strong> (weight × activity factor; lose −500, gain +300, rounded to 50).`
+        : `Fill in weight, weight goal, and activity to estimate daily calories.`;
+    } else {
+      calLine = cals >= 800 ? `Daily calories: <strong>${cals}</strong>` : `Enter at least 800 calories.`;
+    }
+    let grams = "";
+    if (cals >= 800) {
+      const g = M.gramsFromPct(cals, macro);
+      grams = ` · about ${g.p}g protein / ${g.c}g carbs / ${g.f}g fat`;
+    }
+    return `${calLine}<br/>Macro targets from weight goal: <strong>${macro.p}% p / ${macro.c}% c / ${macro.f}% f</strong>${grams}`;
+  }
+
+  function profileSummaryHtml(saved) {
+    const n = normalizeProfile(saved);
+    const days = (n.selectedDays || []).map((id) => {
+      const d = M.DAYS_OF_WEEK.find((x) => x.id === id);
+      return d ? d.short : id;
+    }).join(", ");
+    const macro = M.macrosFromWeightGoal(n.weightGoal);
+    const rows = [
+      ["Monthly grocery budget", "$" + n.budget],
+      ["Grocery orders", CADENCE_LABELS[n.cadence] || n.cadence],
+      ["Daily caloric goal", CAL_MODE_LABELS[n.calorieMode] || n.calorieMode],
+    ];
+    if (n.calorieMode === "help") {
+      rows.push(["Weight", n.weightLbs + " lbs"]);
+      rows.push(["Activity level", ACTIVITY_LABELS[n.activity] || n.activity]);
+    }
+    rows.push(["Daily calories", String(n.calories)]);
+    rows.push(["Weight goal", GOAL_LABELS[n.weightGoal] || "Maintain"]);
+    rows.push(["Macro targets", macro.p + "% p / " + macro.c + "% c / " + macro.f + "% f"]);
+    rows.push(["Meals per day", (M.MEAL_OPTIONS[n.mealOption] || {}).label || (n.meals + " meals")]);
+    rows.push(["Plan days", n.daysPerWeek + " days/week" + (days ? " (" + days + ")" : "")]);
+    return `<ul class="profile-summary" id="profileSummary">${rows.map((r) =>
+      `<li><span>${escHtml(r[0])}</span><span>${escHtml(r[1])}</span></li>`).join("")}</ul>`;
+  }
+
+  /** Copy current form values into the in-memory draft (no validation, no persistence). */
+  function syncProfileDraftFromForm(root) {
+    const d = profileDraft;
+    const val = (sel) => { const n = root.querySelector(sel); return n ? n.value : undefined; };
+    const radio = (name) => { const n = root.querySelector(`input[name="${name}"]:checked`); return n ? n.value : null; };
+    const b = val("#pf-budget"); if (b !== undefined) d.budget = b === "" ? "" : Number(b);
+    const cad = radio("pf-cadence"); if (cad) d.cadence = cad;
+    const mode = radio("pf-calorieMode"); if (mode) d.calorieMode = mode;
+    const cal = val("#pf-calories"); if (cal !== undefined) d.calories = cal === "" ? "" : Number(cal);
+    const wg = radio("pf-weightGoal"); if (wg) d.weightGoal = wg;
+    const wgSel = val("#pf-weightGoalSel"); if (wgSel !== undefined) d.weightGoal = wgSel || null;
+    const wl = val("#pf-weightLbs"); if (wl !== undefined) d.weightLbs = wl === "" ? null : Number(wl);
+    const act = val("#pf-activity"); if (act !== undefined) d.activity = act || null;
+    const meal = radio("pf-meals");
+    if (meal) {
+      d.mealOption = meal;
+      d.meals = M.MEAL_OPTIONS[meal].meals;
+      d.snacks = M.MEAL_OPTIONS[meal].snacks;
+    }
+    const dayBoxes = root.querySelectorAll('input[name="pf-day"]');
+    if (dayBoxes.length) {
+      d.selectedDays = Array.from(dayBoxes).filter((n) => n.checked).map((n) => n.value);
+      d.daysPerWeek = d.selectedDays.length;
+    }
+    if (d.calorieMode === "help" && d.weightLbs && d.weightGoal && d.activity) {
+      d.calories = M.estimateCalories(d.weightLbs, d.weightGoal, d.activity);
+    }
+  }
+
+  function renderProfile() {
+    const root = els.profile;
+    if (!hasCompletedProfile(state)) { setScreen("onboard"); return; }
+    if (!profileDraft) profileDraft = pickProfile(state.answers);
+    const d = profileDraft;
+    const dayChecks = M.DAYS_OF_WEEK.map((day) => {
+      const on = (d.selectedDays || []).indexOf(day.id) !== -1;
+      return `<label class="mp-option${on ? " selected" : ""}">
+        <input type="checkbox" name="pf-day" value="${day.id}" ${on ? "checked" : ""} />
+        <span>${day.label}</span>
+      </label>`;
+    }).join("");
+    const goalOptions = [
+      { value: "lose", label: "Lose" }, { value: "maintain", label: "Maintain" }, { value: "gain", label: "Gain" },
+    ];
+    let calorieFields;
+    if (d.calorieMode === "help") {
+      calorieFields = `
+        <label class="mp-label" for="pf-weightLbs">Weight (lbs)</label>
+        <input class="mp-input" id="pf-weightLbs" type="number" min="50" max="800" step="0.1" value="${escHtml(d.weightLbs ?? "")}" />
+        <label class="mp-label" for="pf-weightGoalSel">Weight goal</label>
+        <select class="mp-input" id="pf-weightGoalSel">
+          <option value="">Select…</option>
+          ${goalOptions.map((o) => `<option value="${o.value}" ${d.weightGoal === o.value ? "selected" : ""}>${o.label}</option>`).join("")}
+        </select>
+        <label class="mp-label" for="pf-activity">Activity level</label>
+        <select class="mp-input" id="pf-activity">
+          <option value="">Select…</option>
+          ${Object.keys(ACTIVITY_LABELS).map((k) => `<option value="${k}" ${d.activity === k ? "selected" : ""}>${ACTIVITY_LABELS[k]}</option>`).join("")}
+        </select>`;
+    } else {
+      calorieFields = `
+        <label class="mp-label" for="pf-calories">Daily caloric goal</label>
+        <input class="mp-input" id="pf-calories" type="number" min="800" max="10000" step="10" value="${escHtml(d.calories ?? 2000)}" />
+        <p class="mp-hint">Calories per day</p>
+        <label class="mp-label">Weight goal</label>
+        ${profileRadio("pf-weightGoal", goalOptions, d.weightGoal || "maintain")}`;
+    }
+    const savedAt = state.profileUpdatedAt
+      ? `Last saved ${new Date(state.profileUpdatedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`
+      : "";
+    root.innerHTML = `
+      <section class="panel profile-intro">
+        <img src="assets/icon-mark.png?v=leaf8" alt="" class="brand-mark" width="30" height="30" />
+        <div>
+          <h2 style="margin:0 0 4px">Your profile</h2>
+          <p class="panel-muted">Your questionnaire answers. Edit anything below, then tap <strong>Save profile</strong> at the bottom — nothing changes until you save. Saved changes apply only to meal plans you schedule from now on. ${escHtml(savedAt)}</p>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>Saved answers</h2>
+        ${profileSummaryHtml(state.answers)}
+      </section>
+      <form id="profileForm" novalidate>
+        <section class="panel profile-group" data-group="groceries">
+          <h2>Groceries &amp; budget</h2>
+          <label class="mp-label" for="pf-budget">Monthly grocery budget (USD)</label>
+          <input class="mp-input" id="pf-budget" type="number" min="1" step="1" placeholder="e.g. 400" value="${escHtml(d.budget ?? "")}" />
+          <p class="mp-hint">USD per month</p>
+          <label class="mp-label">How often do you prefer to order groceries?</label>
+          ${profileRadio("pf-cadence", Object.keys(CADENCE_LABELS).map((k) => ({ value: k, label: CADENCE_LABELS[k] })), d.cadence)}
+        </section>
+        <section class="panel profile-group" data-group="calories">
+          <h2>Calories &amp; goals</h2>
+          <label class="mp-label">What is your daily caloric goal?</label>
+          ${profileRadio("pf-calorieMode", [{ value: "known", label: CAL_MODE_LABELS.known }, { value: "help", label: CAL_MODE_LABELS.help }], d.calorieMode)}
+          ${calorieFields}
+          <p class="profile-derived" id="profileDerived">${derivedTargetsHtml(d)}</p>
+        </section>
+        <section class="panel profile-group" data-group="meals">
+          <h2>Meals &amp; days</h2>
+          <label class="mp-label">How many meals do you prefer per day?</label>
+          ${profileRadio("pf-meals", Object.keys(M.MEAL_OPTIONS).map((k) => ({ value: k, label: M.MEAL_OPTIONS[k].label })), d.mealOption)}
+          <label class="mp-label">Which days will you follow your plan?</label>
+          <div class="mp-options mp-days profile-days">${dayChecks}</div>
+        </section>
+        <p class="mp-error" id="profileError" hidden></p>
+        <div class="profile-actions">
+          <button type="submit" class="cta" id="saveProfile">Save profile</button>
+          <span class="profile-dirty" id="profileDirtyNote" ${profileDirty() ? "" : "hidden"}>Unsaved changes</span>
+        </div>
+      </form>`;
+
+    const form = root.querySelector("#profileForm");
+    const refresh = () => {
+      syncProfileDraftFromForm(root);
+      const derived = root.querySelector("#profileDerived");
+      if (derived) derived.innerHTML = derivedTargetsHtml(profileDraft);
+      root.querySelectorAll(".mp-option").forEach((row) => {
+        const inp = row.querySelector("input");
+        if (inp) row.classList.toggle("selected", inp.checked);
+      });
+      const note = root.querySelector("#profileDirtyNote");
+      if (note) note.hidden = !profileDirty();
+      const err = root.querySelector("#profileError");
+      if (err) err.hidden = true;
+    };
+    form.addEventListener("input", refresh);
+    form.addEventListener("change", (e) => {
+      if (e.target && e.target.name === "pf-calorieMode") {
+        syncProfileDraftFromForm(root);
+        renderProfile(); // conditional fields: known-calories vs help path
+        return;
+      }
+      refresh();
+    });
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveProfileDraft();
+    });
+  }
+
+  function saveProfileDraft() {
+    const root = els.profile;
+    syncProfileDraftFromForm(root);
+    const err = root.querySelector("#profileError");
+    const msg = validateProfile(profileDraft);
+    if (msg) {
+      if (err) { err.hidden = false; err.textContent = msg; }
+      return false;
+    }
+    const next = normalizeProfile(profileDraft);
+    if (sameProfile(next, state.answers)) {
+      profileDraft = pickProfile(state.answers);
+      renderProfile();
+      showNotice("No changes to save", "Your profile already matches what's saved.");
+      return false;
+    }
+    // Only the live profile changes. planBlocks (and their snapshots), plan,
+    // grocery list, coverage, inventory and order dates are left untouched.
+    state.answers = next;
+    state.profileUpdatedAt = new Date().toISOString();
+    saveState(state);
+    profileDraft = pickProfile(state.answers);
+    renderProfile();
+    showNotice("Profile saved 🌿", PROFILE_SAVED_MSG,
+      "Use Repeat, Pick new meals, or schedule ahead to grow plans with your updated profile.");
+    return true;
+  }
+
+  function showNotice(title, message, sub) {
+    const old = document.getElementById("ppNotice");
+    if (old) old.remove();
+    const wrap = document.createElement("div");
+    wrap.className = "pp-notice-backdrop";
+    wrap.id = "ppNotice";
+    wrap.innerHTML = `
+      <div class="pp-notice" role="dialog" aria-modal="true" aria-labelledby="ppNoticeTitle">
+        <img src="assets/icon-mark.png?v=leaf8" alt="" class="brand-mark" width="40" height="40" />
+        <h3 id="ppNoticeTitle">${escHtml(title)}</h3>
+        <p id="ppNoticeMsg">${escHtml(message)}</p>
+        ${sub ? `<p class="pp-notice-sub">${escHtml(sub)}</p>` : ""}
+        <button type="button" class="cta" id="ppNoticeOk">Got it</button>
+      </div>`;
+    const close = () => wrap.remove();
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) close(); });
+    wrap.querySelector("#ppNoticeOk").onclick = close;
+    document.body.appendChild(wrap);
+    try { wrap.querySelector("#ppNoticeOk").focus(); } catch (_) {}
+  }
+
+  window.addEventListener("beforeunload", (e) => {
+    if (screen === "profile" && profileDirty()) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
+
   document.getElementById("app-root").addEventListener("pureprep-goto", (e) => {
     const d = e.detail || {};
     if (d.save && d.plan) {
@@ -1568,7 +2140,11 @@
       const prevCovered = (state.groceryCoveredWeeks || []).slice();
       const prevOrderedAt = state.lastOrderedAt;
       const prevDepleted = state.lastDepletedDate;
-      const nWeeks = cadenceWeeks(state.answers && state.answers.cadence);
+      // Settings this plan was generated with: the live profile for new plans,
+      // or an existing week's own snapshot when updating that week.
+      const planProfile = pickProfile(d.answers) || pickProfile(state.answers);
+      const firstPlan = !hasCompletedProfile(state);
+      const nWeeks = cadenceWeeks(planProfile && planProfile.cadence);
       const newWeeks = buildWeekStarts(fromOffset, nWeeks);
       // Never overwrite planBlocks for weeks whose groceries are already ordered.
       const coveredSet = {};
@@ -1582,11 +2158,16 @@
       }
       const isAppend = fromOffset > 0 && ((state.planBlocks && state.planBlocks.length) || (state.scheduledWeeks && state.scheduledWeeks.length));
 
-      state.answers = d.answers || state.answers;
+      // Questionnaire runs once: its answers become the profile only on the first
+      // save. Later saves (Update / Pick new) never overwrite the profile.
+      if (firstPlan || !state.answers) {
+        state.answers = planProfile;
+        state.profileCompleted = true;
+      }
       state.plan = d.plan; // active/latest plan (grocery list & current confirm target)
       state.groceryList = d.plan.grocery || state.groceryList;
       state._pendingScheduleFromOffset = null;
-      upsertPlanBlock(state, writableWeeks, d.plan);
+      upsertPlanBlock(state, writableWeeks, d.plan, planProfile);
 
       if (isAppend) {
         // Pick-new / advance schedule: keep prior blocks, inventory, coverage, next order.
@@ -1616,20 +2197,17 @@
     setScreen(d.screen || "home");
   });
 
-  document.getElementById("app-root").addEventListener("onboarding-complete", (e) => {
-    // also handled via pureprep-goto from Save & close
-    const d = e.detail || {};
-    if (d.plan && d.save) {
-      state.plan = d.plan;
-      state.answers = d.answers;
-      state.groceryList = d.plan.grocery;
-      saveState(state);
-    }
+  document.getElementById("app-root").addEventListener("onboarding-complete", () => {
+    // Persistence is handled by pureprep-goto (Save & close) so the profile and
+    // already-scheduled weeks are never overwritten here.
   });
 
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => setScreen(btn.getAttribute("data-screen")));
   });
+
+  // Small navigation hook (used by scripts/ headless tests).
+  window.PurePrepApp = { go: (name, opts) => setScreen(name, opts), screen: () => screen };
 
   document.body.classList.add("app-mode");
   setScreen("home");
