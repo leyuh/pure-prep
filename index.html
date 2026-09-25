@@ -775,6 +775,24 @@
       flex-shrink: 0;
     }
     .brand-row .brand-mark { width: 32px; height: 32px; }
+    .site-footer {
+      margin-top: auto;
+      padding: 18px 8px 4px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .site-footer nav a { color: var(--accent-deep); text-decoration: none; font-weight: 600; }
+    .site-footer nav a:hover { text-decoration: underline; }
+    .site-footer p { margin: 3px 0 0; }
+    .mp-price-note {
+      margin: 8px 0 0;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.35;
+    }
   </style>
 </head>
 <body>
@@ -800,6 +818,11 @@
       </div>
     </div>
 
+    <footer class="site-footer">
+      <nav aria-label="Site"><a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="disclosure.html">Affiliate disclosure</a></nav>
+      <p>Pure Prep may earn a commission from Walmart links.</p>
+    </footer>
+
     <nav class="bottom-nav" aria-label="Main">
       <button type="button" class="nav-btn active" data-screen="home" title="Home">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg>
@@ -819,7 +842,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc22"></script>
+  <script src="onboarding.js?v=doc23"></script>
   <script>
 
 (function () {
@@ -1460,6 +1483,7 @@
       root.innerHTML = `<section class="panel"><h2>Suggested groceries</h2>
         <p class="panel-muted">Confirm once you've ordered these for your shopping window.</p>
         ${items || "<p class='panel-muted'>No items.</p>"}
+        ${items ? `<p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>` : ""}
         <button type="button" class="cta" id="confirmGroceries2">Confirm groceries ordered</button>
       </section>`;
       root.querySelector("#confirmGroceries2").onclick = () => { state = confirmGroceries(state); renderInventory(); };

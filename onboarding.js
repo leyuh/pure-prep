@@ -3282,6 +3282,7 @@
             ${budgetBadge}
             <span class="mp-badge ${g.overBudget ? "warn" : "ok"}">Monthly est. ×${g.monthlyFactor}</span>
           </div>
+          <p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>
         </div>
         <div class="mp-nav">
           <button type="button" class="mp-reroll" id="reroll">Reroll meals</button>

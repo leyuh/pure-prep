@@ -1,0 +1,92 @@
+/* Shared styles for About / Privacy / Affiliate disclosure pages.
+   Variables and fonts mirror :root in index.html. */
+:root {
+  --bg: #f4efe6;
+  --bg-deep: #ebe4d6;
+  --card: #fffaf2;
+  --paper: #fbf7ef;
+  --text: #2f3a2f;
+  --muted: #6b7564;
+  --accent: #5a7a52;
+  --accent-deep: #3f5a3a;
+  --sage: #c5d5bc;
+  --sage-soft: rgba(90, 122, 82, 0.12);
+  --moss: #6f8f64;
+  --border: #d9d0bd;
+  --shadow: 0 8px 24px rgba(70, 55, 35, 0.08);
+  --radius: 16px;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--text);
+  line-height: 1.6;
+  padding: 28px 20px;
+  background:
+    radial-gradient(ellipse 120% 80% at 10% -10%, rgba(197, 213, 188, 0.55), transparent 50%),
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(232, 200, 170, 0.35), transparent 45%),
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(180, 160, 120, 0.12), transparent 50%),
+    linear-gradient(165deg, #f7f2e8 0%, var(--bg) 40%, var(--bg-deep) 100%);
+  background-attachment: fixed;
+}
+.page {
+  width: min(720px, 100%);
+  margin: 0 auto;
+}
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  text-decoration: none;
+}
+.top-brand .brand-mark { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+.top-brand span {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--accent-deep);
+  letter-spacing: -0.02em;
+}
+.doc {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  padding: 28px 28px 22px;
+}
+.doc h1 {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--accent-deep);
+}
+.doc h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  margin: 22px 0 6px;
+  color: var(--accent-deep);
+}
+.doc p, .doc li { font-size: 0.95rem; }
+.doc ul { padding-left: 1.2em; }
+.doc .lede { color: var(--muted); margin: 0 0 12px; }
+.doc a { color: var(--accent-deep); }
+.back { display: inline-block; margin-top: 18px; font-weight: 650; color: var(--accent-deep); }
+.site-footer {
+  margin: 18px auto 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.site-footer nav a { color: var(--accent-deep); text-decoration: none; font-weight: 600; }
+.site-footer nav a:hover { text-decoration: underline; }
+.site-footer p { margin: 4px 0 0; }
+@media (max-width: 520px) {
+  .doc { padding: 22px 16px; border-radius: 18px; }
+}
