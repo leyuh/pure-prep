@@ -907,6 +907,94 @@
     .order-date strong { color: var(--accent-deep); font-size: 0.98rem; }
     .order-date.next { border-color: rgba(196, 120, 90, 0.45); background: rgba(196, 120, 90, 0.07); }
     .order-date.next span { color: var(--terracotta); }
+
+    /* Inventory: In stock + "I already have some of these items" (doc26) */
+    .in-stock-panel {
+      background: linear-gradient(135deg, rgba(197, 213, 188, 0.3), rgba(255, 250, 242, 0.95));
+      border-color: var(--sage);
+    }
+    .in-stock-panel h2 { display: flex; align-items: center; gap: 8px; }
+    .in-stock-panel h2 .leaf { font-size: 1rem; }
+    .in-stock-list { list-style: none; margin: 6px 0 0; padding: 0; }
+    .in-stock-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 4px 8px 12px;
+      margin-top: 6px;
+      border: 1px solid var(--sage);
+      border-radius: 12px;
+      background: var(--paper);
+      font-size: 0.92rem;
+    }
+    .in-stock-item .is-name { flex: 1; min-width: 0; color: var(--text); font-weight: 600; }
+    .in-stock-item .is-amt { color: var(--accent-deep); font-weight: 650; white-space: nowrap; font-size: 0.88rem; }
+    .in-stock-x {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--terracotta);
+      font-size: 1.15rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .in-stock-x:hover, .in-stock-x:focus-visible { background: var(--clay-soft); border-color: rgba(196, 120, 90, 0.35); outline: none; }
+    .grocery-row { align-items: center; flex-wrap: wrap; }
+    .grocery-row .gr-main { flex: 1; min-width: 0; }
+    .grocery-row .gr-price { white-space: nowrap; font-weight: 600; color: var(--accent-deep); }
+    .grocery-row .gr-was { text-decoration: line-through; opacity: 0.75; }
+    .grocery-row.reduced .gr-qty { color: var(--moss); font-weight: 600; }
+    .gr-have {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-basis: 100%;
+      margin-top: 0;
+      padding: 5px 10px;
+      border-radius: 12px;
+      background: var(--sage-soft);
+      font-size: 0.82rem;
+      color: var(--accent-deep);
+      font-weight: 600;
+    }
+    .gr-have input {
+      width: 88px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 16px; /* no iOS zoom on focus */
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+    .gr-have input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(90, 122, 82, 0.18); }
+    .gr-have .gr-unit { color: var(--muted); font-weight: 550; }
+    .grocery-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-weight: 650;
+      color: var(--accent-deep);
+    }
+    .grocery-total strong { font-size: 1.05rem; }
+    .grocery-covered-note { margin: 8px 0 0; font-size: 0.82rem; }
+    .grocery-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .grocery-actions .cta { margin-top: 0; }
+    .cta.secondary.active { background: var(--sage-soft); border-color: var(--accent); }
+    .inv-save-actions { justify-content: flex-start; }
+    .grocery-row[hidden], .gr-have[hidden], .in-stock-panel[hidden] { display: none !important; }
+    @media (max-width: 480px) {
+      .grocery-actions .cta { flex: 1 1 100%; justify-content: center; }
+      .inv-save-actions .cta { flex: 1 1 100%; justify-content: center; }
+    }
   </style>
 </head>
 <body>
@@ -957,7 +1045,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc25"></script>
+  <script src="onboarding.js?v=doc26"></script>
   <script>
 
 (function () {
@@ -970,7 +1058,11 @@
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
-      return Object.assign(defaultState(), JSON.parse(raw));
+      const st = Object.assign(defaultState(), JSON.parse(raw));
+      // One row per store product (older saves could hold hard_boiled_egg + egg, pb_tsp + pb_tbsp…).
+      st.inventory = M.canonicalizeInventory(st.inventory || []);
+      if (!Array.isArray(st.inStock)) st.inStock = [];
+      return st;
     } catch (_) {
       return defaultState();
     }
@@ -991,6 +1083,8 @@
       _pendingScheduleFromOffset: null,
       profileCompleted: false,
       profileUpdatedAt: null,
+      inStock: [], // [{ key, name, unit, qty }] saved "I already have" amounts for the next order
+      inStockUpdatedAt: null,
     };
   }
   function saveState(state) {
@@ -1316,13 +1410,7 @@
     const selected = (plan.selectedDays && plan.selectedDays.length ? plan.selectedDays : null) ||
       (st.answers && st.answers.selectedDays) || [];
     const days = selected.length || plan.daysPerWeek || 6;
-    const dailyNeed = {};
-    (plan.schedule || []).forEach((slot) => {
-      (slot.suggestion.ingredients || []).forEach((ing) => {
-        if (!ing._key || ing._note) return;
-        dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
-      });
-    });
+    const dailyNeed = M.dailyGroceryNeeds(plan.schedule); // canonical grocery keys (eggs = egg + hard boiled)
     const byKey = {};
     st.inventory.forEach((it) => { byKey[it.key] = it.qtyRemaining; });
     for (const key of Object.keys(dailyNeed)) {
@@ -1423,13 +1511,7 @@
       const selected = (weekPlan.selectedDays && weekPlan.selectedDays.length ? weekPlan.selectedDays : null) ||
         (weekProfile && weekProfile.selectedDays) || [];
       if (isPlanWeekday(selected, d)) {
-        const dailyNeed = {};
-        (weekPlan.schedule || []).forEach((slot) => {
-          (slot.suggestion.ingredients || []).forEach((ing) => {
-            if (!ing._key || ing._note) return;
-            dailyNeed[ing._key] = (dailyNeed[ing._key] || 0) + (ing._qty || 0);
-          });
-        });
+        const dailyNeed = M.dailyGroceryNeeds(weekPlan.schedule);
         state.inventory = state.inventory.map((item) => {
           const need = dailyNeed[item.key] || 0;
           if (need <= 0) return item;
@@ -1445,15 +1527,50 @@
     return state;
   }
 
+  /** { canonicalKey: qty } from saved/draft In stock rows. */
+  function stockMapFrom(rows) {
+    const map = {};
+    (rows || []).forEach((r) => {
+      const q = Number(r && r.qty) || 0;
+      if (!r || !r.key || q <= 0) return;
+      const k = M.groceryKey(r.key);
+      map[k] = Math.round(((map[k] || 0) + M.groceryQty(r.key, q)) * 1000) / 1000;
+    });
+    return map;
+  }
+
+  /** Suggested list for the next order, reduced by In stock amounts (rows default to saved state.inStock). */
+  function suggestedGrocery(st, stockRows) {
+    const base = (st.plan && st.plan.grocery) || st.groceryList;
+    if (!base) return null;
+    return M.applyStockToGrocery(base, stockMapFrom(stockRows || st.inStock));
+  }
+
   function confirmGroceries(state) {
-    const list = (state.plan && state.plan.grocery) || state.groceryList;
-    if (!list) return state;
+    const base = (state.plan && state.plan.grocery) || state.groceryList;
+    if (!base) return state;
+    // Order = suggested list minus saved In stock amounts (one line per product).
+    const stock = stockMapFrom(state.inStock);
+    const list = M.applyStockToGrocery(base, stock);
     const now = todayISO();
-    // Merge newly ordered qty onto leftover inventory (grocery list already subtracted on-hand).
+    // Merge newly ordered qty onto leftover inventory (grocery list already subtracted on-hand),
+    // plus what the user said they already had (In stock) — each counted exactly once.
     const byKey = {};
-    (state.inventory || []).forEach((it) => {
-      if (!it || !it.key) return;
+    M.canonicalizeInventory(state.inventory || []).forEach((it) => {
       byKey[it.key] = Object.assign({}, it);
+    });
+    Object.keys(stock).forEach((k) => {
+      const prevQty = byKey[k] ? Number(byKey[k].qtyRemaining) || 0 : 0;
+      const newQty = Math.round((prevQty + stock[k]) * 100) / 100;
+      const line = M.groceryLine(k, stock[k]);
+      byKey[k] = {
+        key: k,
+        name: (byKey[k] && byKey[k].name) || line.name,
+        unit: line.unit,
+        qtyRemaining: newQty,
+        qtyLabel: M.formatQty(newQty) + " " + line.unit,
+        initialQty: newQty,
+      };
     });
     (list.items || []).forEach((it) => {
       const prevQty = byKey[it.key] ? Number(byKey[it.key].qtyRemaining) || 0 : 0;
@@ -1469,7 +1586,12 @@
       };
     });
     state.inventory = Object.keys(byKey).map((k) => byKey[k]);
-    state.groceryList = list;
+    state.groceryList = Object.assign({}, list, {
+      inStockApplied: (state.inStock || []).map((r) => Object.assign({}, r)),
+    });
+    // In stock amounts are now part of inventory; clear them so they don't carry into the next order.
+    state.inStock = [];
+    state.inStockUpdatedAt = null;
     state.lastOrderedAt = now;
     state.groceriesConfirmed = true;
     // Cover only the weeks belonging to the plan being ordered (active block), union prior coverage.
@@ -1546,6 +1668,12 @@
       if (!leave) return false;
     }
     if (name !== "profile") profileDraft = null;
+    // Leaving Inventory with unsaved In stock edits: same pattern as Profile.
+    if (screen === "inventory" && name !== "inventory" && inStockDirty()) {
+      const leave = window.confirm("You have unsaved In stock changes. Leave without saving? Your changes will be discarded.");
+      if (!leave) return false;
+    }
+    if (name !== "inventory") { inStockDraft = null; groceryEditMode = false; }
     // Onboarding questionnaire runs once. Returning users edit answers on Profile.
     if (name === "onboard" && hasCompletedProfile(state) && !(opts && opts.startAt === "results")) {
       name = "home";
@@ -1809,17 +1937,7 @@
       return;
     }
     if (!state.groceriesConfirmed) {
-      const items = ((state.plan.grocery && state.plan.grocery.items) || []).map((it) =>
-        `<div class="inv-item"><span>${it.name}<br/><small class="panel-muted">buy ${it.qtyLabel}</small></span><span>$${it.lineTotal.toFixed(2)}</span></div>`
-      ).join("");
-      root.innerHTML = `<section class="panel"><h2>Suggested groceries</h2>
-        ${orderDatesHtml(state)}
-        <p class="panel-muted">Confirm once you've ordered these for your shopping window.</p>
-        ${items || "<p class='panel-muted'>No items.</p>"}
-        ${items ? `<p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>` : ""}
-        <button type="button" class="cta" id="confirmGroceries2">Confirm groceries ordered</button>
-      </section>`;
-      root.querySelector("#confirmGroceries2").onclick = () => { state = confirmGroceries(state); renderInventory(); };
+      renderSuggestedGroceries(root);
       return;
     }
     const rows = (state.inventory || []).map((it) => {
@@ -1832,6 +1950,205 @@
       <button type="button" class="cta secondary" id="reconfirm" style="margin-top:10px">Re-order / reset from grocery list</button>
     </section>`;
     root.querySelector("#reconfirm").onclick = () => { state = confirmGroceries(state); renderInventory(); };
+  }
+
+  /* ── Suggested groceries + In stock (doc26) ──
+   * inStockDraft is in-memory only; nothing persists until Save (Profile pattern).
+   * Confirming the order applies what's on screen. */
+  let inStockDraft = null;   // [{ key, name, unit, qty }] or null when untouched
+  let groceryEditMode = false;
+  const INSTOCK_SAVED_MSG = "Your In stock items are saved and the suggested grocery list has been trimmed to match.";
+
+  function cleanStockRows(rows) {
+    const map = stockMapFrom(rows);
+    return Object.keys(map).sort().map((k) => {
+      const line = M.groceryLine(k, map[k]);
+      const prev = (rows || []).find((r) => r && M.groceryKey(r.key) === k);
+      return { key: k, name: (prev && prev.name) || line.name, unit: line.unit, qty: map[k] };
+    });
+  }
+  function stockRowsKey(rows) {
+    return JSON.stringify(cleanStockRows(rows).map((r) => [r.key, r.qty]));
+  }
+  function currentStockRows() {
+    return inStockDraft || state.inStock || [];
+  }
+  function inStockDirty() {
+    if (!inStockDraft) return false;
+    return stockRowsKey(inStockDraft) !== stockRowsKey(state.inStock || []);
+  }
+  function setDraftStock(key, qty, name, unit) {
+    const rows = cleanStockRows(currentStockRows()).filter((r) => r.key !== key);
+    const q = Math.round((Number(qty) || 0) * 1000) / 1000;
+    if (q > 0) rows.push({ key, name, unit, qty: q });
+    inStockDraft = cleanStockRows(rows);
+  }
+  function money(n) { return "$" + (Number(n) || 0).toFixed(2); }
+  function qtyText(q, unit) { return M.formatQty(Number(q) || 0) + " " + M.displayUnit(unit, q); }
+
+  function inStockListHtml(rows) {
+    if (!rows.length) {
+      return `<p class="panel-muted" id="inStockEmpty">Nothing yet. Enter the amount you have next to any grocery below and it will show up here.</p>`;
+    }
+    return `<ul class="in-stock-list" id="inStockList">${rows.map((r) => `
+      <li class="in-stock-item" data-key="${escHtml(r.key)}">
+        <span class="is-name">${escHtml(r.name)}</span>
+        <span class="is-amt">${escHtml(qtyText(r.qty, r.unit))}</span>
+        <button type="button" class="in-stock-x" data-key="${escHtml(r.key)}" aria-label="Remove ${escHtml(r.name)} from In stock" title="Remove">✕</button>
+      </li>`).join("")}</ul>`;
+  }
+
+  function renderSuggestedGroceries(root) {
+    const base = M.normalizeGroceryList((state.plan && state.plan.grocery) || state.groceryList);
+    const baseItems = (base && base.items) || [];
+    const rowsHtml = baseItems.map((it) => {
+      const step = M.groceryUnitStep(it.key);
+      return `<div class="inv-item grocery-row" data-key="${escHtml(it.key)}">
+        <span class="gr-main">${escHtml(it.name)}<br/><small class="panel-muted gr-qty">buy ${escHtml(it.qtyLabel)}</small></span>
+        <span class="gr-price">${money(it.lineTotal)}</span>
+        <label class="gr-have" ${groceryEditMode ? "" : "hidden"}>
+          <span>I have</span>
+          <input type="number" class="gr-have-input" data-key="${escHtml(it.key)}" data-name="${escHtml(it.name)}" data-unit="${escHtml(it.unit)}"
+            min="0" step="${step}" inputmode="decimal" placeholder="0" aria-label="Amount of ${escHtml(it.name)} you already have (${escHtml(it.unit)})" />
+          <span class="gr-unit">${escHtml(M.displayUnit(it.unit, 2))}</span>
+        </label>
+      </div>`;
+    }).join("");
+    root.innerHTML = `
+      <section class="panel in-stock-panel" id="inStockPanel" hidden>
+        <h2><span class="leaf" aria-hidden="true">🌿</span>In stock</h2>
+        <p class="panel-muted" style="margin:0">Already in your kitchen — these amounts are taken off the suggested list below.</p>
+        <div id="inStockBody"></div>
+      </section>
+      <section class="panel"><h2>Suggested groceries</h2>
+        ${orderDatesHtml(state)}
+        <p class="panel-muted">Confirm once you've ordered these for your shopping window.</p>
+        <div id="groceryRows">${rowsHtml}</div>
+        <p class="panel-muted" id="groceryAllCovered" hidden>Everything on this list is already in stock. 🌱</p>
+        ${baseItems.length ? "" : "<p class='panel-muted'>No items.</p>"}
+        <p class="panel-muted grocery-covered-note" id="groceryCoveredNote" hidden></p>
+        ${baseItems.length ? `<div class="grocery-total" id="groceryTotalRow"><span>Estimated total</span><strong id="groceryTotal">${money(base.grandTotal)}</strong></div>
+        <p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>` : ""}
+        <div class="grocery-actions">
+          <button type="button" class="cta" id="confirmGroceries2">Confirm groceries ordered</button>
+          ${baseItems.length ? `<button type="button" class="cta secondary${groceryEditMode ? " active" : ""}" id="haveSomeBtn" aria-pressed="${groceryEditMode}">${groceryEditMode ? "Done adding what I have" : "I already have some of these items"}</button>` : ""}
+        </div>
+      </section>
+      <div class="profile-actions inv-save-actions">
+        <button type="button" class="cta" id="saveInStock">Save</button>
+        <span class="profile-dirty" id="inStockDirtyNote" hidden>Unsaved changes</span>
+      </div>`;
+
+    refreshGroceryViews(root);
+
+    root.querySelector("#confirmGroceries2").onclick = () => {
+      // Confirming the order uses the (reduced) list on screen, so apply any draft first.
+      if (inStockDraft) { state.inStock = cleanStockRows(inStockDraft); state.inStockUpdatedAt = new Date().toISOString(); }
+      inStockDraft = null;
+      groceryEditMode = false;
+      state = confirmGroceries(state);
+      renderInventory();
+    };
+    const haveBtn = root.querySelector("#haveSomeBtn");
+    if (haveBtn) haveBtn.onclick = () => {
+      groceryEditMode = !groceryEditMode;
+      renderSuggestedGroceries(root);
+      if (groceryEditMode) {
+        const first = root.querySelector(".grocery-row:not([hidden]) .gr-have-input");
+        if (first) try { first.focus({ preventScroll: true }); } catch (_) {}
+      }
+    };
+    root.querySelector("#saveInStock").onclick = saveInStockDraft;
+
+    // Live updates: debounce while typing, apply immediately on change/blur.
+    const timers = {};
+    const apply = (inp) => {
+      clearTimeout(timers[inp.dataset.key]);
+      const raw = String(inp.value).trim();
+      let v = raw === "" ? 0 : Number(raw);
+      if (!isFinite(v) || v < 0) v = 0;
+      const cur = stockMapFrom(currentStockRows())[inp.dataset.key] || 0;
+      if (Math.abs(cur - v) < 1e-9) return;
+      setDraftStock(inp.dataset.key, v, inp.dataset.name, inp.dataset.unit);
+      refreshGroceryViews(root);
+    };
+    root.querySelectorAll(".gr-have-input").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        clearTimeout(timers[inp.dataset.key]);
+        timers[inp.dataset.key] = setTimeout(() => apply(inp), 450);
+      });
+      inp.addEventListener("change", () => apply(inp));
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); apply(inp); } });
+    });
+    root.querySelector("#inStockPanel").addEventListener("click", (e) => {
+      const x = e.target.closest(".in-stock-x");
+      if (!x) return;
+      setDraftStock(x.dataset.key, 0);
+      refreshGroceryViews(root);
+    });
+  }
+
+  /** Update In stock, rows, total and dirty note in place (keeps focus in the input being typed in). */
+  function refreshGroceryViews(root) {
+    const rows = cleanStockRows(currentStockRows());
+    const adjusted = suggestedGrocery(state, rows);
+    const panel = root.querySelector("#inStockPanel");
+    if (panel) {
+      panel.hidden = !(rows.length || groceryEditMode);
+      root.querySelector("#inStockBody").innerHTML = inStockListHtml(rows);
+    }
+    const byKey = {};
+    ((adjusted && adjusted.items) || []).forEach((it) => { byKey[it.key] = it; });
+    const stock = stockMapFrom(rows);
+    let visible = 0;
+    root.querySelectorAll(".grocery-row").forEach((row) => {
+      const key = row.dataset.key;
+      const it = byKey[key];
+      row.hidden = !it;
+      if (!it) return;
+      visible += 1;
+      const reduced = it.originalQty != null && it.stockQty > 0;
+      row.classList.toggle("reduced", !!reduced);
+      row.querySelector(".gr-qty").innerHTML = reduced
+        ? `buy ${escHtml(it.qtyLabel)} <span class="gr-was">${escHtml(qtyText(it.originalQty, it.unit))}</span>`
+        : `buy ${escHtml(it.qtyLabel)}`;
+      row.querySelector(".gr-price").textContent = money(it.lineTotal);
+      const inp = row.querySelector(".gr-have-input");
+      if (inp && document.activeElement !== inp) inp.value = stock[key] ? String(stock[key]) : "";
+    });
+    const total = root.querySelector("#groceryTotal");
+    if (total && adjusted) total.textContent = money(adjusted.grandTotal);
+    const covered = (adjusted && adjusted.coveredByStock) || [];
+    const note = root.querySelector("#groceryCoveredNote");
+    if (note) {
+      note.hidden = !covered.length;
+      note.textContent = covered.length
+        ? covered.length + (covered.length === 1 ? " item is" : " items are") + " fully covered by what's in stock."
+        : "";
+    }
+    const allCovered = root.querySelector("#groceryAllCovered");
+    if (allCovered) allCovered.hidden = !(visible === 0 && root.querySelectorAll(".grocery-row").length > 0);
+    const dirty = root.querySelector("#inStockDirtyNote");
+    if (dirty) dirty.hidden = !inStockDirty();
+  }
+
+  function saveInStockDraft() {
+    const root = els.inventory;
+    // Flush a value still being typed (debounce) before saving.
+    root.querySelectorAll(".gr-have-input").forEach((inp) => inp.dispatchEvent(new Event("change")));
+    if (!inStockDirty()) {
+      inStockDraft = null;
+      refreshGroceryViews(root);
+      showNotice("No changes to save", "Your In stock list already matches what's saved.");
+      return false;
+    }
+    state.inStock = cleanStockRows(inStockDraft);
+    state.inStockUpdatedAt = new Date().toISOString();
+    saveState(state);
+    inStockDraft = null;
+    refreshGroceryViews(root);
+    showNotice("Saved 🌿", INSTOCK_SAVED_MSG);
+    return true;
   }
 
   function renderSchedule() {
@@ -2142,7 +2459,7 @@
   }
 
   window.addEventListener("beforeunload", (e) => {
-    if (screen === "profile" && profileDirty()) {
+    if ((screen === "profile" && profileDirty()) || (screen === "inventory" && inStockDirty())) {
       e.preventDefault();
       e.returnValue = "";
     }
@@ -2228,7 +2545,7 @@
   });
 
   // Small navigation hook (used by scripts/ headless tests).
-  window.PurePrepApp = { go: (name, opts) => setScreen(name, opts), screen: () => screen };
+  window.PurePrepApp = { go: (name, opts) => setScreen(name, opts), screen: () => screen, inStockDirty: () => inStockDirty() };
 
   document.body.classList.add("app-mode");
   setScreen("home");

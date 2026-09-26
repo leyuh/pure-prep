@@ -2099,6 +2099,91 @@
     return d; // weekly
   }
 
+  /**
+   * One grocery key per store product. Several FOOD keys are the same thing at
+   * the store (egg + hard_boiled_egg → "Large eggs"; pb_tsp + pb_tbsp →
+   * "Peanut butter"; chia/hemp/walnuts tsp + tbsp). Meals keep their own keys,
+   * but the grocery list, inventory, credit and depletion all aggregate on the
+   * canonical key. Derived from PRICE_CATALOG product names so a future catalog
+   * entry that shares a product can never produce a duplicate list line.
+   * factor converts one FOOD unit of the variant into the canonical unit
+   * (via package sizes, e.g. 96 tsp = 32 tbsp → 1 tsp = 1/3 tbsp).
+   */
+  function normalizeProductName(name) {
+    return String(name || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+  const GROCERY_CANON = (function () {
+    const byProduct = {};
+    Object.keys(PRICE_CATALOG).forEach((k) => {
+      if (!FOOD[k]) return;
+      const name = normalizeProductName(PRICE_CATALOG[k].product);
+      (byProduct[name] = byProduct[name] || []).push(k);
+    });
+    const map = {};
+    Object.keys(byProduct).forEach((name) => {
+      const keys = byProduct[name];
+      // Canonical: largest unit (smallest package count), then the plainest key ("egg").
+      const canon = keys.slice().sort((a, b) =>
+        PRICE_CATALOG[a].packageQty - PRICE_CATALOG[b].packageQty ||
+        a.length - b.length || (a < b ? -1 : a > b ? 1 : 0))[0];
+      keys.forEach((k) => {
+        map[k] = { key: canon, factor: PRICE_CATALOG[canon].packageQty / PRICE_CATALOG[k].packageQty };
+      });
+    });
+    return map;
+  })();
+
+  /** Canonical grocery/inventory key for a FOOD key. */
+  function groceryKey(key) {
+    return GROCERY_CANON[key] ? GROCERY_CANON[key].key : key;
+  }
+
+  /** Convert qty in `key`'s FOOD unit into its canonical grocery key's unit. */
+  function groceryQty(key, qty) {
+    const c = GROCERY_CANON[key];
+    return (Number(qty) || 0) * (c ? c.factor : 1);
+  }
+
+  /** Per-plan-day ingredient needs keyed by canonical grocery key. */
+  function dailyGroceryNeeds(schedule) {
+    const need = {};
+    (schedule || []).forEach((slot) => {
+      const ings = (slot && slot.suggestion && slot.suggestion.ingredients) || [];
+      ings.forEach((ing) => {
+        if (!ing || ing._note || !ing._key) return;
+        const k = groceryKey(ing._key);
+        need[k] = (need[k] || 0) + groceryQty(ing._key, ing._qty || 0);
+      });
+    });
+    return need;
+  }
+
+  /** Merge inventory rows onto canonical keys (migrates older saves: hard_boiled_egg → egg, pb_tsp → pb_tbsp…). */
+  function canonicalizeInventory(inv) {
+    const byKey = {};
+    const order = [];
+    (inv || []).forEach((it) => {
+      if (!it || !it.key) return;
+      const k = groceryKey(it.key);
+      const qty = groceryQty(it.key, Number(it.qtyRemaining) || 0);
+      const init = groceryQty(it.key, Number(it.initialQty) || 0);
+      if (!byKey[k]) {
+        const price = lookupPrice(k);
+        byKey[k] = Object.assign({}, it, {
+          key: k,
+          name: k === it.key ? it.name : price.product || it.name,
+          unit: FOOD[k] ? FOOD[k].unit : it.unit,
+          qtyRemaining: 0,
+          initialQty: 0,
+        });
+        order.push(k);
+      }
+      byKey[k].qtyRemaining = Math.round((byKey[k].qtyRemaining + qty) * 100) / 100;
+      byKey[k].initialQty = Math.round((byKey[k].initialQty + init) * 100) / 100;
+    });
+    return order.map((k) => byKey[k]);
+  }
+
   function roundBuyQty(key, qty) {
     const unit = FOOD[key] ? FOOD[key].unit : "unit";
     if (unit === "oz") return Math.ceil(qty);
@@ -2113,14 +2198,118 @@
     return Math.ceil(qty * 4) / 4;
   }
 
+  /** Input step for a grocery key's unit (matches roundBuyQty granularity). */
+  function groceryUnitStep(key) {
+    const unit = FOOD[key] ? FOOD[key].unit : "unit";
+    if (unit === "oz" || unit === "tsp" || unit === "medium" || unit === "egg" || unit === "white") return 1;
+    if (unit === "tbsp" || unit === "scoop") return 0.5;
+    return 0.25;
+  }
+
+  /** Display unit for a quantity ("12 eggs", "1 egg"; other units unchanged). */
+  function displayUnit(unit, qty) {
+    const plural = { egg: "eggs", white: "whites" };
+    return plural[unit] && Math.abs(Number(qty) - 1) > 1e-9 ? plural[unit] : unit;
+  }
+
   function formatBuyQty(key, qty) {
     const unit = FOOD[key] ? FOOD[key].unit : "unit";
-    return formatQty(qty) + " " + unit;
+    return formatQty(qty) + " " + displayUnit(unit, qty);
+  }
+
+  /** One priced grocery line for `rawQty` (canonical key units); package-friendly pricing. */
+  function groceryLine(key, rawQty) {
+    const buyQty = roundBuyQty(key, rawQty);
+    const price = lookupPrice(key);
+    // Package-friendly: buy enough packages to cover buyQty
+    const packagesNeeded = Math.max(1, Math.ceil(buyQty / price.packageQty - 1e-9));
+    const lineTotal = Math.round(packagesNeeded * price.packagePrice * 100) / 100;
+    const unitPrice = Math.round(price.unitPrice * 1000) / 1000;
+    return {
+      key,
+      name: price.product || (FOOD[key] ? FOOD[key].name : key),
+      foodName: FOOD[key] ? FOOD[key].name : key,
+      qty: buyQty,
+      qtyLabel: formatBuyQty(key, buyQty),
+      unit: FOOD[key] ? FOOD[key].unit : "unit",
+      unitPrice,
+      packagePrice: price.packagePrice,
+      packageQty: price.packageQty,
+      packages: packagesNeeded,
+      lineTotal,
+      estimated: true,
+    };
+  }
+
+  function groceryTotals(grocery, items) {
+    const grandTotal = Math.round(items.reduce((a, it) => a + (Number(it.lineTotal) || 0), 0) * 100) / 100;
+    const factor = Number(grocery && grocery.monthlyFactor) ||
+      (grocery && grocery.cadence === "weekly" ? 4.3 : grocery && grocery.cadence === "every_other_week" ? 2.15 : 1);
+    const monthlyEstimate = Math.round(grandTotal * factor * 100) / 100;
+    const budget = Number(grocery && grocery.budget) || 0;
+    return { grandTotal, monthlyEstimate, overBudget: budget > 0 && monthlyEstimate > budget };
+  }
+
+  /**
+   * Merge any lines that share a canonical key (older saved plans could list
+   * "Large eggs" twice). Returns a new grocery object; input is not mutated.
+   */
+  function normalizeGroceryList(grocery) {
+    if (!grocery || !Array.isArray(grocery.items)) return grocery;
+    const qty = {};
+    const counts = {};
+    const firstItem = {};
+    grocery.items.forEach((it) => {
+      if (!it || !it.key) return;
+      const k = groceryKey(it.key);
+      qty[k] = (qty[k] || 0) + groceryQty(it.key, Number(it.qty) || 0);
+      counts[k] = (counts[k] || 0) + 1;
+      if (!firstItem[k]) firstItem[k] = it;
+    });
+    const keys = Object.keys(qty).sort();
+    const items = keys.map((k) =>
+      counts[k] === 1 && firstItem[k].key === k ? firstItem[k] : groceryLine(k, qty[k]));
+    return Object.assign({}, grocery, { items }, groceryTotals(grocery, items));
+  }
+
+  /**
+   * Suggested list after "I already have some of these items".
+   * stock: { canonicalKey: qtyOnHand }. Items fully covered are dropped (and
+   * listed in coveredByStock); partial stock re-prices the remainder with the
+   * same package logic. Returns a new grocery object.
+   */
+  function applyStockToGrocery(grocery, stock) {
+    const base = normalizeGroceryList(grocery);
+    if (!base || !Array.isArray(base.items)) return base;
+    const have = {};
+    Object.keys(stock || {}).forEach((k) => {
+      const gk = groceryKey(k);
+      have[gk] = (have[gk] || 0) + groceryQty(k, Number(stock[k]) || 0);
+    });
+    const items = [];
+    const coveredByStock = [];
+    base.items.forEach((it) => {
+      const h = have[it.key] || 0;
+      if (h <= 1e-9) { items.push(it); return; }
+      const remaining = (Number(it.qty) || 0) - h;
+      if (remaining <= 1e-9) {
+        coveredByStock.push(Object.assign({}, it, { originalQty: it.qty, stockQty: h }));
+        return;
+      }
+      const line = groceryLine(it.key, remaining);
+      line.name = it.name || line.name;
+      line.originalQty = it.qty;
+      line.originalLineTotal = it.lineTotal;
+      line.stockQty = h;
+      items.push(line);
+    });
+    return Object.assign({}, base, { items, coveredByStock }, groceryTotals(base, items));
   }
 
   /**
    * Grocery list for shopping window = cadence × days/week.
    * Uses lookupPrice() (Walmart-style estimates; API-ready).
+   * Aggregates on canonical grocery keys so each product appears once.
    */
   function buildGroceryList(schedule, answers, tierOverride) {
     const daysPerWeek =
@@ -2133,8 +2322,9 @@
     for (const slot of schedule) {
       for (const ing of slot.suggestion.ingredients) {
         if (ing._note || !ing._key || !FOOD[ing._key]) continue;
-        if (!agg[ing._key]) agg[ing._key] = 0;
-        agg[ing._key] += (ing._qty || 0) * planDays;
+        const k = groceryKey(ing._key);
+        if (!agg[k]) agg[k] = 0;
+        agg[k] += groceryQty(ing._key, ing._qty || 0) * planDays;
       }
     }
 
@@ -2143,7 +2333,8 @@
     const inv = (answers && answers._inventory) || [];
     inv.forEach((it) => {
       if (!it || !it.key) return;
-      onHand[it.key] = (onHand[it.key] || 0) + (Number(it.qtyRemaining) || 0);
+      const k = groceryKey(it.key);
+      onHand[k] = (onHand[k] || 0) + groceryQty(it.key, Number(it.qtyRemaining) || 0);
     });
     let creditedKeys = 0;
 
@@ -2157,27 +2348,9 @@
         const rawQty = Math.max(0, need - credit);
         if (credit > 0 && rawQty < need - 1e-9) creditedKeys += 1;
         if (rawQty <= 1e-9) return; // fully covered by leftovers
-        const buyQty = roundBuyQty(key, rawQty);
-        const price = lookupPrice(key);
-        // Package-friendly: buy enough packages to cover buyQty
-        const packagesNeeded = Math.max(1, Math.ceil(buyQty / price.packageQty));
-        const lineTotal = Math.round(packagesNeeded * price.packagePrice * 100) / 100;
-        const unitPrice = Math.round(price.unitPrice * 1000) / 1000;
-        grandTotal += lineTotal;
-        items.push({
-          key,
-          name: price.product || FOOD[key].name,
-          foodName: FOOD[key].name,
-          qty: buyQty,
-          qtyLabel: formatBuyQty(key, buyQty),
-          unit: FOOD[key].unit,
-          unitPrice,
-          packagePrice: price.packagePrice,
-          packageQty: price.packageQty,
-          packages: packagesNeeded,
-          lineTotal,
-          estimated: true,
-        });
+        const line = groceryLine(key, rawQty);
+        grandTotal += line.lineTotal;
+        items.push(line);
       });
 
     grandTotal = Math.round(grandTotal * 100) / 100;
@@ -3430,6 +3603,17 @@
     finalizeSuggestion,
     macroPieHtml,
     buildGroceryList,
+    groceryKey,
+    groceryQty,
+    groceryLine,
+    groceryUnitStep,
+    dailyGroceryNeeds,
+    canonicalizeInventory,
+    normalizeGroceryList,
+    applyStockToGrocery,
+    roundBuyQty,
+    formatQty,
+    displayUnit,
     shoppingPlanDays,
     budgetTier,
     rerollSlot,
