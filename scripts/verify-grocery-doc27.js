@@ -1,20 +1,22 @@
 /**
+ * doc27 (was verify-grocery-doc26): In stock edits are drafts until Save.
  * doc26 grocery list (headless, real index.html + onboarding.js):
  *  - No duplicate products on the suggested grocery list across many generated
  *    plans (eggs: egg + hard_boiled_egg; peanut butter/chia/hemp/walnuts tsp + tbsp),
  *    and older saved lists with duplicate lines are merged on display.
  *  - Inventory: "I already have some of these items" beside "Confirm groceries ordered";
  *    toggles a number input (unit, min 0, step) on every item.
- *  - Entering an amount adds it to "In stock" at the top; partial stock reduces the
- *    line (qty + package price), excess removes it; total updates live.
- *  - X on an In stock item restores the suggested amount.
+ *  - Typing an amount (or ✕ on an In stock item) is only a draft: list amounts, prices,
+ *    total and the In stock card do not change until Save.
+ *  - Save: amounts go to "In stock" at the top; partial stock reduces the line
+ *    (qty + package price), excess removes it; total updates. ✕ + Save restores.
  *  - Save persists (reload keeps In stock + reduced list); nothing persists before Save;
  *    leaving the tab / page with unsaved edits asks for confirmation.
  *  - Confirm groceries ordered orders the reduced amounts; inventory = in stock + ordered;
  *    In stock is cleared afterwards.
- *  - Cache-bust ?v=doc26, favicon ?v=leaf8.
+ *  - Cache-bust ?v=doc27, favicon ?v=leaf8.
  * Optional: SHOTS_DIR=/path saves screenshots. BASE_URL=https://… runs against a live site.
- * Run: node scripts/verify-grocery-doc26.js
+ * Run: node scripts/verify-grocery-doc27.js
  */
 "use strict";
 const path = require("path");
@@ -75,7 +77,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc26", "onboarding.js?v=doc26");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc27", "onboarding.js?v=doc27");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
 
@@ -236,89 +238,109 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   const rowHidden = (k) => page.$eval(`#groceryRows .grocery-row[data-key="${k}"]`, (r) => r.hidden);
   const stockKeys = () => page.$$eval("#inStockList .in-stock-item", (ns) => ns.map((n) => n.dataset.key));
 
-  console.log("5) Partial stock reduces the amount (live while typing)");
+  const pending = (k) => page.$eval(`.gr-have-input[data-key="${k}"]`, (i) => ({ value: i.value, pending: i.classList.contains("pending") }));
+  const totalNow = async () => money(await page.textContent("#groceryTotal"));
+  const savedStock = async () => { const m = {}; ((await getState()).inStock || []).forEach((r) => { m[r.key] = r.qty; }); return m; };
+  const expectA = await page.evaluate(([k, q]) => window.MealPlanOnboarding.groceryLine(k, q), [A.key, A.qty - 2]);
   const haveA = 2;
+  const haveB = Math.ceil(B.qty) + 3;
+  const qtyA0 = (await rowQty(A.key)).trim();
+
+  console.log("5) Typing is a draft: list, prices, total and In stock do NOT change before Save");
   await page.fill(`.gr-have-input[data-key="${A.key}"]`, String(haveA));
-  await page.waitForFunction((k) => !!document.querySelector(`#inStockList .in-stock-item[data-key="${k}"]`), A.key, { timeout: 3000 });
-  const expectA = await page.evaluate(([k, q]) => window.MealPlanOnboarding.groceryLine(k, q), [A.key, A.qty - haveA]);
+  await page.waitForTimeout(900); // longer than the old doc26 debounce
+  check((await rowQty(A.key)).trim() === qtyA0 && money(await rowPrice(A.key)) === A.lineTotal, "partial draft: " + A.name + " still '" + qtyA0 + "' at $" + A.lineTotal);
+  check(await totalNow() === total0, "total unchanged ($" + total0 + ")");
+  check((await stockKeys()).length === 0 && !!(await page.$("#inStockEmpty")), "In stock card not updated before Save");
+  const pa = await pending(A.key);
+  check(pa.value === String(haveA) && pa.pending, "input keeps typed draft value (" + pa.value + ") with pending style");
+  check(await page.isVisible("#groceryPendingNote") && await page.isVisible("#inStockDirtyNote"), "'Unsaved changes — tap Save' hints shown");
+  await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
+  await page.press(`.gr-have-input[data-key="${B.key}"]`, "Tab");
+  check(!(await rowHidden(B.key)) && money(await rowPrice(B.key)) === B.lineTotal && await totalNow() === total0, "excess draft: " + B.name + " still listed, total unchanged");
+  check(!Object.keys(await savedStock()).length, "nothing persisted before Save");
+  await shot("doc27-draft-local.png", false);
+
+  console.log("6) Save applies: partial reduces, excess removes, In stock card fills");
+  await page.click("#saveInStock");
+  await page.waitForSelector("#ppNotice");
+  check(/Saved/.test(await page.textContent("#ppNoticeTitle")), "'Saved' notice after Save");
+  await closeNotice();
   const qtyA = await rowQty(A.key);
-  check(!(await rowHidden(A.key)) && qtyA.includes("buy " + expectA.qtyLabel), "partial: row stays, now '" + qtyA.trim() + "' (was " + A.qty + ")");
+  check(!(await rowHidden(A.key)) && qtyA.includes("buy " + expectA.qtyLabel), "partial: now '" + qtyA.trim() + "' (was " + A.qty + ")");
   check(money(await rowPrice(A.key)) === expectA.lineTotal, "partial: price re-computed with package logic ($" + expectA.lineTotal + ")");
+  check(await rowHidden(B.key), "excess: " + B.name + " removed from the list");
+  const total2 = await totalNow();
+  const total1 = Math.round((total0 - A.lineTotal + expectA.lineTotal) * 100) / 100;
+  check(Math.abs(total2 - (total1 - B.lineTotal)) < 0.011, "total updated on Save ($" + total0 + " → $" + total2 + ")");
   const isA = await page.textContent(`#inStockList .in-stock-item[data-key="${A.key}"]`);
   check(isA.includes(A.name) && (isA.includes(haveA + " " + A.unit) || isA.includes(haveA + " " + plural[A.unit])) && !!(await page.$(`#inStockList .in-stock-x[data-key="${A.key}"]`)), "In stock shows name, amount + unit and an X");
-  const total1 = money(await page.textContent("#groceryTotal"));
-  check(Math.abs(total1 - (total0 - A.lineTotal + expectA.lineTotal)) < 0.011, "total updated ($" + total0 + " → $" + total1 + ")");
+  check(JSON.stringify((await stockKeys()).sort()) === JSON.stringify([A.key, B.key].sort()), "In stock lists both items");
+  const sv = await savedStock();
+  check(sv[A.key] === haveA && sv[B.key] === haveB && Object.keys(sv).length === 2, "localStorage inStock = " + JSON.stringify(sv));
+  check(await page.isHidden("#groceryPendingNote") && await page.isHidden("#inStockDirtyNote") && !(await pending(A.key)).pending, "hints cleared after Save");
+  await shot("doc27-saved-local.png", false);
 
-  console.log("6) Excess stock removes the item");
-  const haveB = Math.ceil(B.qty) + 3;
-  await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
-  await page.press(`.gr-have-input[data-key="${B.key}"]`, "Tab");
-  check(await rowHidden(B.key), "excess: " + B.name + " removed from suggested list");
-  check((await stockKeys()).indexOf(B.key) !== -1, "excess: " + B.name + " in In stock");
-  const total2 = money(await page.textContent("#groceryTotal"));
-  check(Math.abs(total2 - (total1 - B.lineTotal)) < 0.011, "total drops by the removed line ($" + total2 + ")");
-  check(await page.isVisible("#inStockDirtyNote"), "'Unsaved changes' shown");
-  check(!((await getState()).inStock || []).length, "nothing persisted before Save");
-  await shot("doc26-edit-local.png", false);
-
-  console.log("7) X restores the suggested amount");
+  console.log("7) ✕ is a draft too: marks 'Removes on Save' (Undo), list changes only on Save");
   await page.click(`#inStockList .in-stock-x[data-key="${B.key}"]`);
-  check(!(await rowHidden(B.key)) && (await stockKeys()).indexOf(B.key) === -1, "X: " + B.name + " back on list, gone from In stock");
-  check(money(await rowPrice(B.key)) === B.lineTotal && (await rowQty(B.key)).trim().startsWith("buy ") && !(await rowQty(B.key)).includes("gr-was"), "X: original amount/price restored");
-  check(await page.$eval(`.gr-have-input[data-key="${B.key}"]`, (i) => i.value === ""), "X: input cleared");
-  check(Math.abs(money(await page.textContent("#groceryTotal")) - total1) < 0.011, "X: total restored");
-  await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
-  await page.press(`.gr-have-input[data-key="${B.key}"]`, "Tab");
+  const liB = `#inStockList .in-stock-item[data-key="${B.key}"]`;
+  check(await page.$eval(liB, (n) => n.classList.contains("pending-remove")) && /Removes on Save/.test(await page.textContent(liB)) && !!(await page.$(`${liB} .in-stock-undo`)),
+    "✕: item stays in card, struck through, 'Removes on Save' + Undo");
+  check(await rowHidden(B.key) && Math.abs(await totalNow() - total2) < 0.011, "✕: list and total unchanged before Save");
+  check(await page.isVisible("#inStockDirtyNote"), "✕: unsaved changes shown");
+  await page.click(`${liB} .in-stock-undo`);
+  check(!(await page.$eval(liB, (n) => n.classList.contains("pending-remove"))) && await page.isHidden("#inStockDirtyNote"), "Undo: back to saved state, nothing pending");
+  await page.click(`#inStockList .in-stock-x[data-key="${B.key}"]`);
+  await page.click("#saveInStock"); await page.waitForSelector("#ppNotice"); await closeNotice();
+  check(!(await rowHidden(B.key)) && money(await rowPrice(B.key)) === B.lineTotal && !(await rowQty(B.key)).includes(" was "), "Save after ✕: " + B.name + " back on list at original amount/price");
+  check((await stockKeys()).indexOf(B.key) === -1 && Math.abs(await totalNow() - total1) < 0.011, "Save after ✕: gone from In stock, total restored ($" + total1 + ")");
+  check(Object.keys(await savedStock()).join() === A.key, "Save after ✕: localStorage only " + A.key);
+  check((await pending(B.key)).value === "", "input for removed item cleared");
 
-  console.log("8) Unsaved-leave prompts");
+  console.log("8) Unsaved-leave prompts keep draft inputs");
+  await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
   dialogMode = "dismiss"; dialogs.length = 0;
   await nav("home");
   check(dialogs.some((d) => d.type === "confirm" && /unsaved In stock/i.test(d.message)), "leaving the tab asks for confirmation");
-  check(await page.evaluate(() => window.PurePrepApp.screen()) === "inventory" && !(await rowHidden(A.key)) && await rowHidden(B.key), "Cancel keeps you on Inventory with edits intact");
-  // beforeunload (reload / close with unsaved edits)
-  check(await page.evaluate(() => {
-    const e = new Event("beforeunload", { cancelable: true });
-    window.dispatchEvent(e);
-    return e.defaultPrevented;
-  }), "beforeunload is blocked while edits are unsaved");
+  check(await page.evaluate(() => window.PurePrepApp.screen()) === "inventory" && (await pending(B.key)).value === String(haveB) && !(await rowHidden(B.key)),
+    "Cancel keeps Inventory, the typed draft, and the unchanged list");
+  check(await page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return e.defaultPrevented; }),
+    "beforeunload is blocked while drafts are unsaved");
   dialogMode = "accept";
 
   console.log("9) Save persists across reload");
-  await page.click("#saveInStock");
-  await page.waitForSelector("#ppNotice");
-  check(/Saved/.test(await page.textContent("#ppNoticeTitle")), "brief confirmation after saving: " + (await page.textContent("#ppNoticeTitle")).trim());
-  await closeNotice();
-  check(await page.isHidden("#inStockDirtyNote"), "dirty note cleared");
-  const stSaved = await getState();
-  const savedMap = {}; (stSaved.inStock || []).forEach((r) => { savedMap[r.key] = r.qty; });
-  check(savedMap[A.key] === haveA && savedMap[B.key] === haveB && Object.keys(savedMap).length === 2, "localStorage inStock = " + JSON.stringify(savedMap));
-  check(await page.evaluate(() => {
-    const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return !e.defaultPrevented;
-  }), "no beforeunload prompt after saving");
+  await page.click("#saveInStock"); await page.waitForSelector("#ppNotice"); await closeNotice();
+  check(await page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return !e.defaultPrevented; }), "no beforeunload prompt after saving");
   await page.reload();
   await nav("inventory");
-  check(await page.isVisible("#inStockPanel") && JSON.stringify((await stockKeys()).sort()) === JSON.stringify([A.key, B.key].sort()), "after reload: In stock lists both items");
+  check(JSON.stringify((await stockKeys()).sort()) === JSON.stringify([A.key, B.key].sort()), "after reload: In stock lists both items");
   check((await rowQty(A.key)).includes("buy " + expectA.qtyLabel) && await rowHidden(B.key), "after reload: reduced list (A reduced, B removed)");
-  check(Math.abs(money(await page.textContent("#groceryTotal")) - total2) < 0.011, "after reload: total $" + total2);
-  check(await page.isHidden(".gr-have"), "after reload: edit mode off (inputs hidden) until toggled");
-  await shot("doc26-inventory-local.png", false);
+  check(Math.abs(await totalNow() - total2) < 0.011, "after reload: total $" + total2);
+  check(await page.isHidden(".gr-have"), "after reload: edit mode off until toggled");
 
-  console.log("10) Discarding: leave + accept drops unsaved edits");
+  console.log("10) Leave + accept discards drafts");
   await page.click("#haveSomeBtn");
   await page.click(`#inStockList .in-stock-x[data-key="${A.key}"]`);
   dialogs.length = 0;
   await nav("home");
   check(dialogs.some((d) => d.type === "confirm"), "confirm shown");
   await nav("inventory");
-  check((await stockKeys()).indexOf(A.key) !== -1, "unsaved removal discarded; saved In stock intact");
+  check((await stockKeys()).indexOf(A.key) !== -1 && !(await page.$(".in-stock-item.pending-remove")), "pending removal discarded; saved In stock intact");
 
-  console.log("11) Confirm groceries ordered uses reduced amounts");
+  console.log("11) Confirm groceries ordered: orders the list on screen (saved amounts)");
+  await page.click("#haveSomeBtn");
+  await page.fill(`.gr-have-input[data-key="${A.key}"]`, String(haveA + 3)); // unsaved draft
+  dialogMode = "dismiss"; dialogs.length = 0;
+  await page.click("#confirmGroceries2");
+  check(dialogs.some((d) => d.type === "confirm" && /unsaved In stock/i.test(d.message)), "unsaved drafts: asks before confirming");
+  check(!(await getState()).groceriesConfirmed && !!(await page.$("#confirmGroceries2")), "Cancel: nothing ordered, still on the suggested list");
+  dialogMode = "accept";
   const stBefore = await getState();
   const invBefore = {}; (stBefore.inventory || []).forEach((i) => { invBefore[i.key] = i.qtyRemaining; });
   await page.click("#confirmGroceries2");
   const st2 = await getState();
   const ordered = {}; (st2.groceryList.items || []).forEach((i) => { ordered[i.key] = i.qty; });
-  check(ordered[A.key] === expectA.qty, "ordered " + A.key + " = " + ordered[A.key] + " (reduced from " + A.qty + ")");
+  check(ordered[A.key] === expectA.qty, "ordered " + A.key + " = " + ordered[A.key] + " (saved reduction; unsaved draft discarded)");
   check(!(B.key in ordered), "ordered list omits fully-stocked " + B.key);
   const inv = {}; (st2.inventory || []).forEach((i) => { inv[i.key] = i.qtyRemaining; });
   check(Math.abs(inv[A.key] - ((invBefore[A.key] || 0) + haveA + expectA.qty)) < 1e-6, "inventory " + A.key + " = in stock + ordered (" + inv[A.key] + ")");
@@ -348,6 +370,6 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join(" | ") : ""));
   await browser.close();
   srv.close();
-  if (failures) { console.log("verify-grocery-doc26: " + failures + " FAILED"); process.exit(1); }
-  console.log("verify-grocery-doc26: OK");
+  if (failures) { console.log("verify-grocery-doc27: " + failures + " FAILED"); process.exit(1); }
+  console.log("verify-grocery-doc27: OK");
 })().catch((e) => { console.error(e); process.exit(1); });
