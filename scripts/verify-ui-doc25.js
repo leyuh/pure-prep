@@ -63,7 +63,7 @@ function check(cond, msg) {
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc27", "onboarding.js?v=doc27 (cache-bust bumped in doc27)");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc28", "onboarding.js?v=doc28 (cache-bust bumped in doc28)");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
 

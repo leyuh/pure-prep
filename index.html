@@ -989,11 +989,11 @@
     .grocery-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
     .grocery-actions .cta { margin-top: 0; }
     .cta.secondary.active { background: var(--sage-soft); border-color: var(--accent); }
-    .inv-save-actions { justify-content: flex-start; }
     .grocery-row[hidden], .gr-have[hidden], .in-stock-panel[hidden] { display: none !important; }
     /* doc27: drafts apply on Save */
     .gr-have input.pending { border-color: var(--terracotta); background: #fff8f3; box-shadow: 0 0 0 3px rgba(196, 120, 90, 0.14); }
     .grocery-pending-note[hidden] { display: none !important; }
+    #haveSomeBtn.save-mode { box-shadow: 0 0 0 3px rgba(90, 122, 82, 0.18), var(--shadow-soft); }
     .grocery-pending-note {
       margin: 0 0 8px;
       padding: 8px 12px;
@@ -1031,7 +1031,6 @@
     }
     @media (max-width: 480px) {
       .grocery-actions .cta { flex: 1 1 100%; justify-content: center; }
-      .inv-save-actions .cta { flex: 1 1 100%; justify-content: center; }
     }
   </style>
 </head>
@@ -1083,7 +1082,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc27"></script>
+  <script src="onboarding.js?v=doc28"></script>
   <script>
 
 (function () {
@@ -2076,7 +2075,7 @@
       <section class="panel"><h2>Suggested groceries</h2>
         ${orderDatesHtml(state)}
         <p class="panel-muted">Confirm once you've ordered these for your shopping window.</p>
-        <p class="grocery-pending-note" id="groceryPendingNote" hidden>Unsaved changes — tap <strong>Save</strong> at the bottom to update this list and your In stock items.</p>
+        <p class="grocery-pending-note" id="groceryPendingNote" hidden>Unsaved changes — tap <strong>Save what I have</strong> (next to Confirm groceries ordered) to update this list and your In stock items.</p>
         <div id="groceryRows">${rowsHtml}</div>
         <p class="panel-muted" id="groceryAllCovered" hidden>Everything on this list is already in stock. 🌱</p>
         ${baseItems.length ? "" : "<p class='panel-muted'>No items.</p>"}
@@ -2085,13 +2084,10 @@
         <p class="mp-price-note">Prices are estimates; the price on Walmart.com governs.</p>` : ""}
         <div class="grocery-actions">
           <button type="button" class="cta" id="confirmGroceries2">Confirm groceries ordered</button>
-          ${baseItems.length ? `<button type="button" class="cta secondary${groceryEditMode ? " active" : ""}" id="haveSomeBtn" aria-pressed="${groceryEditMode}">${groceryEditMode ? "Done adding what I have" : "I already have some of these items"}</button>` : ""}
+          ${baseItems.length ? `<button type="button" class="cta secondary" id="haveSomeBtn" data-mode="open" aria-pressed="false">I already have some of these items</button>` : ""}
         </div>
       </section>
-      <div class="profile-actions inv-save-actions">
-        <button type="button" class="cta" id="saveInStock">Save</button>
-        <span class="profile-dirty" id="inStockDirtyNote" hidden>Unsaved changes</span>
-      </div>`;
+`;
 
     refreshGroceryViews(root);
 
@@ -2107,8 +2103,12 @@
       state = confirmGroceries(state);
       renderInventory();
     };
+    // One button: open edit mode → "Done" (no changes) → "Save what I have" (unsaved drafts).
     const haveBtn = root.querySelector("#haveSomeBtn");
     if (haveBtn) haveBtn.onclick = () => {
+      flushHaveInputs(root);
+      if (inStockDirty()) { saveInStockDraft(); return; }
+      inStockDraft = null;
       groceryEditMode = !groceryEditMode;
       renderSuggestedGroceries(root);
       if (groceryEditMode) {
@@ -2116,7 +2116,6 @@
         if (first) try { first.focus({ preventScroll: true }); } catch (_) {}
       }
     };
-    root.querySelector("#saveInStock").onclick = saveInStockDraft;
 
     // Typing only updates the draft (and the pending/dirty hints) — never the list.
     root.querySelectorAll(".gr-have-input").forEach((inp) => {
@@ -2165,10 +2164,24 @@
     const body = root.querySelector("#inStockBody");
     if (body) body.innerHTML = inStockListHtml(cleanStockRows(state.inStock || []), draftMap);
     const dirty = inStockDirty();
-    const note = root.querySelector("#inStockDirtyNote");
-    if (note) note.hidden = !dirty;
     const pend = root.querySelector("#groceryPendingNote");
     if (pend) pend.hidden = !dirty;
+    updateHaveButton(root, dirty);
+  }
+
+  /** "I already have some of these items" ⇄ "Done adding what I have" ⇄ primary "Save what I have". */
+  function updateHaveButton(root, dirty) {
+    const btn = root.querySelector("#haveSomeBtn");
+    if (!btn) return;
+    const mode = dirty ? "save" : groceryEditMode ? "done" : "open";
+    if (btn.dataset.mode === mode && btn.textContent.trim()) return;
+    btn.dataset.mode = mode;
+    btn.textContent = mode === "save" ? "Save what I have"
+      : mode === "done" ? "Done adding what I have" : "I already have some of these items";
+    btn.classList.toggle("secondary", mode !== "save");
+    btn.classList.toggle("active", mode === "done");
+    btn.classList.toggle("save-mode", mode === "save");
+    btn.setAttribute("aria-pressed", String(groceryEditMode));
   }
 
   /** Render list, total and In stock from SAVED stock; inputs show draft values (focus kept). */
@@ -2216,7 +2229,7 @@
     flushHaveInputs(root); // make sure the latest typed values are in the draft
     if (!inStockDirty()) {
       inStockDraft = null;
-      refreshGroceryViews(root);
+      renderSuggestedGroceries(root);
       showNotice("No changes to save", "Your In stock list already matches what's saved.");
       return false;
     }
@@ -2224,7 +2237,8 @@
     state.inStockUpdatedAt = new Date().toISOString();
     saveState(state);
     inStockDraft = null;
-    refreshGroceryViews(root);
+    groceryEditMode = false; // saving closes edit mode; the button returns to "I already have…"
+    renderSuggestedGroceries(root);
     showNotice("Saved 🌿", INSTOCK_SAVED_MSG);
     return true;
   }

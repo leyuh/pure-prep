@@ -1,5 +1,8 @@
 /**
- * doc27 (was verify-grocery-doc26): In stock edits are drafts until Save.
+ * doc28 (was verify-grocery-doc27/doc26): the "I already have some of these items" button
+ *   becomes "Done adding what I have" in edit mode and the primary "Save what I have" button
+ *   whenever there are unsaved drafts (typed amounts or ✕ removals); no separate bottom Save.
+ * doc27: In stock edits are drafts until Save.
  * doc26 grocery list (headless, real index.html + onboarding.js):
  *  - No duplicate products on the suggested grocery list across many generated
  *    plans (eggs: egg + hard_boiled_egg; peanut butter/chia/hemp/walnuts tsp + tbsp),
@@ -14,9 +17,9 @@
  *    leaving the tab / page with unsaved edits asks for confirmation.
  *  - Confirm groceries ordered orders the reduced amounts; inventory = in stock + ordered;
  *    In stock is cleared afterwards.
- *  - Cache-bust ?v=doc27, favicon ?v=leaf8.
+ *  - Cache-bust ?v=doc28, favicon ?v=leaf8.
  * Optional: SHOTS_DIR=/path saves screenshots. BASE_URL=https://… runs against a live site.
- * Run: node scripts/verify-grocery-doc27.js
+ * Run: node scripts/verify-grocery-doc28.js
  */
 "use strict";
 const path = require("path");
@@ -77,7 +80,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc27", "onboarding.js?v=doc27");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc28", "onboarding.js?v=doc28");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
 
@@ -218,10 +221,13 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
         inputs.filter((x) => x.dataUnit === "cup").every((x) => x.step === 0.25), "sensible steps (1 for eggs/oz/each, 0.25 cup)");
   check(await page.isVisible("#inStockPanel"), "In stock section appears at top in edit mode");
   check(await page.evaluate(() => document.querySelector("#screen-inventory").firstElementChild.id === "inStockPanel"), "In stock is the first section on the page");
-  check(await page.isVisible("#saveInStock") && await page.evaluate(() => {
-    const s = document.getElementById("saveInStock").closest(".inv-save-actions");
-    return s && s === document.querySelector("#screen-inventory").lastElementChild;
-  }), "Save button at the bottom of the page");
+  const btn = () => page.$eval("#haveSomeBtn", (b) => ({ text: b.textContent.trim(), mode: b.dataset.mode, secondary: b.classList.contains("secondary") }));
+  let hb = await btn();
+  check(hb.text === "Done adding what I have" && hb.mode === "done" && hb.secondary, "edit mode, no changes: button reads 'Done adding what I have'");
+  check(!(await page.$("#saveInStock")) && !(await page.$(".inv-save-actions")) && !(await page.$("#inStockDirtyNote")), "no separate Save button / 'Unsaved changes' label at the bottom");
+  await page.click("#haveSomeBtn");
+  check(await page.isHidden(".gr-have") && (await btn()).text === "I already have some of these items", "Done exits edit mode (inputs hidden, label restored)");
+  await page.click("#haveSomeBtn");
 
   // Pick a partial item (whole-number unit, qty >= 3) and a different item to over-cover.
   const lines = await page.evaluate(() => {
@@ -254,15 +260,22 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check((await stockKeys()).length === 0 && !!(await page.$("#inStockEmpty")), "In stock card not updated before Save");
   const pa = await pending(A.key);
   check(pa.value === String(haveA) && pa.pending, "input keeps typed draft value (" + pa.value + ") with pending style");
-  check(await page.isVisible("#groceryPendingNote") && await page.isVisible("#inStockDirtyNote"), "'Unsaved changes — tap Save' hints shown");
+  check(await page.isVisible("#groceryPendingNote") && /Save what I have/.test(await page.textContent("#groceryPendingNote")) && !/bottom/.test(await page.textContent("#groceryPendingNote")),
+    "note above list points to 'Save what I have': " + (await page.textContent("#groceryPendingNote")).trim());
+  hb = await btn();
+  check(hb.text === "Save what I have" && hb.mode === "save" && !hb.secondary, "unsaved typed amount: the same button becomes primary 'Save what I have'");
+  await page.fill(`.gr-have-input[data-key="${A.key}"]`, "");
+  check((await btn()).mode === "done", "clearing the draft back to saved: button returns to 'Done adding what I have'");
+  await page.fill(`.gr-have-input[data-key="${A.key}"]`, String(haveA));
+  check((await btn()).mode === "save", "typing again: Save state");
   await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
   await page.press(`.gr-have-input[data-key="${B.key}"]`, "Tab");
   check(!(await rowHidden(B.key)) && money(await rowPrice(B.key)) === B.lineTotal && await totalNow() === total0, "excess draft: " + B.name + " still listed, total unchanged");
   check(!Object.keys(await savedStock()).length, "nothing persisted before Save");
-  await shot("doc27-draft-local.png", false);
+  await shot("doc28-draft-local.png", false);
 
   console.log("6) Save applies: partial reduces, excess removes, In stock card fills");
-  await page.click("#saveInStock");
+  await page.click("#haveSomeBtn");
   await page.waitForSelector("#ppNotice");
   check(/Saved/.test(await page.textContent("#ppNoticeTitle")), "'Saved' notice after Save");
   await closeNotice();
@@ -278,8 +291,10 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(JSON.stringify((await stockKeys()).sort()) === JSON.stringify([A.key, B.key].sort()), "In stock lists both items");
   const sv = await savedStock();
   check(sv[A.key] === haveA && sv[B.key] === haveB && Object.keys(sv).length === 2, "localStorage inStock = " + JSON.stringify(sv));
-  check(await page.isHidden("#groceryPendingNote") && await page.isHidden("#inStockDirtyNote") && !(await pending(A.key)).pending, "hints cleared after Save");
-  await shot("doc27-saved-local.png", false);
+  check(await page.isHidden("#groceryPendingNote") && !(await pending(A.key)).pending, "hint cleared after Save");
+  hb = await btn();
+  check(hb.text === "I already have some of these items" && hb.secondary && await page.isHidden(".gr-have"), "Save exits edit mode; button back to 'I already have some of these items'");
+  await shot("doc28-saved-local.png", false);
 
   console.log("7) ✕ is a draft too: marks 'Removes on Save' (Undo), list changes only on Save");
   await page.click(`#inStockList .in-stock-x[data-key="${B.key}"]`);
@@ -287,17 +302,18 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(await page.$eval(liB, (n) => n.classList.contains("pending-remove")) && /Removes on Save/.test(await page.textContent(liB)) && !!(await page.$(`${liB} .in-stock-undo`)),
     "✕: item stays in card, struck through, 'Removes on Save' + Undo");
   check(await rowHidden(B.key) && Math.abs(await totalNow() - total2) < 0.011, "✕: list and total unchanged before Save");
-  check(await page.isVisible("#inStockDirtyNote"), "✕: unsaved changes shown");
+  check(await page.isHidden(".gr-have") && (await btn()).text === "Save what I have" && await page.isVisible("#groceryPendingNote"), "✕ outside edit mode: button switches to 'Save what I have' + note");
   await page.click(`${liB} .in-stock-undo`);
-  check(!(await page.$eval(liB, (n) => n.classList.contains("pending-remove"))) && await page.isHidden("#inStockDirtyNote"), "Undo: back to saved state, nothing pending");
+  check(!(await page.$eval(liB, (n) => n.classList.contains("pending-remove"))) && await page.isHidden("#groceryPendingNote") && (await btn()).text === "I already have some of these items", "Undo: back to saved state, button restored");
   await page.click(`#inStockList .in-stock-x[data-key="${B.key}"]`);
-  await page.click("#saveInStock"); await page.waitForSelector("#ppNotice"); await closeNotice();
+  await page.click("#haveSomeBtn"); await page.waitForSelector("#ppNotice"); await closeNotice();
   check(!(await rowHidden(B.key)) && money(await rowPrice(B.key)) === B.lineTotal && !(await rowQty(B.key)).includes(" was "), "Save after ✕: " + B.name + " back on list at original amount/price");
   check((await stockKeys()).indexOf(B.key) === -1 && Math.abs(await totalNow() - total1) < 0.011, "Save after ✕: gone from In stock, total restored ($" + total1 + ")");
   check(Object.keys(await savedStock()).join() === A.key, "Save after ✕: localStorage only " + A.key);
   check((await pending(B.key)).value === "", "input for removed item cleared");
 
   console.log("8) Unsaved-leave prompts keep draft inputs");
+  await page.click("#haveSomeBtn"); // reopen edit mode (Save closed it)
   await page.fill(`.gr-have-input[data-key="${B.key}"]`, String(haveB));
   dialogMode = "dismiss"; dialogs.length = 0;
   await nav("home");
@@ -309,7 +325,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   dialogMode = "accept";
 
   console.log("9) Save persists across reload");
-  await page.click("#saveInStock"); await page.waitForSelector("#ppNotice"); await closeNotice();
+  await page.click("#haveSomeBtn"); await page.waitForSelector("#ppNotice"); await closeNotice();
   check(await page.evaluate(() => { const e = new Event("beforeunload", { cancelable: true }); window.dispatchEvent(e); return !e.defaultPrevented; }), "no beforeunload prompt after saving");
   await page.reload();
   await nav("inventory");
@@ -370,6 +386,6 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join(" | ") : ""));
   await browser.close();
   srv.close();
-  if (failures) { console.log("verify-grocery-doc27: " + failures + " FAILED"); process.exit(1); }
-  console.log("verify-grocery-doc27: OK");
+  if (failures) { console.log("verify-grocery-doc28: " + failures + " FAILED"); process.exit(1); }
+  console.log("verify-grocery-doc28: OK");
 })().catch((e) => { console.error(e); process.exit(1); });
