@@ -1862,8 +1862,10 @@
           const ing = r.suggestion.ingredients[0];
           const addOz = 0.25;
           const newQty = clamp((ing._qty || 1) + addOz, 0.5, 3);
-          if (newQty > (ing._qty || 1) && FOOD.almonds_oz.kcal * 0.25 <= room) {
-            r.suggestion.ingredients[0] = qtyLine("almonds_oz", newQty, formatQty(newQty) + " oz almonds");
+          const nutKey = FOOD[ing._key] && FOOD[ing._key].unit === "oz" ? ing._key : "almonds_oz";
+          if (newQty > (ing._qty || 1) && FOOD[nutKey].kcal * 0.25 <= room) {
+            // Keep the same nut so the title ("Pistachios") matches the ingredient.
+            r.suggestion.ingredients[0] = qtyLine(nutKey, newQty, formatQty(newQty) + " oz " + FOOD[nutKey].name);
             r.suggestion.totals = roundMacros(sumIngredients(r.suggestion.ingredients));
             adjusted = true;
           }
@@ -3494,10 +3496,15 @@
               </li>
             </ul>
             ${noteHtml}
+            ${prepHtml(slot, { days: prepDaysFor(plan) })}
           </article>`
         );
         slotsEl.appendChild(card);
       });
+      slotsEl.insertAdjacentHTML("beforebegin", prepDayHtml(plan, {
+        open: false,
+        note: plan.cadence && plan.cadence !== "weekly" ? "You shop " + cadence + ", but prep weekly so everything stays fresh." : "",
+      }));
 
       const nav = section.querySelector(".mp-nav");
       const lockedNote = opts.mealPlanLocked
@@ -3574,6 +3581,506 @@
     };
   }
 
+  /* ── Prep instructions (doc29) ──────────────────────────────────────────
+   * Every meal/snack gets "Weekly prep" (once on prep day, for all of the
+   * week's plan days) and "Daily" (minimal day-of) steps, derived from the
+   * slot's actual ingredients × plan days, so rerolls and saved plans always
+   * match. prepDayPlan() consolidates the week into one ordered checklist
+   * (oven + rice first, shared sheet pan at one temperature, one pot of eggs…).
+   *
+   * PREP_DOC holds instructions listed in the Meal Templates doc, keyed by
+   * template type (bowl | salad_jar | smoothie | oatmeal | nut | greek_yogurt |
+   * cottage_cheese | hb_egg_snack) as { weekly: [..], daily: [..] } with {n}
+   * (servings) placeholders. When an entry exists its method lines are used
+   * (amounts for the week are still listed first); otherwise we improvise.
+   */
+  const PREP_DOC = {};
+  const PREP_OVEN_F = 400;
+  // Minutes at 400°F on a parchment-lined sheet pan.
+  const PREP_OVEN = {
+    potato_oz: { min: 35, how: "in 1-inch cubes" },
+    sweet_potato_oz: { min: 30, how: "in 1-inch cubes" },
+    chicken_oz: { min: 22, how: "", done: "chicken reaches 165°F inside" },
+    chicken_thigh_oz: { min: 25, how: "", done: "chicken reaches 165°F inside" },
+    salmon_oz: { min: 13, how: "fillets", done: "salmon flakes easily, 145°F" },
+    cod_oz: { min: 12, how: "fillets", done: "cod flakes easily, 145°F" },
+    shrimp_oz: { min: 8, how: "thawed and patted dry", done: "shrimp are pink" },
+    broccoli_cup: { min: 18, how: "florets" },
+    cauliflower_cup: { min: 22, how: "florets" },
+    carrots_cup: { min: 25, how: "halved" },
+    peppers_cup: { min: 18, how: "sliced" },
+    asparagus_cup: { min: 12, how: "trimmed" },
+    zucchini_cup: { min: 15, how: "in half-moons" },
+    mixed_veg_cup: { min: 20, how: "straight from frozen" },
+  };
+  const PREP_GRAIN = {
+    rice_cup: { name: "white rice", min: 20 },
+    brown_rice_cup: { name: "brown rice", min: 45 },
+    quinoa_cup: { name: "quinoa", min: 15 },
+  };
+  const PREP_SKILLET = { beef_oz: 1, turkey_oz: 1 };
+  const PREP_FISH = { salmon_oz: 1, cod_oz: 1, shrimp_oz: 1 };
+  const PREP_EGG_BAKE_MIN = 15;
+  const PREP_NAMES = {
+    rice_cup: "cooked white rice", brown_rice_cup: "cooked brown rice", quinoa_cup: "cooked quinoa",
+    protein_scoop: "protein powder", banana: "", oats_cup: "dry oats", beef_oz: "93% lean ground beef",
+    turkey_oz: "lean ground turkey", chicken_oz: "chicken breast", chicken_thigh_oz: "chicken thighs",
+    salmon_oz: "salmon", cod_oz: "cod", shrimp_oz: "shrimp", evoo_tsp: "olive oil", egg: "", egg_white: "",
+    hard_boiled_egg: "", berries_cup: "mixed berries", cherries_cup: "frozen cherries", pumpkin_cup: "pumpkin puree",
+    greek_nonfat_cup: "0% Greek yogurt", greek_2pct_cup: "2% Greek yogurt", cottage_lf_cup: "low-fat cottage cheese",
+    black_beans_cup: "black beans", avocado_oz: "avocado",
+  };
+
+  function prepPlural(word, qty) {
+    return Number(qty) <= 1 + 1e-9 ? word : word + "s";
+  }
+
+  /** 10.5 → "10½", 3.25 → "3¼", 1.8 → "1.8". */
+  function prepNum(q) {
+    const n = Math.round((Number(q) || 0) * 100) / 100;
+    const whole = Math.floor(n + 1e-9);
+    const frac = Math.round((n - whole) * 100) / 100;
+    const glyph = { 0.25: "¼", 0.5: "½", 0.75: "¾" }[frac];
+    if (!frac) return String(whole);
+    if (glyph) return (whole ? String(whole) : "") + glyph;
+    return String(Math.round(n * 10) / 10);
+  }
+
+  /** Quantity label used in prep text; whole tsp/tbsp (tbsp only when divisible by 3 tsp). */
+  function prepAmountLabel(key, qty) {
+    const f = FOOD[key];
+    const q = Number(qty) || 0;
+    const u = f ? f.unit : "";
+    if (u === "cup") return formatCupQty(q) + " " + prepPlural("cup", q > 1 ? 2 : 1);
+    if (u === "tsp" || u === "tbsp") {
+      const tsp = Math.max(1, Math.round(u === "tbsp" ? q * 3 : q));
+      return tsp >= 3 && tsp % 3 === 0 ? tsp / 3 + " tbsp" : tsp + " tsp";
+    }
+    if (u === "scoop") return prepNum(q) + " " + prepPlural("scoop", q);
+    if (u === "egg") return Math.round(q) + " " + prepPlural(key === "hard_boiled_egg" ? "hard-boiled egg" : "egg", Math.round(q));
+    if (u === "white") return Math.round(q) + " " + prepPlural("egg white", Math.round(q));
+    if (u === "medium") return prepNum(q) + " " + prepPlural("banana", q);
+    if (u === "oz") return prepNum(q) + " oz";
+    return formatQty(q) + (u ? " " + u : "");
+  }
+
+  function prepName(key) {
+    if (key in PREP_NAMES) return PREP_NAMES[key];
+    return FOOD[key] ? FOOD[key].name : key;
+  }
+
+  /** "42 oz salmon" (+ " (7 × 6 oz)" when showPer and n > 1). */
+  function prepItem(key, per, n, showPer) {
+    const total = per * n;
+    const name = prepName(key);
+    let s = prepAmountLabel(key, total) + (name ? " " + name : "");
+    if (showPer && n > 1) s += " (" + n + " × " + prepAmountLabel(key, per) + ")";
+    return s;
+  }
+  function prepPer(key, per) {
+    const name = prepName(key);
+    return prepAmountLabel(key, per) + (name ? " " + name : "");
+  }
+
+  function prepJoin(list) {
+    const a = list.filter(Boolean);
+    if (a.length <= 1) return a.join("");
+    return a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+  }
+
+  function prepDaysFor(plan) {
+    const d = (plan && plan.selectedDays && plan.selectedDays.length) || Number(plan && plan.daysPerWeek) || 7;
+    return clamp(Math.round(d), 1, 7);
+  }
+
+  function prepFill(text, n) {
+    return String(text).replace(/\{n\}/g, String(n));
+  }
+
+  /** How many days cooked food keeps refrigerated (fish 3, everything else 4). */
+  function prepFridgeDays(keys) {
+    return keys.some((k) => PREP_FISH[k]) ? 3 : 4;
+  }
+
+  function prepStorageLine(what, n, limit) {
+    if (n <= limit) return "Refrigerate the " + what + " (keeps " + limit + " days).";
+    return "Refrigerate " + what + " for days 1–" + limit + "; freeze the other " + (n - limit) +
+      ". The night before, move the next one from the freezer to the fridge.";
+  }
+
+  /**
+   * One oven timeline at 400°F: longest item goes in first, shorter ones are
+   * added so everything finishes together. items: [{key, qty}] (week totals).
+   */
+  function prepSheetPanLine(items, opts) {
+    opts = opts || {};
+    const list = items
+      .filter((it) => PREP_OVEN[it.key] && it.qty > 0)
+      .map((it) => Object.assign({ min: PREP_OVEN[it.key].min, how: PREP_OVEN[it.key].how }, it))
+      .sort((a, b) => b.min - a.min || (a.key < b.key ? -1 : 1));
+    if (!list.length) return null;
+    const total = list[0].min;
+    const label = (it) => prepAmountLabel(it.key, it.qty) + " " + prepName(it.key) + (it.how ? " (" + it.how + ")" : "");
+    const groups = [];
+    list.forEach((it) => {
+      const at = total - it.min;
+      const g = groups.find((x) => x.at === at);
+      if (g) g.items.push(it); else groups.push({ at, items: [it] });
+    });
+    const parts = groups.map((g, i) => (i === 0 ? "start " : "at " + g.at + " min add ") + prepJoin(g.items.map(label)));
+    // Pan load: ~48 oz protein/potatoes or ~12 cups veg per half-sheet pan, single layer.
+    const load = list.reduce((a, it) => a + (FOOD[it.key].unit === "oz" ? it.qty / 48 : it.qty / 12), 0);
+    const pans = Math.max(1, Math.ceil(load - 0.05));
+    let s = (pans > 1 ? pans + " sheet pans" : "One sheet pan") + " at " + PREP_OVEN_F + "°F (parchment-lined): " + parts.join("; ") + ".";
+    if (opts.oilTsp) s += " Toss the " + prepJoin(list.filter((it) => !PREP_FISH[it.key] && !/chicken/.test(it.key)).map((it) => prepName(it.key)).slice(0, 3)) +
+      " with " + prepAmountLabel("evoo_tsp", opts.oilTsp) + " olive oil and a pinch of salt first.";
+    const done = list.map((it) => PREP_OVEN[it.key].done).filter(Boolean);
+    s += " Done at " + total + " min" + (done.length ? " (" + done[0] + ")" : "") + ".";
+    if (pans > 1) s += " Keep a single layer; if the pans don't fit together, roast in two rounds.";
+    return { text: s, minutes: total, pans };
+  }
+
+  function prepGrainLine(key, cookedTotal) {
+    const g = PREP_GRAIN[key];
+    const dry = cookedTotal / 3;
+    return "Cook " + formatCupQty(dry) + " " + prepPlural("cup", dry > 1 ? 2 : 1) + " dry " + g.name +
+      " (makes " + prepAmountLabel(key, cookedTotal) + " cooked) in a rice cooker or one covered pot, ~" + g.min + " min.";
+  }
+
+  function prepSkilletLine(items) {
+    const names = items.map((it) => prepAmountLabel(it.key, it.qty) + " " + prepName(it.key));
+    return "Brown " + prepJoin(names) + " in one large skillet over medium-high, 8–10 min, breaking it up; drain and season lightly.";
+  }
+
+  function prepEggBakeLine(key, total, n) {
+    const what = key === "egg_white" ? prepAmountLabel("egg_white", total) : prepAmountLabel("egg", total);
+    // A 9×13 pan holds ~12 eggs; a rimmed half-sheet pan ~24.
+    const pans = total <= 12 ? "a parchment-lined 9×13 pan"
+      : Math.ceil(total / 24) === 1 ? "a parchment-lined rimmed sheet pan"
+      : Math.ceil(total / 24) + " parchment-lined rimmed sheet pans";
+    const min = total <= 12 ? PREP_EGG_BAKE_MIN : PREP_EGG_BAKE_MIN + 3;
+    return "Egg bake: whisk " + what + " with a pinch of salt, pour into " + pans + " and bake at " + PREP_OVEN_F +
+      "°F for ~" + min + " min until set (same oven, same temperature). Cut into " + n + " " + prepPlural("portion", n) + ".";
+  }
+
+  function prepBoilLine(total) {
+    return "Hard-boil " + prepAmountLabel("egg", total) + " at once: cover with water, bring to a boil, cover and turn off the heat for 11 min, then move to ice water.";
+  }
+
+  /** Normalized ingredient view for a suggestion: [{key, qty}]. */
+  function prepIngs(s) {
+    return ((s && s.ingredients) || []).filter((i) => i && !i._note && i._key && FOOD[i._key]).map((i) => ({ key: i._key, qty: Number(i._qty) || 0 }));
+  }
+
+  function prepDocOverride(type, n, amountLine, generated) {
+    const doc = PREP_DOC[type];
+    if (!doc || (!doc.weekly && !doc.daily)) return Object.assign({ source: "improvised" }, generated);
+    const weekly = [amountLine].concat((doc.weekly || []).map((t) => prepFill(t, n)));
+    const daily = doc.daily && doc.daily.length ? doc.daily.map((t) => prepFill(t, n)) : generated.daily;
+    return { weekly, daily, tasks: generated.tasks, source: "doc" };
+  }
+
+  /* ── per-template builders ── return { weekly, daily, tasks } ── */
+
+  function prepCookedMeal(s, n, kind) {
+    const ings = prepIngs(s);
+    const weekly = [];
+    const daily = [];
+    const tasks = [];
+    const oven = [];
+    const skillet = [];
+    let oilTsp = 0;
+    let hbe = 0;
+    let avocado = 0;
+    const raw = [];
+    const byKey = {};
+    ings.forEach((i) => { byKey[i.key] = (byKey[i.key] || 0) + i.qty; });
+    const proteinKey = ings.map((i) => i.key).find((k) => PREP_OVEN[k] && /_oz$/.test(k) && !/potato/.test(k) || PREP_SKILLET[k] || k === "egg" || k === "egg_white");
+    ings.forEach((i) => {
+      const k = i.key;
+      if (PREP_SKILLET[k]) skillet.push({ key: k, qty: i.qty * n, per: i.qty });
+      else if (PREP_OVEN[k] && (kind === "bowl" || k === proteinKey)) oven.push({ key: k, qty: i.qty * n, per: i.qty });
+      else if (k === "evoo_tsp") oilTsp = i.qty * n;
+      else if (k === "hard_boiled_egg") hbe = i.qty;
+      else if (k === "avocado_oz") avocado = i.qty;
+      else if (!PREP_GRAIN[k] && k !== "egg" && k !== "egg_white") raw.push(i);
+    });
+    const eggKey = byKey.egg ? "egg" : byKey.egg_white ? "egg_white" : null;
+    // 1. Grains (start first)
+    Object.keys(PREP_GRAIN).forEach((g) => {
+      if (!byKey[g]) return;
+      weekly.push(prepGrainLine(g, byKey[g] * n));
+      tasks.push({ kind: "grain", key: g, qty: byKey[g] * n });
+    });
+    // 2. Eggs to boil (fat serving)
+    if (hbe) {
+      weekly.push(prepBoilLine(hbe * n) + (kind === "bowl"
+        ? (n > 5 ? " Keep them in the shell in the fridge (good for a week)." : " Peel and keep in a covered container.")
+        : " Peel and slice."));
+      tasks.push({ kind: "boil", qty: hbe * n });
+    }
+    // 3. Oven: one sheet pan at one temperature (bowls: protein + carb + veg; jars: protein only)
+    const useOil = kind === "bowl" ? oilTsp : 0;
+    const pan = prepSheetPanLine(oven, { oilTsp: useOil });
+    if (pan) {
+      weekly.push(pan.text);
+      oven.forEach((it) => tasks.push({ kind: "oven", key: it.key, qty: it.qty }));
+      if (useOil) tasks.push({ kind: "oil", qty: useOil });
+    }
+    if (eggKey) {
+      weekly.push(prepEggBakeLine(eggKey, byKey[eggKey] * n, n));
+      tasks.push({ kind: "eggbake", key: eggKey, qty: byKey[eggKey] * n, n });
+    }
+    // 4. Skillet
+    if (skillet.length) {
+      weekly.push(prepSkilletLine(skillet));
+      skillet.forEach((it) => tasks.push({ kind: "skillet", key: it.key, qty: it.qty }));
+    }
+    const limit = prepFridgeDays(ings.map((i) => i.key));
+    if (kind === "bowl") {
+      const parts = ings.filter((i) => ["evoo_tsp", "avocado_oz", "hard_boiled_egg"].indexOf(i.key) === -1).map((i) => prepPer(i.key, i.qty));
+      weekly.push("Cool 10 min, then divide into " + n + " " + prepPlural("container", n) + ": " + prepJoin(parts) + " each.");
+      weekly.push(prepStorageLine(n === 1 ? "container" : "containers", n, limit));
+      tasks.push({ kind: "portion", text: n + " " + s.title.toLowerCase() + " " + prepPlural("container", n), limit, n });
+      daily.push("Microwave the container 2–2½ min, stirring halfway, until hot.");
+      if (avocado) daily.push("Top with " + prepPer("avocado_oz", avocado) + ", sliced fresh so it doesn't brown.");
+      if (hbe) daily.push(n > 5 ? "Peel and add " + prepAmountLabel("hard_boiled_egg", hbe) + "."
+        : "Add " + prepAmountLabel("hard_boiled_egg", hbe) + " (already peeled).");
+      if (oilTsp && !pan) daily.push("Drizzle " + prepAmountLabel("evoo_tsp", oilTsp / n) + " olive oil.");
+      daily.push("Season to taste and eat.");
+    } else {
+      // Salad jars: chop raw veg/greens once; layer dressing → hearty veg → rice → protein → cheese/egg → greens.
+      const cupRaw = raw.filter((i) => FOOD[i.key].unit === "cup");
+      const chop = cupRaw.map((i) => prepItem(i.key, i.qty, n, false));
+      if (chop.length) {
+        const tips = [];
+        if (byKey.black_beans_cup) tips.push("rinse the beans");
+        if (byKey.corn_cup) tips.push("thaw the corn under cool water");
+        if (byKey.cherry_tomato_cup) tips.push("leave tomatoes whole so they stay firm");
+        weekly.push("Wash and chop: " + prepJoin(chop) + (tips.length ? " (" + tips.join("; ") + ")" : "") + ".");
+        cupRaw.forEach((i) => tasks.push({ kind: "chop", key: i.key, qty: i.qty * n }));
+      }
+      const layer = [];
+      if (oilTsp) layer.push(prepPer("evoo_tsp", oilTsp / n) + " olive oil (+ a splash of vinegar or lemon)");
+      ings.filter((i) => ["black_beans_cup", "corn_cup", "onion_cup", "peppers_cup", "carrots_cup", "cucumber_cup", "cherry_tomato_cup"].indexOf(i.key) !== -1)
+        .forEach((i) => layer.push(prepPer(i.key, i.qty)));
+      Object.keys(PREP_GRAIN).forEach((g) => { if (byKey[g]) layer.push(prepPer(g, byKey[g])); });
+      if (proteinKey) layer.push(prepPer(proteinKey, byKey[proteinKey]) + " (cooled)");
+      ["feta_oz", "parmesan_oz"].forEach((k) => { if (byKey[k]) layer.push(prepPer(k, byKey[k])); });
+      if (hbe) layer.push(prepAmountLabel("hard_boiled_egg", hbe) + ", sliced");
+      ings.filter((i) => ["lettuce_cup", "kale_cup", "spinach_cup", "mixed_greens_cup"].indexOf(i.key) !== -1).forEach((i) => layer.push(prepPer(i.key, i.qty)));
+      const jarLimit = Math.min(5, limit);
+      const build = Math.min(n, jarLimit);
+      weekly.push("Layer " + build + " " + prepPlural("jar", build) + " bottom to top: " + prepJoin(layer) + ". Lid and refrigerate.");
+      if (n > jarLimit) {
+        weekly.push("For days " + (jarLimit + 1) + "–" + n + ": freeze the remaining " + prepName(proteinKey) + " in portions and keep the chopped veg and greens bagged in the fridge.");
+        daily.push("Days " + (jarLimit + 1) + "–" + n + ": the night before, thaw a protein portion in the fridge and fill a jar the same way (2 min).");
+      }
+      tasks.push({ kind: "portion", text: n + " " + s.title.toLowerCase() + "s", limit: jarLimit, n });
+      if (avocado) daily.push("Add " + prepPer("avocado_oz", avocado) + ", sliced fresh so it doesn't brown.");
+      daily.push("Shake the jar into a bowl, toss and eat cold.");
+    }
+    return { weekly, daily, tasks };
+  }
+
+  function prepSmoothie(s, n) {
+    const ings = prepIngs(s);
+    const milk = ings.filter((i) => /milk/.test(i.key));
+    const pack = ings.filter((i) => !/milk/.test(i.key));
+    const packLabel = (i) => (i.key === "banana" ? prepAmountLabel("banana", i.qty) + " (sliced)" : prepPer(i.key, i.qty));
+    const weekly = [
+      "Make " + n + " smoothie freezer " + prepPlural("pack", n) + " (zip bags or containers). In each: " + prepJoin(pack.map(packLabel)) + ". Freeze.",
+    ];
+    if (n > 1) weekly.push("Uses " + prepJoin(pack.map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    const daily = [
+      "Empty 1 pack into the blender with " + prepJoin(milk.map((i) => prepPer(i.key, i.qty))) + "; blend ~60 s (add a splash more milk if thick).",
+    ];
+    const flav = (s.notes || []).find((x) => /cinnamon|cacao|pumpkin/i.test(x));
+    if (flav) daily.push(flav.replace(/^Optional flavor:\s*/i, "Optional: add ").replace(/^Flavor:\s*/i, "Add ") + ".");
+    return { weekly, daily, tasks: [{ kind: "pack", text: n + " smoothie freezer " + prepPlural("pack", n) + " (" + s.title.toLowerCase() + ")" }] };
+  }
+
+  function prepOatmeal(s, n) {
+    const ings = prepIngs(s);
+    const dryKeys = { oats_cup: 1, protein_scoop: 1, chia_tsp: 1, chia_tbsp: 1, hemp_tsp: 1, hemp_tbsp: 1, walnuts_tsp: 1, walnuts_tbsp: 1, raisins_cup: 1, cacao_tsp: 1 };
+    const dry = ings.filter((i) => dryKeys[i.key]);
+    const banana = ings.find((i) => i.key === "banana");
+    const wet = ings.filter((i) => !dryKeys[i.key] && i.key !== "banana");
+    const oats = ings.find((i) => i.key === "oats_cup");
+    const wetLabels = wet.map((i) => prepPer(i.key, i.qty));
+    if (!wet.some((i) => /milk/.test(i.key)) && oats) wetLabels.unshift(Math.round((oats.qty / 0.5) * 4) + " oz water");
+    const fresh = Math.min(n, 5);
+    const weekly = [];
+    weekly.push("Make " + n + " overnight-oat " + prepPlural("jar", n) + ". In each: " + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) + ".");
+    if (fresh === n) {
+      weekly.push("Stir " + prepJoin(wetLabels) + " into each jar, cap and refrigerate (keeps 5 days).");
+    } else {
+      weekly.push("Stir " + prepJoin(wetLabels) + " into jars for days 1–" + fresh + ", cap and refrigerate (keeps 5 days). Keep days " + (fresh + 1) + "–" + n + " dry in the pantry.");
+    }
+    if (n > 1) weekly.push("Uses " + prepJoin(dry.concat(wet).map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    const daily = [];
+    if (fresh < n) daily.push("Days " + (fresh + 1) + "–" + n + ": the night before, stir in " + prepJoin(wetLabels) + " and refrigerate (1 min).");
+    if (banana) daily.push("Top with " + prepAmountLabel("banana", banana.qty) + ", sliced fresh so it doesn't brown.");
+    daily.push("Eat cold, or microwave 1½–2 min.");
+    return { weekly, daily, tasks: [{ kind: "pack", text: n + " overnight-oat " + prepPlural("jar", n) + " (" + s.title.toLowerCase() + ")" }] };
+  }
+
+  function prepSnackContainers(s, n, noun) {
+    const ings = prepIngs(s);
+    const eggs = ings.find((i) => i.key === "hard_boiled_egg");
+    const weekly = [];
+    const tasks = [];
+    if (eggs) {
+      weekly.push(prepBoilLine(eggs.qty * n) + (n > 5 ? " Peel " + prepAmountLabel("hard_boiled_egg", eggs.qty * 5) + " for days 1–5; keep the rest in the shell." : " Peel."));
+      tasks.push({ kind: "boil", qty: eggs.qty * n });
+    }
+    const limit = 5;
+    const each = ings.map((i) => prepPer(i.key, i.qty));
+    const build = Math.min(n, limit);
+    weekly.push("Pack " + build + " " + prepPlural(noun, build) + ": " + prepJoin(each) + " in each. Lid and refrigerate.");
+    if (n > limit) {
+      weekly.push("For days " + (limit + 1) + "–" + n + ": portion the rest " + (eggs ? "(keep those eggs unpeeled)" : "but keep the fruit separate") + " so it stays fresh.");
+    }
+    if (n > 1) weekly.push("Uses " + prepJoin(ings.map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    const daily = ["Grab 1 " + noun + " and eat" + (eggs ? " (pinch of salt and pepper optional)." : ", stirring first.")];
+    if (n > limit) daily.push("Days " + (limit + 1) + "–" + n + ": " + (eggs ? "peel the eggs" : "add the fruit") + " the night before (1 min).");
+    tasks.push({ kind: "pack", text: n + " " + s.title.toLowerCase() + " " + prepPlural(noun, n) });
+    return { weekly, daily, tasks };
+  }
+
+  function prepNuts(s, n) {
+    const ings = prepIngs(s);
+    const nut = ings[0];
+    const weekly = [
+      "Portion " + (nut ? prepItem(nut.key, nut.qty, n, false) : "the nuts") + " into " + n + " snack " + prepPlural("bag", n) +
+        (nut ? " (" + prepAmountLabel(nut.key, nut.qty) + " each — weigh once, then eyeball)" : "") + ".",
+    ];
+    ings.slice(1).forEach((i) => weekly.push("Add " + prepPer(i.key, i.qty) + " to each bag."));
+    return { weekly, daily: ["Grab 1 bag."], tasks: [{ kind: "pack", text: n + " snack " + prepPlural("bag", n) + " of " + (nut ? prepAmountLabel(nut.key, nut.qty) + " " + prepName(nut.key) : "nuts") }] };
+  }
+
+  /** Weekly + daily prep for one schedule slot. ctx: { days } (plan days this week). */
+  function prepForSlot(slot, ctx) {
+    const s = slot && slot.suggestion ? slot.suggestion : slot;
+    const n = clamp(Math.round((ctx && ctx.days) || 7), 1, 7);
+    const type = (s && s.type) || "";
+    let gen;
+    if (type === "bowl") gen = prepCookedMeal(s, n, "bowl");
+    else if (type === "salad_jar") gen = prepCookedMeal(s, n, "jar");
+    else if (type === "smoothie") gen = prepSmoothie(s, n);
+    else if (type === "oatmeal") gen = prepOatmeal(s, n);
+    else if (type === "nut") gen = prepNuts(s, n);
+    else if (type === "greek_yogurt" || type === "cottage_cheese") gen = prepSnackContainers(s, n, "cup");
+    else if (type === "hb_egg_snack") gen = prepSnackContainers(s, n, "container");
+    else {
+      const ings = prepIngs(s);
+      gen = {
+        weekly: ["Portion " + n + " " + prepPlural("serving", n) + ": " + prepJoin(ings.map((i) => prepPer(i.key, i.qty))) + " each. Refrigerate."],
+        daily: ["Grab 1 serving (reheat if needed)."],
+        tasks: [{ kind: "pack", text: n + " " + prepPlural("serving", n) + " of " + String((s && s.title) || "this meal").toLowerCase() }],
+      };
+    }
+    const amountLine = "For " + n + " " + prepPlural("day", n) + ": " + prepJoin(prepIngs(s).map((i) => prepItem(i.key, i.qty, n, false))) + ".";
+    const out = prepDocOverride(type, n, amountLine, gen);
+    out.days = n;
+    out.type = type;
+    return out;
+  }
+
+  /**
+   * Consolidated, efficiency-ordered prep-day checklist for a plan's week:
+   * preheat + long-cooking grains first, all eggs in one pot, one shared
+   * 400°F oven timeline, one skillet, then no-cook packing while things cook.
+   */
+  function prepDayPlan(plan, ctx) {
+    const n = clamp(Math.round((ctx && ctx.days) || prepDaysFor(plan)), 1, 7);
+    const tasks = [];
+    ((plan && plan.schedule) || []).forEach((slot) => {
+      prepForSlot(slot, { days: n }).tasks.forEach((t) => tasks.push(Object.assign({ slot: slot.name }, t)));
+    });
+    const sum = (kind) => {
+      const m = {};
+      tasks.filter((t) => t.kind === kind).forEach((t) => { m[t.key || "_"] = (m[t.key || "_"] || 0) + t.qty; });
+      return m;
+    };
+    const steps = [];
+    const oven = sum("oven");
+    const eggBake = tasks.filter((t) => t.kind === "eggbake");
+    const grains = sum("grain");
+    const hasOven = Object.keys(oven).length > 0 || eggBake.length > 0;
+    if (hasOven) steps.push({ id: "preheat", text: "Preheat the oven to " + PREP_OVEN_F + "°F and line sheet pans with parchment." });
+    Object.keys(grains).sort((a, b) => PREP_GRAIN[b].min - PREP_GRAIN[a].min).forEach((g) => {
+      steps.push({ id: "grain-" + g, text: prepGrainLine(g, grains[g]) });
+    });
+    const boil = tasks.filter((t) => t.kind === "boil").reduce((a, t) => a + t.qty, 0);
+    if (boil) steps.push({ id: "boil", text: prepBoilLine(boil) + " Peel as each meal says." });
+    if (Object.keys(oven).length) {
+      const oil = tasks.filter((t) => t.kind === "oil").reduce((a, t) => a + t.qty, 0);
+      const pan = prepSheetPanLine(Object.keys(oven).map((k) => ({ key: k, qty: oven[k] })), { oilTsp: oil });
+      steps.push({ id: "oven", text: pan.text });
+    }
+    eggBake.forEach((t) => steps.push({ id: "eggbake-" + t.key, text: prepEggBakeLine(t.key, t.qty, t.n) }));
+    const sk = sum("skillet");
+    if (Object.keys(sk).length) steps.push({ id: "skillet", text: prepSkilletLine(Object.keys(sk).map((k) => ({ key: k, qty: sk[k] }))) });
+    const chop = sum("chop");
+    const packs = tasks.filter((t) => t.kind === "pack").map((t) => t.text);
+    const whileCooking = [];
+    if (Object.keys(chop).length) whileCooking.push("wash and chop " + prepJoin(Object.keys(chop).map((k) => prepAmountLabel(k, chop[k]) + " " + prepName(k))));
+    packs.forEach((p) => whileCooking.push("make " + p));
+    if (whileCooking.length) {
+      steps.push({ id: "while", text: (hasOven || Object.keys(grains).length || Object.keys(sk).length ? "While everything cooks: " : "") + whileCooking.join("; ") + "." });
+    }
+    const portions = tasks.filter((t) => t.kind === "portion");
+    if (portions.length) {
+      const limit = Math.min.apply(null, portions.map((t) => t.limit));
+      steps.push({
+        id: "portion",
+        text: "Cool cooked food 10 min, then portion " + prepJoin(portions.map((t) => t.text)) + " (see each meal). " +
+          (n > limit ? "Refrigerate days 1–" + limit + " and freeze the rest; move one to the fridge the night before." : "Refrigerate everything."),
+      });
+    }
+    const minutes = Math.max(
+      0,
+      ...Object.keys(grains).map((g) => PREP_GRAIN[g].min),
+      Object.keys(oven).length ? Math.max(...Object.keys(oven).map((k) => PREP_OVEN[k].min)) + 10 : 0,
+      eggBake.length ? PREP_EGG_BAKE_MIN + 10 : 0,
+      boil ? 25 : 0,
+      Object.keys(sk).length ? 15 : 0
+    );
+    return { days: n, steps, minutes: minutes + 10 + 5 * packs.length };
+  }
+
+  function prepEsc(t) {
+    return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /** Collapsible "Weekly prep" + "Daily" block for one meal/snack card. */
+  function prepHtml(slot, ctx) {
+    const r = prepForSlot(slot, ctx);
+    const open = !ctx || ctx.open !== false;
+    const li = (arr) => arr.map((t) => "<li>" + prepEsc(t) + "</li>").join("");
+    return '<details class="mp-prep" data-prep-type="' + prepEsc(r.type) + '" data-prep-source="' + r.source + '" data-prep-days="' + r.days + '"' + (open ? " open" : "") + ">" +
+      '<summary><span class="mp-prep-title">Prep steps</span><span class="mp-prep-sub">weekly + daily</span></summary>' +
+      '<div class="mp-prep-body">' +
+      '<div class="mp-prep-block mp-prep-weekly"><h4><span class="mp-prep-ico" aria-hidden="true">🧺</span>Weekly prep <small>· prep day, ' + r.days + " " + prepPlural("serving", r.days) + "</small></h4><ol>" + li(r.weekly) + "</ol></div>" +
+      '<div class="mp-prep-block mp-prep-daily"><h4><span class="mp-prep-ico" aria-hidden="true">🌱</span>Daily <small>· day of</small></h4><ol>' + li(r.daily) + "</ol></div>" +
+      "</div></details>";
+  }
+
+  /** Consolidated prep-day checklist for a plan (checkboxes are just for ticking off; not saved). */
+  function prepDayHtml(plan, ctx) {
+    const d = prepDayPlan(plan, ctx);
+    const open = !!(ctx && ctx.open);
+    const note = (ctx && ctx.note) || "";
+    const items = d.steps.map((st, i) =>
+      '<li><label><input type="checkbox" data-prep-step="' + prepEsc(st.id) + '" /><span><b>' + (i + 1) + ".</b> " + prepEsc(st.text) + "</span></label></li>"
+    ).join("");
+    return '<details class="mp-prepday" data-prep-days="' + d.days + '"' + (open ? " open" : "") + ">" +
+      '<summary><span class="mp-prep-title">🌿 Prep day checklist</span><span class="mp-prep-sub">~' + d.minutes + " min · " + d.days + " " + prepPlural("day", d.days) + "</span></summary>" +
+      '<div class="mp-prep-body"><p class="mp-prepday-intro">Do this once a week, in this order, for all meals &amp; snacks. Each card below has the same steps for just that item, plus what\'s left for the day of.' + (note ? " " + prepEsc(note) : "") + "</p>" +
+      '<ul class="mp-prepday-list">' + items + "</ul></div></details>";
+  }
+
   global.MealPlanOnboarding = {
     MACRO_PRESETS,
     macrosFromWeightGoal,
@@ -3625,5 +4132,12 @@
     buildHbEggSnack,
     formatCupQty,
     snapCupFraction,
+    PREP_DOC,
+    prepForSlot,
+    prepDayPlan,
+    prepDaysFor,
+    prepAmountLabel,
+    prepHtml,
+    prepDayHtml,
   };
 })(typeof window !== "undefined" ? window : globalThis);
