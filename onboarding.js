@@ -4117,10 +4117,11 @@
     return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  /** Collapsible "Weekly prep" + "Daily" block for one meal/snack card. */
+  /** Collapsible "Weekly prep" + "Daily" block for one meal/snack card (starts collapsed). */
   function prepHtml(slot, ctx) {
     const r = prepForSlot(slot, ctx);
-    const open = !ctx || ctx.open !== false;
+    // doc31: collapsed by default (tap "Prep steps" to expand); pass { open: true } to start open.
+    const open = !!(ctx && ctx.open === true);
     const li = (arr) => arr.map((t) => "<li>" + prepEsc(t) + "</li>").join("");
     return '<details class="mp-prep" data-prep-type="' + prepEsc(r.type) + '" data-prep-source="' + r.source + '" data-prep-days="' + r.days + '"' + (open ? " open" : "") + ">" +
       '<summary><span class="mp-prep-title">Prep steps</span><span class="mp-prep-sub">weekly + daily</span></summary>' +

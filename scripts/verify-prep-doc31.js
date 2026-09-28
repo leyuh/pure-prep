@@ -1,4 +1,6 @@
 /**
+ * doc31: "Prep steps" blocks start collapsed on results cards and Home meal rows;
+ *    tapping the summary expands them (steps unchanged).
  * doc30: Meal Templates doc prep instructions (fresh export in docs/meal-templates.txt)
  *    applied via PREP_DOC: smoothie + oatmeal use the doc's jar method ("Portion out dry
  *    ingredients into N jars." / "Empty jar into blender…" / "Empty jar into bowl and add milk
@@ -17,9 +19,9 @@
  *  - Templates with instructions in the Meal Templates doc (PREP_DOC) use them.
  *  - Results page: each card has the prep block + a prep-day checklist; rerolling a
  *    meal updates its instructions; Home meal rows show the same steps as the saved plan.
- *  - Cache-bust ?v=doc30, favicon ?v=leaf8.
+ *  - Cache-bust ?v=doc31, favicon ?v=leaf8.
  * Optional: SHOTS_DIR=/path saves screenshots. BASE_URL=https://… runs against a live site.
- * Run: node scripts/verify-prep-doc30.js
+ * Run: node scripts/verify-prep-doc31.js
  */
 "use strict";
 const path = require("path");
@@ -77,7 +79,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc30", "onboarding.js?v=doc30");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc31", "onboarding.js?v=doc31");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
   check(typeof (await page.evaluate(() => typeof window.MealPlanOnboarding.prepForSlot)) === "string" &&
@@ -243,7 +245,15 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
     daily: [...c.querySelectorAll(".mp-prep-daily li")].map((l) => l.textContent.trim()),
   })));
   check(cards.length === 5, "5 cards (3 meals + 2 snacks)");
-  check(cards.every((c) => c.prep && c.open && c.weekly.length && c.daily.length && c.weekly.every(Boolean) && c.daily.every(Boolean)), "every results card shows Weekly prep + Daily steps (open)");
+  check(cards.every((c) => c.prep && c.weekly.length && c.daily.length && c.weekly.every(Boolean) && c.daily.every(Boolean)), "every results card has Weekly prep + Daily steps");
+  check(cards.every((c) => !c.open), "every results card's Prep steps block starts collapsed");
+  check(!(await page.isVisible(".mp-slots > .mp-card:first-child .mp-prep-weekly")), "collapsed: weekly steps hidden until tapped");
+  await page.tap(".mp-slots > .mp-card:first-child details.mp-prep > summary");
+  check(await page.$eval(".mp-slots > .mp-card:first-child details.mp-prep", (d) => d.open) &&
+    await page.isVisible(".mp-slots > .mp-card:first-child .mp-prep-weekly li") && await page.isVisible(".mp-slots > .mp-card:first-child .mp-prep-daily li"),
+    "tapping 'Prep steps' expands the Weekly prep + Daily steps");
+  await page.tap(".mp-slots > .mp-card:first-child details.mp-prep > summary");
+  check(!(await page.$eval(".mp-slots > .mp-card:first-child details.mp-prep", (d) => d.open)), "tapping again collapses it");
   const pd = await page.$$eval(".mp-result details.mp-prepday .mp-prepday-list li", (ls) => ls.map((l) => l.textContent.trim()));
   const bf = cards.find((c) => /smoothie|oatmeal/i.test(c.title));
   check(!!bf && /^Portion out dry ingredients into 6 jars\./.test(bf.weekly[0]) && /^Empty jar into (blender|bowl)/.test(bf.daily[0]),
@@ -251,7 +261,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(pd.length >= 2 && (await page.$(".mp-result details.mp-prepday + .mp-slots")) !== null, "prep-day checklist (" + pd.length + " steps) sits above the meal cards");
   const overflow = await page.evaluate(() => [...document.querySelectorAll(".mp-prep, .mp-prepday")].some((e) => e.getBoundingClientRect().right > window.innerWidth + 1));
   check(!overflow, "prep blocks fit the 390px viewport");
-  if (shots) await page.screenshot({ path: path.join(shots, "doc30-results-local.png"), fullPage: true });
+  if (shots) await page.screenshot({ path: path.join(shots, "doc31-results-local.png"), fullPage: true });
 
   // Reroll meal 1 until the title changes; instructions must change with it.
   let idx = 0, before = cards[0], afterCard = before;
@@ -280,19 +290,24 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   console.log("5) Home meal rows + prep-day checklist");
   const home = await page.evaluate(() => {
     document.querySelectorAll("#screen-home details.meal-row").forEach((d) => { d.open = true; });
+    const prepOpen = [...document.querySelectorAll("#screen-home details.meal-row details.mp-prep")].map((d) => d.open);
     return {
       rows: [...document.querySelectorAll("#screen-home details.meal-row")].map((r) => [...r.querySelectorAll(".mp-prep li")].map((l) => l.textContent.trim()).join("|")),
       weeklyOk: [...document.querySelectorAll("#screen-home details.meal-row")].every((r) => r.querySelectorAll(".mp-prep-weekly li").length && r.querySelectorAll(".mp-prep-daily li").length),
       prepDay: document.querySelectorAll("#screen-home details.mp-prepday .mp-prepday-list li").length,
+      prepOpen,
     };
   });
   check(home.rows.length === 5 && home.weeklyOk, "every Home meal row has Weekly prep + Daily");
+  check(home.prepOpen.length === 5 && home.prepOpen.every((o) => !o), "Home Prep steps blocks start collapsed (even with the meal row expanded)");
+  await page.tap("#screen-home details.meal-row:first-of-type details.mp-prep > summary");
+  check(await page.isVisible("#screen-home details.meal-row:first-of-type .mp-prep-weekly li"), "tapping Prep steps on Home expands it");
   check(JSON.stringify(home.rows) === JSON.stringify(expected.slots), "Home steps match the saved plan");
   check(home.prepDay === expected.day && home.prepDay > 0, "Home prep-day checklist (" + home.prepDay + " steps)");
   await page.click("#screen-home details.mp-prepday summary");
   await page.click("#screen-home .mp-prepday-list li:first-child label");
   check(await page.$eval("#screen-home .mp-prepday-list li:first-child input", (i) => i.checked), "checklist items can be ticked off");
-  if (shots) await page.screenshot({ path: path.join(shots, "doc30-home-local.png"), fullPage: true });
+  if (shots) await page.screenshot({ path: path.join(shots, "doc31-home-local.png"), fullPage: true });
 
   console.log("6) Existing flows still intact");
   const st2 = await getState();
