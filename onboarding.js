@@ -3593,8 +3593,33 @@
    * cottage_cheese | hb_egg_snack) as { weekly: [..], daily: [..] } with {n}
    * (servings) placeholders. When an entry exists its method lines are used
    * (amounts for the week are still listed first); otherwise we improvise.
+   * Entries marked builder: true (smoothie, oatmeal) keep the doc wording as
+   * the core of each step and append the plan's specifics (which items go in
+   * the jar vs. are added the day of, with amounts).
+   *
+   * From the Meal Templates doc (export 2026-09-28). The doc's Bowl "Daily prep"
+   * line duplicates the oatmeal one (jar/milk/oats), a copy-paste error, so it
+   * is not applied; bowls, salad jars and snacks have no doc steps (improvised).
    */
-  const PREP_DOC = {};
+  const PREP_DOC = {
+    smoothie: {
+      builder: true,
+      weekly: ["Portion out dry ingredients into {n} jars."],
+      daily: ["Empty jar into blender and add remaining ingredients. Blend until smooth and enjoy."],
+    },
+    oatmeal: {
+      builder: true,
+      weekly: ["Portion out dry ingredients into {n} jars."],
+      daily: ["Empty jar into bowl and add milk or water. Microwave for 1-2 minutes until oats are soft. Add toppings and enjoy."],
+    },
+  };
+  // Shelf-stable items that go in the weekly jar (smoothie/oatmeal). Everything
+  // else (milk, banana, frozen fruit, spinach, nut butter, pumpkin, honey/maple) is added daily.
+  const PREP_JAR_DRY = {
+    protein_scoop: 1, oats_cup: 1, chia_tsp: 1, chia_tbsp: 1, hemp_tsp: 1, hemp_tbsp: 1,
+    walnuts_tsp: 1, walnuts_tbsp: 1, raisins_cup: 1, cacao_tsp: 1, cinnamon_tsp: 1, pb_powder_tbsp: 1, pb_powder_tsp: 1,
+  };
+  const PREP_FROZEN = { berries_cup: 1, blueberries_cup: 1, strawberries_cup: 1, cherries_cup: 1, mango_cup: 1 };
   const PREP_OVEN_F = 400;
   // Minutes at 400°F on a parchment-lined sheet pan.
   const PREP_OVEN = {
@@ -3774,7 +3799,7 @@
 
   function prepDocOverride(type, n, amountLine, generated) {
     const doc = PREP_DOC[type];
-    if (!doc || (!doc.weekly && !doc.daily)) return Object.assign({ source: "improvised" }, generated);
+    if (!doc || doc.builder || (!doc.weekly && !doc.daily)) return Object.assign({ source: "improvised" }, generated);
     const weekly = [amountLine].concat((doc.weekly || []).map((t) => prepFill(t, n)));
     const daily = doc.daily && doc.daily.length ? doc.daily.map((t) => prepFill(t, n)) : generated.daily;
     return { weekly, daily, tasks: generated.tasks, source: "doc" };
@@ -3883,46 +3908,84 @@
     return { weekly, daily, tasks };
   }
 
+  function prepFillJars(text, n) {
+    return prepFill(text, n).replace(/\b1 jars\b/g, "1 jar");
+  }
+
+  /** Optional flavor words from the suggestion's notes that can go in the dry jar. */
+  function prepJarFlavors(s) {
+    const note = (s.notes || []).find((x) => /cinnamon|cacao|pumpkin spice|salt/i.test(x));
+    if (!note) return "";
+    const words = [];
+    if (/cinnamon/i.test(note)) words.push("cinnamon");
+    if (/cacao/i.test(note)) words.push("cacao");
+    if (/pumpkin spice/i.test(note)) words.push("pumpkin spice");
+    if (/salt/i.test(note)) words.push("a pinch of salt");
+    if (!words.length) return "";
+    const optional = /optional/i.test(note) || words.length > 1;
+    const list = words.length > 1 ? words.slice(0, -1).join(", ") + " or " + words[words.length - 1] : words[0];
+    return optional ? "Optional: add " + list + " to each jar, to taste." : "Add " + list + " to each jar, to taste.";
+  }
+
+  /** Daily add-in label: frozen fruit comes "from the freezer bag", banana is sliced fresh. */
+  function prepAddIn(i) {
+    if (i.key === "banana") return prepAmountLabel("banana", i.qty) + " (sliced fresh)";
+    if (PREP_FROZEN[i.key]) return prepPer(i.key, i.qty) + " (from the freezer bag)";
+    return prepPer(i.key, i.qty);
+  }
+
+  function prepJarWeekly(type, s, n, dry, all) {
+    const doc = PREP_DOC[type];
+    const core = prepFillJars(doc.weekly[0], n);
+    const weekly = [
+      core.replace(/\.$/, "") + (dry.length ? (n === 1 ? ". In the jar: " : ". Each jar: ") + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) + ". Lid and keep in the pantry." : ". Lid and keep in the pantry."),
+    ];
+    (doc.weekly || []).slice(1).forEach((t) => weekly.push(prepFillJars(t, n)));
+    const flav = prepJarFlavors(s);
+    if (flav) weekly.push(flav);
+    if (n > 1) weekly.push("Uses " + prepJoin(all.map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    return weekly;
+  }
+
   function prepSmoothie(s, n) {
     const ings = prepIngs(s);
-    const milk = ings.filter((i) => /milk/.test(i.key));
-    const pack = ings.filter((i) => !/milk/.test(i.key));
-    const packLabel = (i) => (i.key === "banana" ? prepAmountLabel("banana", i.qty) + " (sliced)" : prepPer(i.key, i.qty));
-    const weekly = [
-      "Make " + n + " smoothie freezer " + prepPlural("pack", n) + " (zip bags or containers). In each: " + prepJoin(pack.map(packLabel)) + ". Freeze.",
-    ];
-    if (n > 1) weekly.push("Uses " + prepJoin(pack.map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    const dry = ings.filter((i) => PREP_JAR_DRY[i.key]);
+    const rest = ings.filter((i) => !PREP_JAR_DRY[i.key]);
+    // Milk first, then fruit/veg, then nut butter etc.
+    rest.sort((a, b) => (/milk/.test(b.key) ? 1 : 0) - (/milk/.test(a.key) ? 1 : 0));
+    const weekly = prepJarWeekly("smoothie", s, n, dry, dry.concat(rest));
+    const dailyDoc = PREP_DOC.smoothie.daily[0];
     const daily = [
-      "Empty 1 pack into the blender with " + prepJoin(milk.map((i) => prepPer(i.key, i.qty))) + "; blend ~60 s (add a splash more milk if thick).",
+      rest.length
+        ? dailyDoc.replace("add remaining ingredients.", "add remaining ingredients: " + prepJoin(rest.map(prepAddIn)) + ".")
+        : dailyDoc,
     ];
-    const flav = (s.notes || []).find((x) => /cinnamon|cacao|pumpkin/i.test(x));
-    if (flav) daily.push(flav.replace(/^Optional flavor:\s*/i, "Optional: add ").replace(/^Flavor:\s*/i, "Add ") + ".");
-    return { weekly, daily, tasks: [{ kind: "pack", text: n + " smoothie freezer " + prepPlural("pack", n) + " (" + s.title.toLowerCase() + ")" }] };
+    return {
+      weekly, daily, source: "doc",
+      tasks: [{ kind: "pack", text: n + " smoothie " + prepPlural("jar", n) + " of dry ingredients (" + s.title.toLowerCase() + ")" }],
+    };
   }
 
   function prepOatmeal(s, n) {
     const ings = prepIngs(s);
-    const dryKeys = { oats_cup: 1, protein_scoop: 1, chia_tsp: 1, chia_tbsp: 1, hemp_tsp: 1, hemp_tbsp: 1, walnuts_tsp: 1, walnuts_tbsp: 1, raisins_cup: 1, cacao_tsp: 1 };
-    const dry = ings.filter((i) => dryKeys[i.key]);
-    const banana = ings.find((i) => i.key === "banana");
-    const wet = ings.filter((i) => !dryKeys[i.key] && i.key !== "banana");
+    const dry = ings.filter((i) => PREP_JAR_DRY[i.key]);
+    const milk = ings.filter((i) => /milk/.test(i.key));
+    const pumpkin = ings.filter((i) => i.key === "pumpkin_cup");
+    const toppings = ings.filter((i) => !PREP_JAR_DRY[i.key] && !/milk/.test(i.key) && i.key !== "pumpkin_cup");
     const oats = ings.find((i) => i.key === "oats_cup");
-    const wetLabels = wet.map((i) => prepPer(i.key, i.qty));
-    if (!wet.some((i) => /milk/.test(i.key)) && oats) wetLabels.unshift(Math.round((oats.qty / 0.5) * 4) + " oz water");
-    const fresh = Math.min(n, 5);
-    const weekly = [];
-    weekly.push("Make " + n + " overnight-oat " + prepPlural("jar", n) + ". In each: " + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) + ".");
-    if (fresh === n) {
-      weekly.push("Stir " + prepJoin(wetLabels) + " into each jar, cap and refrigerate (keeps 5 days).");
-    } else {
-      weekly.push("Stir " + prepJoin(wetLabels) + " into jars for days 1–" + fresh + ", cap and refrigerate (keeps 5 days). Keep days " + (fresh + 1) + "–" + n + " dry in the pantry.");
-    }
-    if (n > 1) weekly.push("Uses " + prepJoin(dry.concat(wet).map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
-    const daily = [];
-    if (fresh < n) daily.push("Days " + (fresh + 1) + "–" + n + ": the night before, stir in " + prepJoin(wetLabels) + " and refrigerate (1 min).");
-    if (banana) daily.push("Top with " + prepAmountLabel("banana", banana.qty) + ", sliced fresh so it doesn't brown.");
-    daily.push("Eat cold, or microwave 1½–2 min.");
-    return { weekly, daily, tasks: [{ kind: "pack", text: n + " overnight-oat " + prepPlural("jar", n) + " (" + s.title.toLowerCase() + ")" }] };
+    const weekly = prepJarWeekly("oatmeal", s, n, dry, dry.concat(milk, pumpkin, toppings));
+    // Liquid: the plan's milk, or water at the doc ratio (4 oz per ½ cup oats) when milk was omitted.
+    const liquid = milk.length
+      ? prepJoin(milk.map((i) => prepPer(i.key, i.qty)))
+      : (oats ? "about " + Math.max(4, Math.round((oats.qty / 0.5) * 4)) + " oz water" : "water");
+    const withPumpkin = pumpkin.length ? "; stir in " + prepJoin(pumpkin.map((i) => prepPer(i.key, i.qty))) + " too" : "";
+    const dailyDoc = PREP_DOC.oatmeal.daily[0];
+    let text = dailyDoc.replace("add milk or water.", "add milk or water (" + liquid + withPumpkin + ").");
+    if (toppings.length) text = text.replace("Add toppings and enjoy.", "Add toppings and enjoy: " + prepJoin(toppings.map(prepAddIn)) + ".");
+    return {
+      weekly, daily: [text], source: "doc",
+      tasks: [{ kind: "pack", text: n + " oatmeal " + prepPlural("jar", n) + " of dry ingredients (" + s.title.toLowerCase() + ")" }],
+    };
   }
 
   function prepSnackContainers(s, n, noun) {
@@ -3981,7 +4044,7 @@
       };
     }
     const amountLine = "For " + n + " " + prepPlural("day", n) + ": " + prepJoin(prepIngs(s).map((i) => prepItem(i.key, i.qty, n, false))) + ".";
-    const out = prepDocOverride(type, n, amountLine, gen);
+    const out = gen.source === "doc" ? gen : prepDocOverride(type, n, amountLine, gen);
     out.days = n;
     out.type = type;
     return out;

@@ -82,7 +82,7 @@ function check(cond, msg) {
   check(navLabels.includes("Profile"), "bottom nav has a 'Profile' button (" + navLabels.join(", ") + ")");
   check(!navLabels.includes("Plan"), "no 'Plan' button remains");
   const scriptSrc = await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src"));
-  check(/^onboarding\.js\?v=doc2[4-9]$/.test(scriptSrc), "cache-bust onboarding.js (" + scriptSrc + ")");
+  check(/^onboarding\.js\?v=doc(2[4-9]|3[0-9])$/.test(scriptSrc), "cache-bust onboarding.js (" + scriptSrc + ")");
   const fav = await page.$eval('link[rel="icon"][type="image/svg+xml"]', (l) => l.getAttribute("href"));
   check(fav === "assets/favicon.svg?v=leaf8", "favicon stays ?v=leaf8");
   const footer = await page.$$eval(".site-footer nav a", (as) => as.map((a) => a.getAttribute("href")));

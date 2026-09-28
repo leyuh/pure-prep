@@ -1,4 +1,11 @@
 /**
+ * doc30: Meal Templates doc prep instructions (fresh export in docs/meal-templates.txt)
+ *    applied via PREP_DOC: smoothie + oatmeal use the doc's jar method ("Portion out dry
+ *    ingredients into N jars." / "Empty jar into blender…" / "Empty jar into bowl and add milk
+ *    or water…") with the plan's specifics appended; jar count = servings for the prep week;
+ *    dry items in the jar, perishables (milk, banana, frozen fruit, nut butter, pumpkin,
+ *    honey/maple) added daily. The doc's bowl "Daily prep" line (a copy of oatmeal's) is NOT
+ *    applied; bowls, salad jars and snacks stay improvised.
  * doc29: weekly + daily prep instructions for every meal and snack.
  *  - Across many generated plans (budgets, cadences, every meal structure, goals,
  *    calories, variants, 1–7 plan days) every meal/snack has non-empty "Weekly prep"
@@ -10,9 +17,9 @@
  *  - Templates with instructions in the Meal Templates doc (PREP_DOC) use them.
  *  - Results page: each card has the prep block + a prep-day checklist; rerolling a
  *    meal updates its instructions; Home meal rows show the same steps as the saved plan.
- *  - Cache-bust ?v=doc29, favicon ?v=leaf8.
+ *  - Cache-bust ?v=doc30, favicon ?v=leaf8.
  * Optional: SHOTS_DIR=/path saves screenshots. BASE_URL=https://… runs against a live site.
- * Run: node scripts/verify-prep-doc29.js
+ * Run: node scripts/verify-prep-doc30.js
  */
 "use strict";
 const path = require("path");
@@ -70,7 +77,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc29", "onboarding.js?v=doc29");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc30", "onboarding.js?v=doc30");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
   check(typeof (await page.evaluate(() => typeof window.MealPlanOnboarding.prepForSlot)) === "string" &&
@@ -80,7 +87,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   const rep = await page.evaluate(() => {
     const M = window.MealPlanOnboarding;
     const ALL = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-    const out = { plans: 0, slots: 0, types: {}, empty: [], amount: [], spoon: [], safety: [], freshDaily: [], temp: [], prepDay: [], bad: [] };
+    const out = { plans: 0, slots: 0, types: {}, empty: [], amount: [], spoon: [], safety: [], freshDaily: [], temp: [], prepDay: [], bad: [], docWord: [], jarCount: [], jarSplit: [] };
     const push = (arr, x) => { if (arr.length < 5) arr.push(x); arr.count = (arr.count || 0) + 1; };
     for (const budget of [120, 250, 500, 900])
       for (const cadence of ["weekly", "every_other_week", "monthly"])
@@ -115,24 +122,57 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
                   const lim = s.type === "salad_jar" ? (fish ? 3 : 4) : (fish ? 3 : 4);
                   if (cooked && n > lim && !/freeze/i.test(txt)) push(out.safety, s.title + " n=" + n);
                 }
-                if (/banana|avocado/.test(keys.join(",")) && s.type !== "smoothie") {
+                if (/banana|avocado/.test(keys.join(","))) {
                   if (r.weekly.some((t) => /avocado|banana/i.test(t) && !/^Uses |^For \d/.test(t))) push(out.freshDaily, s.title + ": " + r.weekly.join(" / "));
                   if (!r.daily.some((t) => /avocado|banana/i.test(t))) push(out.freshDaily, s.title + " (no daily fresh-cut step)");
                 }
                 const temps = (txt.match(/\d{3}°F/g) || []).filter((t) => t !== "165°F" && t !== "145°F");
                 if (temps.some((t) => t !== "400°F")) push(out.temp, s.title + ": " + temps.join(","));
+                if (s.type === "smoothie" || s.type === "oatmeal") {
+                  out.jarSlots = (out.jarSlots || 0) + 1;
+                  const jar = r.weekly[0] || "";
+                  const m = jar.match(/^Portion out dry ingredients into (\d+) jars?\./);
+                  if (r.source !== "doc" || !m) push(out.docWord, s.title + ": " + jar);
+                  else if (Number(m[1]) !== n) push(out.jarCount, s.title + " jars=" + m[1] + " servings=" + n);
+                  const d0 = r.daily.join(" ");
+                  const docDaily = s.type === "smoothie"
+                    ? ["Empty jar into blender and add remaining ingredients", "Blend until smooth and enjoy."]
+                    : ["Empty jar into bowl and add milk or water", "Microwave for 1-2 minutes until oats are soft.", "Add toppings and enjoy"];
+                  if (!docDaily.every((w) => d0.includes(w))) push(out.docWord, s.title + " daily: " + d0);
+                  // Dry items (protein powder, oats, seeds, walnuts, raisins, cacao) in the jar; perishables daily.
+                  s.ingredients.forEach((i) => {
+                    if (!i._key) return;
+                    const label = M.prepAmountLabel(i._key, i._qty);
+                    const dry = /^(protein_scoop|oats_cup|chia_|hemp_|walnuts_|raisins_cup|cacao_tsp)/.test(i._key);
+                    if (dry && !jar.includes(label)) push(out.jarSplit, s.title + ": " + i._key + " not in jar");
+                    if (!dry && (/Each jar:|In the jar:/.test(jar) && jar.split(/Each jar:|In the jar:/)[1].includes(label + " "))) {
+                      const name = i._key === "banana" ? "banana" : (i._key.match(/milk|berries|cherries|pb|pumpkin|maple|honey|spinach|mango/) || [""])[0];
+                      if (name && new RegExp(name, "i").test(jar.split(/Each jar:|In the jar:/)[1])) push(out.jarSplit, s.title + ": " + i._key + " in jar");
+                    }
+                    if (!dry && !d0.includes(label)) push(out.jarSplit, s.title + ": " + i._key + " missing from daily");
+                    if (/berries|cherries|mango/.test(i._key) && !d0.includes("(from the freezer bag)")) push(out.jarSplit, s.title + ": frozen fruit not from freezer bag");
+                  });
+                } else {
+                  if (r.source !== "improvised") push(out.docWord, s.type + " should be improvised");
+                  if (/Empty jar into bowl|oats are soft/.test(txt)) push(out.docWord, s.type + " got the oatmeal doc line");
+                }
               });
               const d = M.prepDayPlan(p);
               const ovenUsed = p.schedule.some((sl) => M.prepForSlot(sl, { days: n }).tasks.some((t) => t.kind === "oven" || t.kind === "eggbake"));
               if (!d.steps.length || d.steps.some((st) => !st.text || /undefined|NaN/.test(st.text))) push(out.prepDay, "empty/bad");
               if (ovenUsed && !/Preheat/.test(d.steps[0].text)) push(out.prepDay, "oven used but step 1 is not preheat");
               if (d.days !== n) push(out.prepDay, "days mismatch");
+              p.schedule.forEach((sl) => {
+                if (sl.suggestion.type !== "smoothie" && sl.suggestion.type !== "oatmeal") return;
+                const want = "make " + n + " " + sl.suggestion.type + " " + (n === 1 ? "jar" : "jars") + " of dry ingredients";
+                if (!d.steps.some((st) => st.text.includes(want))) push(out.prepDay, "checklist missing '" + want + "'");
+              });
             }
-    ["empty", "amount", "spoon", "safety", "freshDaily", "temp", "prepDay", "bad"].forEach((k) => { out[k + "Count"] = out[k].count || 0; });
+    ["empty", "amount", "spoon", "safety", "freshDaily", "temp", "prepDay", "bad", "docWord", "jarCount", "jarSplit"].forEach((k) => { out[k + "Count"] = out[k].count || 0; });
     return out;
   });
   console.log("     " + JSON.stringify({ plans: rep.plans, slots: rep.slots, types: rep.types }));
-  ["empty", "amount", "spoon", "safety", "freshDaily", "temp", "prepDay", "bad"].forEach((k) => { if (rep[k + "Count"]) console.log("     " + k + ": " + JSON.stringify(rep[k])); });
+  ["empty", "amount", "spoon", "safety", "freshDaily", "temp", "prepDay", "bad", "docWord", "jarCount", "jarSplit"].forEach((k) => { if (rep[k + "Count"]) console.log("     " + k + ": " + JSON.stringify(rep[k])); });
   check(rep.plans >= 500, rep.plans + " plans / " + rep.slots + " meals+snacks generated");
   check(["bowl", "salad_jar", "smoothie", "oatmeal", "nut", "greek_yogurt", "cottage_cheese", "hb_egg_snack"].every((t) => rep.types[t] > 0), "all 8 templates covered");
   check(rep.emptyCount === 0 && rep.badCount === 0, "every meal/snack has non-empty weekly + daily steps");
@@ -141,7 +181,10 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(rep.safetyCount === 0, "cooked meat >4 days / fish >3 days → freeze + thaw the night before");
   check(rep.freshDailyCount === 0, "avocado / banana are cut fresh in the daily steps (not weekly)");
   check(rep.tempCount === 0, "all oven steps share one temperature (400°F)");
-  check(rep.prepDayCount === 0, "prep-day checklist is ordered (preheat first when the oven is used) and non-empty");
+  check(rep.prepDayCount === 0, "prep-day checklist is ordered (preheat first when the oven is used), non-empty, and lists the smoothie/oatmeal jars");
+  check(rep.jarSlots > 100 && rep.docWordCount === 0, rep.jarSlots + " smoothie/oatmeal items use the doc wording (weekly + daily); bowls/jars/snacks stay improvised");
+  check(rep.jarCountCount === 0, "jar count = servings for the prep week");
+  check(rep.jarSplitCount === 0, "dry items in the jar; milk/banana/nut butter/pumpkin/sweetener daily; frozen fruit 'from the freezer bag'");
 
   console.log("2) Combined cooking (salmon + potatoes on one sheet pan)");
   const combo = await page.evaluate(() => {
@@ -171,7 +214,13 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
     return { types, before, withDoc, after };
   });
   console.log("     templates with doc instructions: " + (doc.types.length ? doc.types.join(", ") : "none (doc copy has none; all improvised)"));
-  check(doc.before.source === (doc.types.includes("nut") ? "doc" : "improvised"), "source flag reflects PREP_DOC");
+  check(JSON.stringify(doc.types.sort()) === JSON.stringify(["oatmeal", "smoothie"]), "PREP_DOC has the doc's smoothie + oatmeal entries only (bowl's copy-pasted oatmeal line not applied)");
+  check(doc.before.source === "improvised", "source flag reflects PREP_DOC");
+  const docTxt = fs.readFileSync(path.join(ROOT, "docs", "meal-templates.txt"), "utf8");
+  check(/Weekly prep: Portion out dry ingredients into plan_days_count jars\./.test(docTxt) && /Empty jar into blender and add remaining ingredients/.test(docTxt), "docs/meal-templates.txt is the fresh export with prep lines");
+  const docSrc = await page.evaluate(() => window.MealPlanOnboarding.PREP_DOC);
+  check(docTxt.includes(docSrc.smoothie.weekly[0].replace("{n}", "plan_days_count")) && docTxt.includes(docSrc.smoothie.daily[0]) &&
+    docTxt.includes(docSrc.oatmeal.daily[0]), "PREP_DOC text matches the doc verbatim");
   check(doc.withDoc.source === "doc" && doc.withDoc.weekly.includes("DOC: portion into 5 bags.") && doc.withDoc.daily[0] === "DOC: grab a bag." &&
     /7½ oz almonds/.test(doc.withDoc.weekly[0]), "doc steps used (with {n} filled) + plan amounts line");
   check(doc.after.source === "improvised" && doc.after.weekly.join() === doc.before.weekly.join(), "removing the doc entry restores improvised steps");
@@ -196,10 +245,13 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(cards.length === 5, "5 cards (3 meals + 2 snacks)");
   check(cards.every((c) => c.prep && c.open && c.weekly.length && c.daily.length && c.weekly.every(Boolean) && c.daily.every(Boolean)), "every results card shows Weekly prep + Daily steps (open)");
   const pd = await page.$$eval(".mp-result details.mp-prepday .mp-prepday-list li", (ls) => ls.map((l) => l.textContent.trim()));
+  const bf = cards.find((c) => /smoothie|oatmeal/i.test(c.title));
+  check(!!bf && /^Portion out dry ingredients into 6 jars\./.test(bf.weekly[0]) && /^Empty jar into (blender|bowl)/.test(bf.daily[0]),
+    "results card (" + (bf ? bf.title.replace(/^.*- /, "") : "none") + ") shows the doc jar steps for 6 servings");
   check(pd.length >= 2 && (await page.$(".mp-result details.mp-prepday + .mp-slots")) !== null, "prep-day checklist (" + pd.length + " steps) sits above the meal cards");
   const overflow = await page.evaluate(() => [...document.querySelectorAll(".mp-prep, .mp-prepday")].some((e) => e.getBoundingClientRect().right > window.innerWidth + 1));
   check(!overflow, "prep blocks fit the 390px viewport");
-  if (shots) await page.screenshot({ path: path.join(shots, "doc29-results-local.png"), fullPage: true });
+  if (shots) await page.screenshot({ path: path.join(shots, "doc30-results-local.png"), fullPage: true });
 
   // Reroll meal 1 until the title changes; instructions must change with it.
   let idx = 0, before = cards[0], afterCard = before;
@@ -240,7 +292,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.click("#screen-home details.mp-prepday summary");
   await page.click("#screen-home .mp-prepday-list li:first-child label");
   check(await page.$eval("#screen-home .mp-prepday-list li:first-child input", (i) => i.checked), "checklist items can be ticked off");
-  if (shots) await page.screenshot({ path: path.join(shots, "doc29-home-local.png"), fullPage: true });
+  if (shots) await page.screenshot({ path: path.join(shots, "doc30-home-local.png"), fullPage: true });
 
   console.log("6) Existing flows still intact");
   const st2 = await getState();
