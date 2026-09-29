@@ -4370,7 +4370,7 @@
           frame({ label: slot.name, title: slot.name + ": no options fit", body, pct: (ps.i / total) * 100, onBack: pickBack });
           return;
         }
-        body.appendChild(el(`<p class="mp-hint mp-pick-intro">${escText(slot.name)} of ${total} · about ${slot.calories} cal. Pick a template; next you'll choose what goes in it.</p>`));
+        body.appendChild(el(`<p class="mp-hint mp-pick-intro">${escText(slot.name)} · ${ps.i + 1} of ${total} meals &amp; snacks · about ${slot.calories} cal. Pick a template; next you'll choose what goes in it.</p>`));
         const box = el(`<div class="mp-options mp-pick-templates"></div>`);
         if (pk.template && !templates.some((t) => t.id === pk.template)) { pk.template = null; pk.sel = {}; }
         templates.forEach((t) => box.appendChild(optionRow("radio", "pickTemplate", t.id, t.label, t.desc, pk.template === t.id)));
