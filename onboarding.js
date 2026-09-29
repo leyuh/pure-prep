@@ -125,7 +125,8 @@
     raisins_cup: { name: "raisins", unit: "cup", kcal: 430, p: 4.5, c: 114, f: 0.7, m: M({ fiber_g: 5.4, potassium_mg: 1086, iron_mg: 2.7, magnesium_mg: 46, calcium_mg: 73, sodium_mg: 16, zinc_mg: 0.3 }) },
     maple_tsp: { name: "maple syrup", unit: "tsp", kcal: 17, p: 0, c: 4.4, f: 0, m: M({ calcium_mg: 7, potassium_mg: 14, magnesium_mg: 1, zinc_mg: 0.05, iron_mg: 0.01 }) },
     honey_tsp: { name: "honey", unit: "tsp", kcal: 21, p: 0, c: 5.8, f: 0, m: M({ potassium_mg: 3.5, calcium_mg: 0.4 }) },
-    cacao_tsp: { name: "cacao powder", unit: "tsp", kcal: 8, p: 0.5, c: 1.2, f: 0.4, m: M({ fiber_g: 0.7, iron_mg: 0.5, magnesium_mg: 10, zinc_mg: 0.15, potassium_mg: 30, calcium_mg: 5 }) },
+    // doc34: USDA FDC [19165] unsweetened cocoa/cacao powder 228 kcal, 19.6 p, 57.9 c, 13.7 f /100 g; 1 tsp = 1.8 g.
+    cacao_tsp: { name: "cacao powder", unit: "tsp", kcal: 4.1, p: 0.35, c: 1.04, f: 0.25, m: M({ fiber_g: 0.67, iron_mg: 0.25, magnesium_mg: 9, zinc_mg: 0.12, potassium_mg: 27, calcium_mg: 2.3, copper_mg: 0.07, manganese_mg: 0.07, phosphorus_mg: 13 }) },
     beef_oz: { name: "93% lean ground beef (cooked)", unit: "oz", kcal: 48, p: 7, c: 0, f: 2.2, m: M({ iron_mg: 0.7, zinc_mg: 1.5, vitB12_mcg: 0.7, potassium_mg: 90, sodium_mg: 20, magnesium_mg: 6, calcium_mg: 4, vitA_mcg: 1, niacin_mg: 1.5, selenium_mcg: 6, phosphorus_mg: 55, vitB6_mg: 0.1, choline_mg: 20, riboflavin_mg: 0.05}) },
     turkey_oz: { name: "lean ground turkey (cooked)", unit: "oz", kcal: 45, p: 7.2, c: 0, f: 1.8, m: M({ zinc_mg: 0.9, iron_mg: 0.4, vitB12_mcg: 0.4, potassium_mg: 80, sodium_mg: 25, magnesium_mg: 7, calcium_mg: 5 }) },
     chicken_oz: { name: "chicken breast (cooked)", unit: "oz", kcal: 46, p: 8.8, c: 0, f: 1, m: M({ zinc_mg: 0.3, iron_mg: 0.15, vitB12_mcg: 0.1, potassium_mg: 73, sodium_mg: 20, magnesium_mg: 8, calcium_mg: 4, niacin_mg: 3.5, selenium_mcg: 7, phosphorus_mg: 60, vitB6_mg: 0.25, choline_mg: 20, thiamin_mg: 0.02, riboflavin_mg: 0.04, folate_mcg: 1}) },
@@ -177,6 +178,55 @@
     // 40 kcal, 0 g protein, 1 g carb, 4 g fat, 460 mg calcium). SR Legacy/FNDDS only list the
     // sweetened/generic beverage and canned coconut milk. Per fl oz below.
     coconut_milk_oz: { name: "unsweetened coconut milk", unit: "oz", kcal: 5.1, p: 0, c: 0.13, f: 0.5, m: M({ calcium_mg: 57.5, vitA_mcg: 22.5, vitD_mcg: 0.25, vitB12_mcg: 0.11, potassium_mg: 38.8, sodium_mg: 5.6, iron_mg: 0.06 }) },
+    // doc34 (Meal Templates: Greek yogurt bowl, Lunch box, flax, Flavor step). USDA FoodData Central,
+    // SR Legacy per-100 g values scaled to the unit below (NDB numbers in brackets; crackers are a
+    // branded-label estimate — SR Legacy has no organic ≤5-ingredient sourdough cracker).
+    // Ground flaxseed [12220] 534 kcal, 18.3 p, 28.9 c, 42.2 f /100 g; 1 tbsp = 7 g.
+    flax_tbsp: { name: "ground flax seeds", unit: "tbsp", kcal: 37, p: 1.3, c: 2, f: 3, m: M({ fiber_g: 1.9, calcium_mg: 18, magnesium_mg: 27, iron_mg: 0.4, zinc_mg: 0.3, potassium_mg: 57, phosphorus_mg: 45, thiamin_mg: 0.11 }) },
+    flax_tsp: { name: "ground flax seeds", unit: "tsp", kcal: 12.3, p: 0.43, c: 0.67, f: 1, m: M({ fiber_g: 0.63, calcium_mg: 6, magnesium_mg: 9, iron_mg: 0.13, zinc_mg: 0.1, potassium_mg: 19, phosphorus_mg: 15, thiamin_mg: 0.04 }) },
+    // Deglet noor dates, chopped [09087] 282 kcal, 2.45 p, 75 c, 0.39 f; 1 cup = 147 g.
+    dates_cup: { name: "chopped dates", unit: "cup", kcal: 415, p: 3.6, c: 110, f: 0.6, m: M({ fiber_g: 11.8, potassium_mg: 964, magnesium_mg: 63, calcium_mg: 57, iron_mg: 1.5, vitB6_mg: 0.24, copper_mg: 0.3, manganese_mg: 0.4 }) },
+    // Grapes [09132] 69 kcal /100 g; 1 cup = 151 g.
+    grapes_cup: { name: "grapes", unit: "cup", kcal: 104, p: 1.1, c: 27.3, f: 0.2, m: M({ fiber_g: 1.4, potassium_mg: 288, vitC_mg: 4.8, vitK_mcg: 22, calcium_mg: 15, magnesium_mg: 11, iron_mg: 0.5 }) },
+    // Apple with skin [09003] 52 kcal /100 g; medium = 182 g.
+    apple: { name: "apple", unit: "medium", kcal: 95, p: 0.5, c: 25.1, f: 0.3, m: M({ fiber_g: 4.4, potassium_mg: 195, vitC_mg: 8.4, vitK_mcg: 4, calcium_mg: 11, magnesium_mg: 9, iron_mg: 0.2 }) },
+    // Orange [09200] 47 kcal /100 g; medium = 131 g.
+    orange: { name: "orange", unit: "medium", kcal: 62, p: 1.2, c: 15.4, f: 0.2, m: M({ fiber_g: 3.1, vitC_mg: 69.7, potassium_mg: 237, calcium_mg: 52, folate_mcg: 39, magnesium_mg: 13, vitA_mcg: 14, thiamin_mg: 0.11 }) },
+    // Celery [11143] 16 kcal /100 g; 1 cup chopped = 101 g.
+    celery_cup: { name: "celery", unit: "cup", kcal: 16, p: 0.7, c: 3, f: 0.2, m: M({ fiber_g: 1.6, potassium_mg: 263, vitK_mcg: 30, calcium_mg: 40, vitA_mcg: 23, folate_mcg: 36, magnesium_mg: 11, sodium_mg: 81 }) },
+    // Edible-podded (snap) peas [11300] 42 kcal /100 g; 1 cup = 98 g.
+    snap_peas_cup: { name: "snap peas", unit: "cup", kcal: 41, p: 2.8, c: 7.4, f: 0.2, m: M({ fiber_g: 2.5, vitC_mg: 58.8, vitK_mcg: 24.5, potassium_mg: 196, iron_mg: 2, magnesium_mg: 24, vitA_mcg: 53, folate_mcg: 41 }) },
+    // Light tuna canned in water, drained [15121] 116 kcal, 25.5 p, 0.8 f /100 g; per oz (28.35 g).
+    tuna_oz: { name: "canned light tuna (in water, drained)", unit: "oz", kcal: 33, p: 7.2, c: 0, f: 0.2, m: M({ sodium_mg: 96, potassium_mg: 67, selenium_mcg: 22.8, vitB12_mcg: 0.85, niacin_mg: 3.3, vitD_mcg: 0.3, phosphorus_mg: 46, iron_mg: 0.4, magnesium_mg: 8, vitB6_mg: 0.1, choline_mg: 8 }) },
+    // Chicken, canned, meat only, with broth [05284] 165 kcal, 21.8 p, 8 f /100 g; per oz.
+    canned_chicken_oz: { name: "canned chicken breast (drained)", unit: "oz", kcal: 47, p: 6.2, c: 0, f: 2.3, m: M({ sodium_mg: 143, potassium_mg: 39, selenium_mcg: 6.4, niacin_mg: 1.8, phosphorus_mg: 32, zinc_mg: 0.4, iron_mg: 0.4, vitB6_mg: 0.1, magnesium_mg: 3.4 }) },
+    // Pink salmon canned, drained, with bone [15084] 139 kcal, 23.1 p, 4.9 f /100 g; per oz.
+    canned_salmon_oz: { name: "canned pink salmon (drained)", unit: "oz", kcal: 39, p: 6.5, c: 0, f: 1.4, m: M({ calcium_mg: 79, sodium_mg: 108, potassium_mg: 92, vitD_mcg: 3.1, vitB12_mcg: 1.4, selenium_mcg: 10.5, niacin_mg: 1.9, phosphorus_mg: 93, magnesium_mg: 9, vitB6_mg: 0.1, choline_mg: 25 }) },
+    // Oven-roasted deli turkey breast, sliced [07943] 104 kcal, 17.1 p, 4.2 c, 1.7 f /100 g; per oz.
+    deli_turkey_oz: { name: "nitrate-free oven-roasted deli turkey", unit: "oz", kcal: 29.5, p: 4.8, c: 1.2, f: 0.5, m: M({ sodium_mg: 288, potassium_mg: 74, selenium_mcg: 5.8, niacin_mg: 2.1, phosphorus_mg: 64, zinc_mg: 0.3, iron_mg: 0.1, vitB6_mg: 0.1 }) },
+    // Sourdough (French/Vienna incl. sourdough) bread [18029] 272 kcal, 10.8 p, 51.9 c, 3 f /100 g; slice = 32 g.
+    sourdough_bread_slice: { name: "organic sourdough bread", unit: "slice", kcal: 87, p: 3.5, c: 16.6, f: 1, m: M({ fiber_g: 0.7, sodium_mg: 193, iron_mg: 1.2, folate_mcg: 38, thiamin_mg: 0.17, potassium_mg: 36, calcium_mg: 14, selenium_mcg: 9 }) },
+    // Organic sourdough crackers (flour, water, olive oil, salt): ~ label 1 oz = 120 kcal, 3 p, 21 c, 3 f.
+    sourdough_crackers_oz: { name: "organic sourdough crackers", unit: "oz", kcal: 120, p: 3, c: 21, f: 3, m: M({ fiber_g: 1, sodium_mg: 180, iron_mg: 1, potassium_mg: 40, calcium_mg: 8 }) },
+    // Hummus, commercial [16158] 166 kcal, 7.9 p, 14.3 c, 9.6 f /100 g; 1 tbsp = 15 g.
+    hummus_tbsp: { name: "organic hummus", unit: "tbsp", kcal: 25, p: 1.2, c: 2.1, f: 1.4, m: M({ fiber_g: 0.9, sodium_mg: 57, potassium_mg: 34, iron_mg: 0.4, magnesium_mg: 11, folate_mcg: 13, calcium_mg: 6, zinc_mg: 0.3 }) },
+    // Cheddar [01009] 403 kcal, 24.9 p, 1.3 c, 33.1 f /100 g; per oz.
+    // 4% cottage cheese [01012] 98 kcal, 11.1 p, 3.4 c, 4.3 f /100 g; 1 cup = 210 g (doc34 bowl fat).
+    cottage_full_cup: { name: "4% cottage cheese", unit: "cup", kcal: 206, p: 23.3, c: 7.1, f: 9, m: M({ calcium_mg: 174, sodium_mg: 764, potassium_mg: 218, vitB12_mcg: 0.9, phosphorus_mg: 334, selenium_mcg: 20, vitA_mcg: 78, zinc_mg: 0.8, riboflavin_mg: 0.34 }) },
+    cheddar_oz: { name: "cheddar cheese", unit: "oz", kcal: 114, p: 7.1, c: 0.4, f: 9.4, m: M({ calcium_mg: 204, sodium_mg: 176, vitA_mcg: 75, vitB12_mcg: 0.2, zinc_mg: 0.9, phosphorus_mg: 145, selenium_mcg: 4 }) },
+    // Flavor-step items (doc34). Cinnamon [02010] 1 tsp = 2.6 g; vanilla extract [02050] 1 tsp = 4.2 g;
+    // pumpkin pie spice [02035] 1 tsp = 1.7 g; salt [02047] a pinch ≈ 0.4 g; black pepper [02030] a pinch ≈ 0.3 g;
+    // garlic powder [02020] 1 tsp = 3.1 g; paprika [02028] 1 tsp = 2.3 g; yellow mustard [02046] 1 tsp = 5 g;
+    // lemon juice [09152] 1 tsp = 5.1 g.
+    cinnamon_tsp: { name: "ground cinnamon", unit: "tsp", kcal: 6, p: 0.1, c: 2.1, f: 0, m: M({ fiber_g: 1.4, calcium_mg: 26, manganese_mg: 0.45, iron_mg: 0.2, potassium_mg: 11 }) },
+    vanilla_tsp: { name: "vanilla extract", unit: "tsp", kcal: 12, p: 0, c: 0.5, f: 0, m: M({ potassium_mg: 6 }) },
+    pumpkin_spice_tsp: { name: "pumpkin pie spice", unit: "tsp", kcal: 6, p: 0.1, c: 1.2, f: 0.2, m: M({ fiber_g: 0.3, calcium_mg: 12, manganese_mg: 0.3, iron_mg: 0.3, potassium_mg: 11 }) },
+    salt_pinch: { name: "salt", unit: "pinch", kcal: 0, p: 0, c: 0, f: 0, m: M({ sodium_mg: 155 }) },
+    pepper_pinch: { name: "black pepper", unit: "pinch", kcal: 1, p: 0, c: 0.2, f: 0, m: M({ potassium_mg: 4 }) },
+    garlic_powder_tsp: { name: "garlic powder", unit: "tsp", kcal: 10, p: 0.5, c: 2.3, f: 0, m: M({ potassium_mg: 37, calcium_mg: 2, magnesium_mg: 2, vitB6_mg: 0.05 }) },
+    paprika_tsp: { name: "paprika", unit: "tsp", kcal: 6.5, p: 0.3, c: 1.2, f: 0.3, m: M({ fiber_g: 0.8, vitA_mcg: 57, potassium_mg: 54, iron_mg: 0.5, vitE_mg: 0.7 }) },
+    mustard_tsp: { name: "yellow mustard", unit: "tsp", kcal: 3, p: 0.2, c: 0.3, f: 0.2, m: M({ sodium_mg: 57, calcium_mg: 3, potassium_mg: 7 }) },
+    lemon_juice_tsp: { name: "lemon juice", unit: "tsp", kcal: 1, p: 0, c: 0.3, f: 0, m: M({ vitC_mg: 2.0, potassium_mg: 5 }) },
     pumpkin_seeds_oz: { name: "pumpkin seeds", unit: "oz", kcal: 158, p: 8.5, c: 3, f: 13.9, m: M({ fiber_g: 1.7, magnesium_mg: 156, zinc_mg: 2.2, iron_mg: 2.5, potassium_mg: 229, phosphorus_mg: 330, manganese_mg: 1.3, copper_mg: 0.4, calcium_mg: 13 }) },
   };
 
@@ -187,7 +237,7 @@
     strawberries_cup: 152, cherries_cup: 140, mango_cup: 165, spinach_cup: 30,
     oats_cup: 80, chia_tbsp: 10, hemp_tbsp: 10, walnuts_tbsp: 7.5, pb_tbsp: 16,
     chia_tsp: 3.3, hemp_tsp: 3.3, walnuts_tsp: 2.5, pb_tsp: 5.3,
-    pumpkin_cup: 245, raisins_cup: 145, maple_tsp: 7, honey_tsp: 7, cacao_tsp: 2.5,
+    pumpkin_cup: 245, raisins_cup: 145, maple_tsp: 7, honey_tsp: 7, cacao_tsp: 1.8,
     beef_oz: 28, turkey_oz: 28, chicken_oz: 28, chicken_thigh_oz: 28, salmon_oz: 28, cod_oz: 28, shrimp_oz: 28,
     lettuce_cup: 36, kale_cup: 67, mixed_greens_cup: 40, cherry_tomato_cup: 149, cucumber_cup: 104,
     onion_cup: 160, corn_cup: 164, black_beans_cup: 172, feta_oz: 28, parmesan_oz: 28,
@@ -199,6 +249,12 @@
     pineapple_cup: 165, peach_cup: 154,
     egg: 50, egg_white: 33, avocado_oz: 28, hard_boiled_egg: 50,
     plant_protein_scoop: 33, soy_milk_oz: 30, tofu_oz: 28, pumpkin_seeds_oz: 28, coconut_milk_oz: 30,
+    // doc34
+    flax_tbsp: 7, flax_tsp: 2.3, dates_cup: 147, grapes_cup: 151, apple: 182, orange: 131, celery_cup: 101, snap_peas_cup: 98,
+    tuna_oz: 28, canned_chicken_oz: 28, canned_salmon_oz: 28, deli_turkey_oz: 28, sourdough_bread_slice: 32,
+    sourdough_crackers_oz: 28, hummus_tbsp: 15, cheddar_oz: 28, cottage_full_cup: 210,
+    cinnamon_tsp: 2.6, vanilla_tsp: 4.2, pumpkin_spice_tsp: 1.7, salt_pinch: 0.4, pepper_pinch: 0.3,
+    garlic_powder_tsp: 3.1, paprika_tsp: 2.3, mustard_tsp: 5, lemon_juice_tsp: 5.1,
   };
 
   const DAYS_OF_WEEK = [
@@ -335,6 +391,34 @@
     tofu_oz: { product: "Extra-firm tofu", packageQty: 14, packageUnit: "oz", packagePrice: 2.28 },
     pumpkin_seeds_oz: { product: "Pumpkin seeds (pepitas)", packageQty: 10, packageUnit: "oz", packagePrice: 4.98 },
     coconut_milk_oz: { product: "Unsweetened coconut milk (carton)", packageQty: 64, packageUnit: "oz", packagePrice: 3.28 },
+    // doc34 (Walmart-style estimates). Canned fish/chicken: 5 oz can ≈ 4 oz drained.
+    flax_tbsp: { product: "Ground flaxseed", packageQty: 32, packageUnit: "tbsp", packagePrice: 3.98 },
+    flax_tsp: { product: "Ground flaxseed", packageQty: 96, packageUnit: "tsp", packagePrice: 3.98 },
+    dates_cup: { product: "Pitted dates", packageQty: 2.5, packageUnit: "cup", packagePrice: 4.48 },
+    grapes_cup: { product: "Grapes", packageQty: 5, packageUnit: "cup", packagePrice: 3.98 },
+    apple: { product: "Apples", packageQty: 1, packageUnit: "medium", packagePrice: 0.72 },
+    orange: { product: "Navel oranges", packageQty: 1, packageUnit: "medium", packagePrice: 0.84 },
+    celery_cup: { product: "Celery", packageQty: 6, packageUnit: "cup", packagePrice: 1.98 },
+    snap_peas_cup: { product: "Sugar snap peas", packageQty: 3, packageUnit: "cup", packagePrice: 3.48 },
+    tuna_oz: { product: "Canned light tuna in water (5 oz can)", packageQty: 4, packageUnit: "oz", packagePrice: 1.12 },
+    canned_chicken_oz: { product: "Canned chicken breast (12.5 oz can)", packageQty: 9, packageUnit: "oz", packagePrice: 3.48 },
+    canned_salmon_oz: { product: "Canned pink salmon (14.75 oz can)", packageQty: 11, packageUnit: "oz", packagePrice: 4.28 },
+    deli_turkey_oz: { product: "Nitrate-free oven-roasted turkey (deli)", packageQty: 8, packageUnit: "oz", packagePrice: 4.48 },
+    sourdough_bread_slice: { product: "Organic sourdough bread (≤5 ingredients)", packageQty: 16, packageUnit: "slice", packagePrice: 5.48 },
+    sourdough_crackers_oz: { product: "Organic sourdough crackers (≤5 ingredients, no seed oils)", packageQty: 6, packageUnit: "oz", packagePrice: 4.98 },
+    hummus_tbsp: { product: "Organic hummus", packageQty: 20, packageUnit: "tbsp", packagePrice: 3.98 },
+    cheddar_oz: { product: "Cheddar cheese block", packageQty: 8, packageUnit: "oz", packagePrice: 2.48 },
+    cottage_full_cup: { product: "4% cottage cheese (16 oz)", packageQty: 2, packageUnit: "cup", packagePrice: 2.98 },
+    // Pantry flavors (pantry: true → listed on the grocery list but not priced into the budget total).
+    cinnamon_tsp: { product: "Ground cinnamon", packageQty: 36, packageUnit: "tsp", packagePrice: 1.98, pantry: true },
+    vanilla_tsp: { product: "Pure vanilla extract", packageQty: 12, packageUnit: "tsp", packagePrice: 4.97, pantry: true },
+    pumpkin_spice_tsp: { product: "Pumpkin pie spice", packageQty: 30, packageUnit: "tsp", packagePrice: 2.48, pantry: true },
+    salt_pinch: { product: "Salt", packageQty: 1000, packageUnit: "pinch", packagePrice: 0.98, pantry: true },
+    pepper_pinch: { product: "Ground black pepper", packageQty: 400, packageUnit: "pinch", packagePrice: 1.98, pantry: true },
+    garlic_powder_tsp: { product: "Garlic powder", packageQty: 30, packageUnit: "tsp", packagePrice: 1.98, pantry: true },
+    paprika_tsp: { product: "Paprika", packageQty: 30, packageUnit: "tsp", packagePrice: 1.98, pantry: true },
+    mustard_tsp: { product: "Yellow mustard", packageQty: 80, packageUnit: "tsp", packagePrice: 1.18, pantry: true },
+    lemon_juice_tsp: { product: "Lemon juice", packageQty: 90, packageUnit: "tsp", packagePrice: 2.48, pantry: true },
   };
 
   /* ── Dietary restrictions (doc32) ──────────────────────────────────────
@@ -364,6 +448,9 @@
     salmon_oz: ["fish"], cod_oz: ["fish"], shrimp_oz: ["fish"],
     beef_oz: ["meat"], turkey_oz: ["meat"], chicken_oz: ["meat"], chicken_thigh_oz: ["meat"],
     honey_tsp: ["honey"],
+    // doc34
+    tuna_oz: ["fish"], canned_salmon_oz: ["fish"], canned_chicken_oz: ["meat"], deli_turkey_oz: ["meat"],
+    cheddar_oz: ["dairy"], cottage_full_cup: ["dairy"], sourdough_bread_slice: ["gluten"], sourdough_crackers_oz: ["gluten"],
   };
 
   function normalizeRestrictions(list) {
@@ -551,8 +638,11 @@
 
   /** Condense tsp → tbsp only when divisible by 3 (e.g. 6 tsp → 2 tbsp). Prefer integer tsp (4 tsp over 1.3 tbsp). */
   function condenseTsp(foodKey, qty) {
-    const tbspMap = { chia_tsp: "chia_tbsp", hemp_tsp: "hemp_tbsp", walnuts_tsp: "walnuts_tbsp", pb_tsp: "pb_tbsp" };
-    const tspOnly = { evoo_tsp: 1, maple_tsp: 1, honey_tsp: 1, cacao_tsp: 1 };
+    const tbspMap = { chia_tsp: "chia_tbsp", hemp_tsp: "hemp_tbsp", walnuts_tsp: "walnuts_tbsp", pb_tsp: "pb_tbsp", flax_tsp: "flax_tbsp" };
+    const tspOnly = {
+      evoo_tsp: 1, maple_tsp: 1, honey_tsp: 1, cacao_tsp: 1, cinnamon_tsp: 1, vanilla_tsp: 1, pumpkin_spice_tsp: 1,
+      garlic_powder_tsp: 1, paprika_tsp: 1, mustard_tsp: 1, lemon_juice_tsp: 1,
+    };
     // If already tbsp with non-integer / non-clean qty, bounce back to integer tsp
     if (foodKey.endsWith("_tbsp") && FOOD[foodKey] && FOOD[foodKey].unit === "tbsp") {
       const asTsp = Math.max(1, Math.round(Number(qty) * 3));
@@ -589,7 +679,9 @@
   function gramsFor(foodKey, qty) {
     const g = UNIT_GRAMS[foodKey];
     if (!g) return null;
-    return Math.round(g * qty);
+    const v = g * qty;
+    // doc34: a pinch of salt is 0.4 g — show one decimal below 1 g instead of "0g".
+    return v > 0 && v < 1 ? Math.round(v * 10) / 10 : Math.round(v);
   }
 
   function qtyLine(foodKey, qty, labelOverride) {
@@ -642,12 +734,17 @@
     } else if (f.unit === "cup") {
       label = formatCupQty(macroQty) + " cup " + f.name;
     } else if (f.unit === "scoop") {
-      label = formatQty(macroQty) + " scoop" + (macroQty === 1 ? "" : "s") + " " + f.name;
+      label = formatQty(macroQty) + " scoop" + (macroQty <= 1 ? "" : "s") + " " + f.name;
     } else if (f.unit === "egg") {
       // doc33: "3 large eggs" / "1 hard boiled egg" (was "3 egg large egg").
       label = formatQty(macroQty) + " " + f.name + (Math.abs(macroQty - 1) < 1e-9 ? "" : "s");
     } else if (f.unit === "white") {
       label = eggWhiteAmount(macroQty) + " " + f.name;
+    } else if (f.unit === "pinch") {
+      // doc34 flavor step: "Pinch of salt", "Pinch of black pepper".
+      label = (macroQty > 1 ? formatQty(macroQty) + " pinches of " : "Pinch of ") + f.name;
+    } else if (f.unit === "slice") {
+      label = formatQty(macroQty) + " " + (macroQty > 1 ? "slices" : "slice") + " " + f.name;
     } else {
       label = formatQty(macroQty) + " " + f.unit + " " + f.name;
     }
@@ -656,7 +753,7 @@
     if (labelOverride && !/\b(tsp|tbsp|cup|oz|scoop)/i.test(labelOverride)) {
       label = labelOverride;
     }
-    if (grams != null && !/\(\d+g\)/.test(label)) {
+    if (grams != null && !/\([\d.]+g\)/.test(label)) {
       label = label + " (" + grams + "g)";
     }
     return { label, kcal, p, c, f: fat, _key: macroKey, _qty: macroQty, _grams: grams };
@@ -675,6 +772,8 @@
       walnuts_tbsp: "walnuts",
       pb_tsp: "pb",
       pb_tbsp: "pb",
+      flax_tsp: "flax",
+      flax_tbsp: "flax",
       hard_boiled_egg: "egg",
       egg: "egg",
     };
@@ -688,6 +787,7 @@
       hemp: { tsp: "hemp_tsp", tbsp: "hemp_tbsp" },
       walnuts: { tsp: "walnuts_tsp", tbsp: "walnuts_tbsp" },
       pb: { tsp: "pb_tsp", tbsp: "pb_tbsp" },
+      flax: { tsp: "flax_tsp", tbsp: "flax_tbsp" },
     };
     if (spoon[family]) {
       const tsp = Math.max(1, Math.round(totalTspEquiv));
@@ -730,7 +830,7 @@
         // Exact same key only once — still merge identical keys by summing qty
       }
       // Sum tsp-equivalent for spoon foods; otherwise sum qty on canonical key
-      const spoonFamilies = { chia: 1, hemp: 1, walnuts: 1, pb: 1 };
+      const spoonFamilies = { chia: 1, hemp: 1, walnuts: 1, pb: 1, flax: 1 };
       if (spoonFamilies[fam]) {
         let tsp = 0;
         for (const ing of list) tsp += qtyToTspEquiv(ing._key, ing._qty || 0);
@@ -906,7 +1006,7 @@
   }
 
   function scoopLabel(scoops) {
-    return formatQty(scoops) + " scoop" + (scoops === 1 ? "" : "s") + " protein powder";
+    return formatQty(scoops) + " scoop" + (scoops <= 1 ? "" : "s") + " protein powder";
   }
 
 
@@ -1124,7 +1224,8 @@
       banana_bread: "Banana bread smoothie",
     };
     const totals = roundMacros(sumIngredients(ings));
-    return {
+    // doc34: profile spice as a line (chocolate cherry always has cacao); optional flavors stay a side note.
+    return applyProfileFlavors({
       title: titles[flavor] || "Smoothie",
       type: "smoothie",
       flavor,
@@ -1133,7 +1234,7 @@
       notes,
       targetGrams,
       targetCal,
-    };
+    }, flavor, ["cinnamon_tsp", "cacao_tsp"]);
   }
 
   function buildOatmealSlot(flavor, targetCal, targetGrams, includeMilk, milkKey) {
@@ -1170,8 +1271,7 @@
       notes.push("Optional flavor: cacao, cinnamon, or a pinch of salt");
     } else {
       ings.push(qtyLine("cherries_cup", 0.75, "¾ cup cherries"));
-      ings.push(qtyLine("cacao_tsp", 2, "2 tsp cacao powder"));
-      notes.push("Optional flavor: cinnamon, cacao, or a pinch of salt");
+      // doc34: the 2 tsp cacao now comes from the chocolate cherry profile flavor (added last).
     }
 
     // Milk: 4oz per 1 serving oats — omit if caller says so (day budget)
@@ -1212,7 +1312,7 @@
       chocolate_cherry: "Chocolate cherry oatmeal",
     };
     const totals = roundMacros(sumIngredients(ings));
-    return {
+    return applyProfileFlavors({
       title: titles[flavor] || "Oatmeal",
       type: "oatmeal",
       flavor,
@@ -1222,7 +1322,7 @@
       targetGrams,
       targetCal,
       _oatCups: oatCups,
-    };
+    }, flavor, ["cinnamon_tsp", "cacao_tsp", "salt_pinch"]);
   }
 
   function buildBowlSlot(protein, targetCal, targetGrams, options) {
@@ -1303,6 +1403,8 @@
       pickedFats.forEach((fs) => {
         if (fs === "avocado") ings.push(qtyLine("avocado_oz", clamp(Math.round((share / FOOD.avocado_oz.f) * 2) / 2, 1, 4)));
         else if (fs === "hbe") ings.push(qtyLine("hard_boiled_egg", clamp(Math.round(share / FOOD.hard_boiled_egg.f), 1, 2)));
+        // doc34: cottage cheese (4%) as a bowl fat, ¼–¾ cup.
+        else if (fs === "cottage") ings.push(qtyLine("cottage_full_cup", clamp(snapCupFraction(share / FOOD.cottage_full_cup.f), 0.25, 0.75)));
         else ings.push(qtyLine("evoo_tsp", clamp(Math.round(share / FOOD.evoo_tsp.f), 1, 3)));
       });
     } else if (fatNeed >= 2) {
@@ -1593,7 +1695,11 @@
     return ings;
   }
 
-  const MEAL_TYPES_ALL = ["smoothie", "oatmeal", "bowl", "salad_jar"];
+  // doc34: the doc's six meal templates — Sweet (smoothie, Greek yogurt bowl, oatmeal) then
+  // Savory (lunch box, salad jar, bowl). Pick-wizard order is slot-aware (see pickTemplatesFor).
+  const MEAL_TYPES_ALL = ["smoothie", "oatmeal", "bowl", "salad_jar", "yogurt_bowl", "lunch_box"];
+  const SWEET_MEAL_TYPES = ["smoothie", "yogurt_bowl", "oatmeal"];
+  const SAVORY_MEAL_TYPES = ["lunch_box", "salad_jar", "bowl"];
   const SNACK_TYPES_ALL = ["nut", "cottage", "greek", "hb_egg"];
 
   /** Shared protein/flavor pools respecting budgetTier preferences. */
@@ -1638,13 +1744,19 @@
         ? ["pineapple", "peach"]
         : ["pineapple", "peach", "mango", "berries"]
       : ["pineapple", "peach", "mango", "berries"];
-    const pools = { tier, bowlProteins, saladProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
+    // doc34 Lunch box proteins: canned tuna/chicken(/salmon), hard-boiled eggs, deli turkey (with eggs).
+    const lunchProteins = tier.preferCheapProtein
+      ? ["tuna", "canned_chicken", "hb_eggs", "deli_turkey"]
+      : ["tuna", "canned_chicken", "canned_salmon", "hb_eggs", "deli_turkey"];
+    const pools = { tier, bowlProteins, saladProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits, lunchProteins };
     return restrictPools(pools, restrictionFlags(planOptions.restrictions));
   }
 
   const PROTEIN_FOOD_KEY = {
     beef: "beef_oz", turkey: "turkey_oz", chicken: "chicken_oz", chicken_thigh: "chicken_thigh_oz",
     salmon: "salmon_oz", cod: "cod_oz", shrimp: "shrimp_oz", eggs: "egg", egg_whites: "egg_white", tofu: "tofu_oz",
+    tuna: "tuna_oz", canned_chicken: "canned_chicken_oz", canned_salmon: "canned_salmon_oz", hb_eggs: "hard_boiled_egg",
+    deli_turkey: "deli_turkey_oz",
   };
 
   /**
@@ -1658,6 +1770,8 @@
       const ok = (p) => foodAllowed(PROTEIN_FOOD_KEY[p], flags);
       out.bowlProteins = pools.bowlProteins.filter(ok);
       out.saladProteins = pools.saladProteins.filter(ok);
+      // doc34: deli meat is always paired with hard-boiled eggs, so it needs eggs allowed too.
+      out.lunchProteins = (pools.lunchProteins || []).filter((p) => ok(p) && (p !== "deli_turkey" || !flags.egg));
       if (flags.vegetarian) {
         out.bowlProteins.push("tofu");
         out.saladProteins.push("tofu");
@@ -1672,11 +1786,259 @@
     }
     const f = out.flags;
     // Smoothie/oatmeal always work (whey or plant protein powder); bowls/jars need a protein.
+    // doc34: the Greek yogurt bowl needs dairy; the lunch box needs a lunch protein
+    // (vegetarian → hard-boiled eggs only; vegan / vegetarian + egg-free → none).
     out.mealTypes = MEAL_TYPES_ALL.filter((t) =>
-      t === "bowl" ? out.bowlProteins.length > 0 : t === "salad_jar" ? out.saladProteins.length > 0 : true);
+      t === "bowl" ? out.bowlProteins.length > 0
+        : t === "salad_jar" ? out.saladProteins.length > 0
+        : t === "yogurt_bowl" ? !f.dairy
+        : t === "lunch_box" ? (out.lunchProteins || []).length > 0
+        : true);
     out.snackTypes = SNACK_TYPES_ALL.filter((t) =>
       t === "nut" ? out.nutKeys.length > 0 : t === "hb_egg" ? !f.egg : !f.dairy);
     return out;
+  }
+
+  /* ── doc34: Flavor step + generated flavors ─────────────────────────────
+   * Flavors are real ingredient lines (grams + USDA macros) so they show on the
+   * card, in prep and on the grocery list. Cacao is a priced purchase; spices,
+   * salt, vanilla, mustard and lemon juice are pantry items (listed, not priced).
+   * Sweet templates (smoothie, Greek yogurt bowl, oatmeal) offer sweet flavors;
+   * savory templates (lunch box, salad jar, bowl) offer the doc's seasonings.
+   */
+  const FLAVOR_SWEET = ["cinnamon_tsp", "cacao_tsp", "vanilla_tsp", "pumpkin_spice_tsp", "salt_pinch"];
+  const FLAVOR_SAVORY = ["salt_pinch", "pepper_pinch", "garlic_powder_tsp", "paprika_tsp", "lemon_juice_tsp", "mustard_tsp"];
+  const FLAVOR_QTY = {
+    cinnamon_tsp: 1, cacao_tsp: 2, vanilla_tsp: 1, pumpkin_spice_tsp: 1, salt_pinch: 1,
+    pepper_pinch: 1, garlic_powder_tsp: 1, paprika_tsp: 1, lemon_juice_tsp: 2, mustard_tsp: 2,
+  };
+  const MAX_FLAVORS = 3;
+  function isFlavorKey(k) {
+    return !!k && Object.prototype.hasOwnProperty.call(FLAVOR_QTY, k);
+  }
+  function mealGroupFor(type) {
+    return SWEET_MEAL_TYPES.indexOf(type) !== -1 ? "sweet" : "savory";
+  }
+  function flavorOptionsFor(type) {
+    return (mealGroupFor(type) === "sweet" ? FLAVOR_SWEET : FLAVOR_SAVORY).slice();
+  }
+  /** Replace a suggestion's flavor lines with `keys` (max 3, restriction-safe), appended last. */
+  function applyFlavors(s, keys, flags) {
+    if (!s || !s.ingredients) return s;
+    const uniq = [];
+    (keys || []).forEach((k) => { if (isFlavorKey(k) && uniq.indexOf(k) === -1 && foodAllowed(k, flags)) uniq.push(k); });
+    const list = uniq.slice(0, MAX_FLAVORS);
+    s.ingredients = s.ingredients.filter((i) => !(i && isFlavorKey(i._key))).concat(list.map((k) => qtyLine(k, FLAVOR_QTY[k])));
+    s.flavors = list;
+    s.totals = roundMacros(sumIngredients(s.ingredients));
+    return s;
+  }
+  // Doc flavor profiles: the named spice is part of the profile (added as a line);
+  // the doc's optional flavors stay a side note.
+  const PROFILE_FLAVORS = {
+    pumpkin_spice: ["pumpkin_spice_tsp"], banana_bread: ["cinnamon_tsp"], berry_banana: [], pb_banana: [], chocolate_cherry: ["cacao_tsp"],
+  };
+  const FLAVOR_WORD = { cinnamon_tsp: "cinnamon", cacao_tsp: "cacao", salt_pinch: "a pinch of salt", pumpkin_spice_tsp: "pumpkin spice" };
+  function optionalFlavorNote(included, candidates) {
+    const words = candidates.filter((k) => included.indexOf(k) === -1).map((k) => FLAVOR_WORD[k]);
+    if (!words.length) return null;
+    return "Optional flavor: " + (words.length > 1 ? words.slice(0, -1).join(", ") + " or " + words[words.length - 1] : words[0]);
+  }
+  /** Sweet generated meals: profile spice line(s) + the doc's optional side note. */
+  function applyProfileFlavors(s, flavor, candidates) {
+    const keys = (PROFILE_FLAVORS[flavor] || []).slice();
+    applyFlavors(s, keys, null);
+    s.notes = (s.notes || []).filter((n) => !/^(Optional flavor|Flavor:|Optional:)/i.test(n));
+    const note = optionalFlavorNote(keys, candidates);
+    if (note) s.notes.push(note);
+    return s;
+  }
+  /** Savory generated meals: doc seasonings (salad jar: 0–1 of mustard/lemon; bowl: season lightly). */
+  function applyGeneratedSavoryFlavors(s, seed, flags) {
+    if (!s || s._picked || (s.flavors && s.flavors.length)) return s;
+    const i = ((Number(seed) || 0) % 3 + 3) % 3;
+    let keys = [];
+    if (s.type === "salad_jar") {
+      keys = [["lemon_juice_tsp"], ["mustard_tsp"], []][i];
+      if ((s.notes || []).indexOf("Salt and pepper to taste") === -1) s.notes = (s.notes || []).concat(["Salt and pepper to taste"]);
+    } else if (s.type === "bowl") {
+      keys = [["salt_pinch", "pepper_pinch"], ["salt_pinch", "garlic_powder_tsp"], ["salt_pinch", "paprika_tsp"]][i];
+    } else if (s.type === "lunch_box") {
+      keys = /tuna|salmon/i.test(s.protein || "") ? ["lemon_juice_tsp", "pepper_pinch"] : [];
+    } else return s;
+    return applyFlavors(s, keys, flags);
+  }
+
+  /* ── doc34: Greek yogurt bowl (sweet meal) ────────────────────────────────
+   * Protein: low-fat (2%) Greek yogurt base, protein powder optional.
+   * Carbs: 1–3 fruits/berries/dried fruit; optional 1–2 tsp honey/maple, 1–2 tbsp dry oats.
+   * Fats: pick 1–3 of chia/flax/hemp, a small portion of nuts (walnuts), nut butter.
+   * comps: { fruits, powder (bool), oats (bool), sweet (honey_tsp|maple_tsp|null), fats, flavors, title }
+   */
+  const YOGURT_FRUIT_QTY = { banana: 1, raisins_cup: 0.125, dates_cup: 0.125 };
+  function buildYogurtBowlSlot(comps, targetCal, tg, flags) {
+    comps = comps || {};
+    const ings = [];
+    const fruits = (comps.fruits && comps.fruits.length ? comps.fruits : ["banana", "berries_cup"]).slice(0, 3);
+    const dried = (k) => k === "raisins_cup" || k === "dates_cup";
+    // Fruit portions: one fruit → a full serving; more → split (dried fruit stays ⅛ cup).
+    const fresh = fruits.filter((k) => !dried(k));
+    const qty = {};
+    fruits.forEach((k) => {
+      if (dried(k)) qty[k] = 0.125;
+      else if (k === "banana") qty[k] = fresh.length === 1 ? 1 : 0.5;
+      else qty[k] = fresh.length === 1 ? 1 : fresh.length === 2 ? 0.5 : 0.5;
+    });
+    // Protein: yogurt covers most of it; powder (when picked/needed) tops up.
+    const fruitP = fruits.reduce((a, k) => a + FOOD[k].p * qty[k], 0);
+    const pk = proteinPowderKey(flags);
+    let cups = clamp(snapCupFraction(Math.max(0.5, (tg.p - 6 - fruitP) / FOOD.greek_2pct_cup.p)), 0.5, comps.powder === false ? 2 : 1.5);
+    if (cups > 1.5 && comps.powder !== false) cups = 1.5;
+    ings.push(qtyLine("greek_2pct_cup", cups));
+    const pLeft = tg.p - cups * FOOD.greek_2pct_cup.p - fruitP - 3;
+    if (comps.powder === true || (comps.powder == null && pLeft >= 10)) {
+      const sc = clamp(Math.round((Math.max(0, pLeft) / FOOD[pk].p) * 2) / 2, 0.5, 1.5);
+      ings.push(qtyLine(pk, sc));
+    }
+    const fruitLines = () => fruits.map((k) => qtyLine(k, qty[k]));
+    let oatCups = comps.oats ? 0.125 : 0; // ⅛ cup = 2 tbsp
+    let sweetTsp = comps.sweet ? 1 : 0;
+    const build = () => {
+      const l = ings.concat(fruitLines());
+      if (oatCups) l.push(qtyLine("oats_cup", oatCups, "2 tbsp dry oats"));
+      if (sweetTsp) l.push(qtyLine(comps.sweet, sweetTsp));
+      return l;
+    };
+    let list = build();
+    let guard = 0;
+    while (sumIngredients(list).c < tg.c - 10 && guard++ < 16) {
+      if (comps.sweet && sweetTsp < 2) sweetTsp = 2;
+      else {
+        const k = fruits.find((x) => (x === "banana" ? qty[x] < 1 : dried(x) ? qty[x] < 0.25 : qty[x] < 1.5));
+        if (!k) break;
+        qty[k] = k === "banana" ? 1 : dried(k) ? 0.25 : qty[k] + 0.25;
+      }
+      list = build();
+    }
+    const fats = (comps.fats && comps.fats.length ? comps.fats : ["chia_tsp"]).slice(0, 3);
+    splitFatSpoons(list, fats, tg.f - sumIngredients(list).f);
+    const s = {
+      title: comps.title || "Greek yogurt bowl",
+      type: "yogurt_bowl",
+      flavor: comps.flavor || null,
+      ingredients: list,
+      totals: roundMacros(sumIngredients(list)),
+      notes: [],
+      targetGrams: tg,
+      targetCal,
+    };
+    return s;
+  }
+  // Generated yogurt bowls follow the doc flavor profiles (raisins are fine outside smoothies).
+  const YOGURT_PROFILE = {
+    berry_banana: { fruits: ["banana", "berries_cup"], fats: ["chia_tsp", "hemp_tsp"], title: "Berry banana yogurt bowl" },
+    pb_banana: { fruits: ["banana"], fats: ["pb_tsp", "chia_tsp"], title: "Peanut butter banana yogurt bowl", oats: true },
+    chocolate_cherry: { fruits: ["cherries_cup"], fats: ["walnuts_tsp", "chia_tsp"], title: "Chocolate cherry yogurt bowl" },
+    pumpkin_spice: { fruits: ["banana", "raisins_cup"], fats: ["walnuts_tsp", "flax_tsp"], title: "Pumpkin spice yogurt bowl", sweet: "maple_tsp" },
+    banana_bread: { fruits: ["banana", "raisins_cup"], fats: ["walnuts_tsp", "flax_tsp"], title: "Banana bread yogurt bowl", oats: true },
+  };
+  function buildGeneratedYogurtBowl(flavor, targetCal, tg, flags) {
+    const prof = YOGURT_PROFILE[flavor] || YOGURT_PROFILE.berry_banana;
+    const s = buildYogurtBowlSlot(Object.assign({ flavor, powder: null, sweet: prof.sweet || null, oats: !!prof.oats }, prof), targetCal, tg, flags);
+    s.flavor = flavor;
+    return applyProfileFlavors(s, flavor, ["cinnamon_tsp", "cacao_tsp", "salt_pinch"]);
+  }
+
+  /* ── doc34: Lunch box — grab-and-go snack plate (savory meal) ─────────────
+   * Protein: canned tuna / chicken / salmon, hard-boiled eggs, nitrate-free deli
+   * turkey (sparingly, always with hard-boiled eggs). Optional sourdough crackers
+   * or bread; about a serving of fruit and of raw vegetables; fats: nuts/seeds,
+   * hummus, olive oil, peanut butter, cheese.
+   * comps: { protein, carbs: [crackers|bread], fruit, veg: [..], fats: [..] }
+   */
+  const LUNCH_TITLES = {
+    tuna: "Tuna lunch box", canned_chicken: "Chicken lunch box", canned_salmon: "Salmon lunch box",
+    hb_eggs: "Hard-boiled egg lunch box", deli_turkey: "Turkey & egg lunch box",
+  };
+  function buildLunchBoxSlot(comps, targetCal, tg, flags) {
+    comps = comps || {};
+    const protein = comps.protein || "tuna";
+    const ings = [];
+    const eggP = FOOD.hard_boiled_egg.p;
+    if (protein === "hb_eggs") {
+      ings.push(qtyLine("hard_boiled_egg", clamp(Math.round((tg.p - 8) / eggP), 2, MAX_WHOLE_EGGS)));
+    } else if (protein === "deli_turkey") {
+      // Deli meat sparingly (≤ 3 oz) to keep sodium low, paired with hard-boiled eggs.
+      const eggs = clamp(Math.round((tg.p - 8 - 3 * FOOD.deli_turkey_oz.p) / eggP), 1, 2);
+      ings.push(qtyLine("hard_boiled_egg", eggs));
+      const oz = clamp(Math.round(((tg.p - 6 - eggs * eggP) / FOOD.deli_turkey_oz.p) * 2) / 2, 1, 3);
+      ings.push(qtyLine("deli_turkey_oz", oz));
+    } else {
+      const pk = PROTEIN_FOOD_KEY[protein] || "tuna_oz";
+      ings.push(qtyLine(pk, proteinQtyForTarget(FOOD[pk].p, tg.p, 2, 8, 0.5)));
+    }
+    const fruit = comps.fruit || "apple";
+    ings.push(qtyLine(fruit, 1));
+    const veg = (comps.veg && comps.veg.length ? comps.veg : ["carrots_cup", "cucumber_cup"]).slice(0, 3);
+    const vegQty = veg.length === 1 ? 1 : 0.5;
+    veg.forEach((k) => ings.push(qtyLine(k, vegQty)));
+    const carbs = comps.carbs || [];
+    if (carbs.indexOf("sourdough_crackers_oz") !== -1 || carbs.indexOf("sourdough_bread_slice") !== -1) {
+      const need = tg.c - sumIngredients(ings).c;
+      if (carbs.indexOf("sourdough_bread_slice") !== -1) {
+        const both = carbs.indexOf("sourdough_crackers_oz") !== -1;
+        ings.push(qtyLine("sourdough_bread_slice", clamp(Math.round((both ? need / 2 : need) / FOOD.sourdough_bread_slice.c), 1, 2)));
+      }
+      if (carbs.indexOf("sourdough_crackers_oz") !== -1) {
+        const n2 = tg.c - sumIngredients(ings).c;
+        ings.push(qtyLine("sourdough_crackers_oz", clamp(Math.round((n2 / FOOD.sourdough_crackers_oz.c) * 2) / 2, 0.5, 2)));
+      }
+    } else {
+      // No refined carbs: grow the fruit a little (grapes/berries up to 1½ cups).
+      const need = tg.c - sumIngredients(ings).c;
+      if (need > 15 && (fruit === "grapes_cup" || fruit === "berries_cup")) {
+        ings[ings.findIndex((i) => i._key === fruit)] = qtyLine(fruit, clamp(snapCupFraction(1 + need / FOOD[fruit].c / 2), 1, 1.5));
+      }
+    }
+    const fats = (comps.fats && comps.fats.length ? comps.fats : ["hummus_tbsp"]).slice(0, 2);
+    const share = Math.max(0, tg.f - sumIngredients(ings).f) / fats.length;
+    fats.forEach((k) => {
+      if (k === "hummus_tbsp") ings.push(qtyLine(k, clamp(Math.round(share / FOOD.hummus_tbsp.f), 2, 6)));
+      else if (k === "cheddar_oz") ings.push(qtyLine(k, clamp(Math.round((share / FOOD.cheddar_oz.f) * 2) / 2, 0.5, 1.5)));
+      else if (k === "evoo_tsp") ings.push(qtyLine(k, clamp(Math.round(share / FOOD.evoo_tsp.f), 1, 3), null));
+      else if (k === "pb_tsp") ings.push(qtyLine(k, clamp(Math.round(share / FOOD.pb_tsp.f), 1, 6), null));
+      else if (FOOD[k] && FOOD[k].unit === "oz") ings.push(qtyLine(k, clamp(Math.round((share / FOOD[k].f) * 4) / 4, 0.5, 1)));
+    });
+    return {
+      title: LUNCH_TITLES[protein] || "Lunch box",
+      type: "lunch_box",
+      protein,
+      ingredients: ings,
+      totals: roundMacros(sumIngredients(ings)),
+      notes: protein === "deli_turkey" ? ["Deli meat is kept small to keep sodium low"] : [],
+      targetGrams: tg,
+      targetCal,
+    };
+  }
+  const LUNCH_VEG = ["carrots_cup", "celery_cup", "cucumber_cup", "peppers_cup", "snap_peas_cup", "cherry_tomato_cup", "broccoli_cup"];
+  function buildGeneratedLunchBox(targetCal, tg, seed, pools, tier) {
+    const pick = (arr, i) => arr[((i % arr.length) + arr.length) % arr.length];
+    // Generated boxes use canned protein (eggs-only boxes run short on protein; deli stays a pick).
+    const prots = (pools.lunchProteins || []).filter((p) => p !== "hb_eggs" && p !== "deli_turkey");
+    const protein = prots.length ? pick(prots, Math.floor(seed / 2)) : (pools.lunchProteins || ["hb_eggs"])[0];
+    const fruitPool = tier.preferCheapProduce ? ["apple", "orange", "grapes_cup"] : ["apple", "grapes_cup", "orange", "berries_cup"];
+    const v1 = pick(LUNCH_VEG, seed);
+    const v2 = pick(LUNCH_VEG, seed + 3);
+    const fatPool = [["hummus_tbsp"], ["hummus_tbsp", "almonds_oz"], ["cheddar_oz"], ["pumpkin_seeds_oz", "hummus_tbsp"]]
+      .map((l) => l.filter((k) => foodAllowed(k, pools.flags))).filter((l) => l.length);
+    return buildLunchBoxSlot({
+      protein,
+      fruit: pick(fruitPool, seed + 1),
+      veg: v1 === v2 ? [v1] : [v1, v2],
+      carbs: pools.flags && pools.flags.gluten ? []
+        : tier.preferCheapProduce || seed % 2 === 0 ? ["sourdough_bread_slice"] : ["sourdough_crackers_oz"],
+      fats: pick(fatPool.length ? fatPool : [["evoo_tsp"]], seed),
+    }, targetCal, tg, pools.flags);
   }
 
   /**
@@ -1685,8 +2047,9 @@
    */
   function buildMealSuggestionForType(type, calories, targetGrams, seed, planOptions) {
     const pools = mealTypePools(planOptions || {});
-    if (pools.mealTypes.indexOf(type) === -1) type = pools.mealTypes[pools.mealTypes.length - 1] || "oatmeal";
-    return restrictSuggestion(buildMealSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions), pools.flags);
+    if (pools.mealTypes.indexOf(type) === -1) type = ["salad_jar", "bowl"].find((t) => pools.mealTypes.indexOf(t) !== -1) || pools.mealTypes[pools.mealTypes.length - 1] || "oatmeal";
+    const raw = buildMealSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions);
+    return restrictSuggestion(applyGeneratedSavoryFlavors(raw, seed, pools.flags), pools.flags);
   }
 
   function buildMealSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions) {
@@ -1706,6 +2069,12 @@
     if (type === "oatmeal") {
       const fl = pick(breakfastFlavors, seed);
       return buildOatmealSlot(fl, calories, tg, true);
+    }
+    if (type === "yogurt_bowl") {
+      return buildGeneratedYogurtBowl(pick(breakfastFlavors, seed), calories, tg, pools.flags);
+    }
+    if (type === "lunch_box") {
+      return buildGeneratedLunchBox(calories, tg, seed, pools, tier);
     }
     if (type === "salad_jar") {
       const prot = pick(pools.saladProteins || bowlProteins.filter((p) => p !== "eggs" && p !== "egg_whites"), Math.floor(seed / 2));
@@ -1988,6 +2357,18 @@
           }
           bowlI += 1;
         }
+        // doc34: the doc's new templates join generated days on mid/high budgets (low budgets keep
+        // the cheaper originals): a sweet slot (Meal 1, or Meal 3 on 3 meals + 2 snacks) is
+        // sometimes a Greek yogurt bowl; a savory slot is sometimes a lunch box.
+        if (!planOptions.freeMealTypes && !tier.reduceVariety) {
+          const sweetSlot = SWEET_MEAL_TYPES.indexOf(suggestion.type) !== -1;
+          if (sweetSlot && pools.mealTypes.indexOf("yogurt_bowl") !== -1 && (variant + mealCount) % 3 === 2) {
+            suggestion = buildGeneratedYogurtBowl(pickDiverseFlavor(breakfastFlavors, usedProduce, variant + mealCount), slot.calories, tg, rflags);
+          } else if (!sweetSlot && pools.mealTypes.indexOf("lunch_box") !== -1 && !rflags.gluten && (variant + mealCount) % 3 === 1) {
+            suggestion = buildGeneratedLunchBox(slot.calories, tg, variant + mealCount, pools, tier);
+          }
+        }
+        suggestion = applyGeneratedSavoryFlavors(suggestion, variant + mealCount, rflags);
         markProduceFromIngredients(usedProduce, suggestion.ingredients);
         results.push(Object.assign({}, slot, { targetMacros: gramsFromPct(slot.calories, macroPct), suggestion }));
       } else {
@@ -2394,6 +2775,11 @@
       if (!changed) break;
     }
 
+    // doc34: the fine-tune above only knows the original templates; days with a
+    // Greek yogurt bowl or lunch box get the generic portion tuner too.
+    if (results.some((r) => r && r.suggestion && (r.suggestion.type === "yogurt_bowl" || r.suggestion.type === "lunch_box"))) {
+      tunePickedDay(results.filter((r) => r && r.suggestion), macroPct, dailyCalories);
+    }
     for (const r of results) {
       if (r && r.suggestion) finalizeSuggestion(restrictSuggestion(r.suggestion, rflags));
     }
@@ -2553,21 +2939,21 @@
     if (unit === "tsp") return Math.ceil(qty);
     if (unit === "tbsp") return Math.ceil(qty * 2) / 2;
     if (unit === "scoop") return Math.ceil(qty * 2) / 2;
-    if (unit === "medium" || unit === "egg" || unit === "white") return Math.ceil(qty);
+    if (unit === "medium" || unit === "egg" || unit === "white" || unit === "slice" || unit === "pinch") return Math.ceil(qty);
     return Math.ceil(qty * 4) / 4;
   }
 
   /** Input step for a grocery key's unit (matches roundBuyQty granularity). */
   function groceryUnitStep(key) {
     const unit = FOOD[key] ? FOOD[key].unit : "unit";
-    if (unit === "oz" || unit === "tsp" || unit === "medium" || unit === "egg" || unit === "white") return 1;
+    if (unit === "oz" || unit === "tsp" || unit === "medium" || unit === "egg" || unit === "white" || unit === "slice" || unit === "pinch") return 1;
     if (unit === "tbsp" || unit === "scoop") return 0.5;
     return 0.25;
   }
 
   /** Display unit for a quantity ("12 eggs", "1 egg"; other units unchanged). */
   function displayUnit(unit, qty) {
-    const plural = { egg: "eggs", white: "whites" };
+    const plural = { egg: "eggs", white: "whites", slice: "slices", pinch: "pinches" };
     return plural[unit] && Math.abs(Number(qty) - 1) > 1e-9 ? plural[unit] : unit;
   }
 
@@ -2582,9 +2968,12 @@
     const price = lookupPrice(key);
     // Package-friendly: buy enough packages to cover buyQty
     const packagesNeeded = Math.max(1, Math.ceil(buyQty / price.packageQty - 1e-9));
-    const lineTotal = Math.round(packagesNeeded * price.packagePrice * 100) / 100;
+    // doc34: pantry flavors (spices, salt, vanilla…) are listed but not priced into the total.
+    const pantry = !!(PRICE_CATALOG[key] && PRICE_CATALOG[key].pantry);
+    const lineTotal = pantry ? 0 : Math.round(packagesNeeded * price.packagePrice * 100) / 100;
     const unitPrice = Math.round(price.unitPrice * 1000) / 1000;
     return {
+      pantry,
       key,
       name: price.product || (FOOD[key] ? FOOD[key].name : key),
       foodName: FOOD[key] ? FOOD[key].name : key,
@@ -3096,6 +3485,8 @@
         if (type === "smoothie") dim = Math.max(1, pools.smoothieSafeFlavors.length);
         else if (type === "oatmeal") dim = Math.max(1, pools.breakfastFlavors.length);
         else if (type === "bowl") dim = Math.max(1, pools.bowlProteins.length) * 3;
+        else if (type === "yogurt_bowl") dim = Math.max(1, pools.breakfastFlavors.length);
+        else if (type === "lunch_box") dim = Math.max(1, (pools.lunchProteins || []).length) * 4;
         else dim = Math.max(1, pools.bowlProteins.length) * 5;
         // Extra seeds so proteins × flavors × fats get coverage beyond the minimum dims
         const seedCount = Math.max(12, dim);
@@ -3253,11 +3644,14 @@
    * and mango added); nuts & seeds add cashews, pistachios and pumpkin seeds.
    */
   const PICK_TEMPLATES = {
+    // doc34: the doc's Sweet and Savory groups (order within a group follows the doc).
     meal: [
-      { id: "bowl", label: "Bowl", desc: "A protein, a carb, a veggie and a little healthy fat." },
-      { id: "smoothie", label: "Smoothie", desc: "Protein powder blended with fruit, milk and a healthy fat." },
-      { id: "oatmeal", label: "Oatmeal", desc: "Protein oats with fruit or a little sweetness and a healthy fat." },
-      { id: "salad_jar", label: "Salad jar", desc: "A protein, greens and crunchy veggies layered in a jar." },
+      { id: "smoothie", group: "sweet", label: "Smoothie", desc: "Protein powder blended with fruit, milk and a healthy fat." },
+      { id: "yogurt_bowl", group: "sweet", label: "Greek yogurt bowl", desc: "Low-fat Greek yogurt with 1–3 fruits, seeds or nuts, and optional oats or honey." },
+      { id: "oatmeal", group: "sweet", label: "Oatmeal / overnight oats", desc: "Protein oats with fruit or a little sweetness and a healthy fat — warm or overnight." },
+      { id: "lunch_box", group: "savory", label: "Lunch box", desc: "Grab-and-go snack plate: canned fish or chicken or eggs, fruit, raw veggies and a healthy fat." },
+      { id: "salad_jar", group: "savory", label: "Salad jar", desc: "A protein, greens and crunchy veggies layered in a jar." },
+      { id: "bowl", group: "savory", label: "Bowl", desc: "A protein, a carb, a veggie and a little healthy fat." },
     ],
     snack: [
       { id: "nut", label: "Nuts & seeds", desc: "A measured handful of one kind of nut or seeds." },
@@ -3283,19 +3677,54 @@
     almonds_oz: "Almonds", peanuts_oz: "Peanuts", cashews_oz: "Cashews", pistachios_oz: "Pistachios", pumpkin_seeds_oz: "Pumpkin seeds",
     pineapple: "Pineapple", peach: "Peaches", mango: "Mango", berries: "Mixed berries",
     almond_milk_oz: "Almond milk", coconut_milk_oz: "Coconut milk", milk_skim_oz: "Cow's milk", soy_milk_oz: "Soy milk", water: "None (water)",
+    // doc34
+    flax_tsp: "Flax seeds", cottage: "Cottage cheese", dates_cup: "Dates", grapes_cup: "Grapes", apple: "Apple", orange: "Orange",
+    celery_cup: "Celery", snap_peas_cup: "Snap peas", broccoli_raw: "Broccoli", tuna: "Canned tuna", canned_chicken: "Canned chicken",
+    canned_salmon: "Canned salmon", hb_eggs: "Hard-boiled eggs", deli_turkey: "Deli turkey (nitrate-free, with eggs)",
+    sourdough_crackers_oz: "Sourdough crackers", sourdough_bread_slice: "Sourdough bread", hummus_tbsp: "Hummus", cheddar_oz: "Cheese (cheddar)",
+    powder: "Protein powder", yogurt_oats: "Dry oats (2 tbsp)", evoo_tsp: "Olive oil",
+    cinnamon_tsp: "Cinnamon", cacao_tsp: "Cacao", vanilla_tsp: "Vanilla", pumpkin_spice_tsp: "Pumpkin spice", salt_pinch: "Dash of salt",
+    pepper_pinch: "Black pepper", garlic_powder_tsp: "Garlic powder", paprika_tsp: "Paprika", lemon_juice_tsp: "Lemon juice", mustard_tsp: "Mustard",
   };
   // Value → FOOD key (for in-stock tags and restriction checks).
   const PICK_FOOD_KEY = Object.assign({}, PROTEIN_FOOD_KEY, {
     evoo: "evoo_tsp", avocado: "avocado_oz", hbe: "hard_boiled_egg", feta: "feta_oz", parmesan: "parmesan_oz",
     salad_rice: "rice_cup", pineapple: "pineapple_cup", peach: "peach_cup", mango: "mango_cup", berries: "berries_cup",
+    cottage: "cottage_full_cup", broccoli_raw: "broccoli_cup", powder: "protein_scoop", yogurt_oats: "oats_cup",
   });
   function pickFoodKey(v) { return PICK_FOOD_KEY[v] || v; }
 
-  /** Templates offered for a slot kind, minus ones a restriction makes impossible. */
-  function pickTemplatesFor(kind, planOptions) {
+  /**
+   * doc34: Meal 1 and — on 4- and 5-meal plans — the last meal list Sweet first;
+   * every other meal lists Savory first. ctx: { mealIndex (1-based), mealCount }.
+   */
+  function sweetFirstFor(ctx) {
+    if (!ctx || !ctx.mealIndex) return true;
+    const mi = Number(ctx.mealIndex);
+    const mc = Number(ctx.mealCount) || 0;
+    return mi === 1 || (mc >= 4 && mi === mc);
+  }
+  /** Templates offered for a slot kind, minus ones a restriction makes impossible (meals: group-ordered). */
+  function pickTemplatesFor(kind, planOptions, ctx) {
     const pools = mealTypePools(planOptions || {});
     const allowed = kind === "snack" ? pools.snackTypes : pools.mealTypes;
-    return PICK_TEMPLATES[kind === "snack" ? "snack" : "meal"].filter((t) => allowed.indexOf(t.id) !== -1);
+    const list = PICK_TEMPLATES[kind === "snack" ? "snack" : "meal"].filter((t) => allowed.indexOf(t.id) !== -1);
+    if (kind === "snack") return list;
+    const order = sweetFirstFor(ctx) ? ["sweet", "savory"] : ["savory", "sweet"];
+    return order.reduce((a, g) => a.concat(list.filter((t) => t.group === g)), []);
+  }
+  /** doc34: meal templates as ordered groups [{ id, label, templates }]; snacks are one ungrouped list. */
+  function pickTemplateGroups(kind, planOptions, ctx) {
+    const list = pickTemplatesFor(kind, planOptions, ctx);
+    if (kind === "snack") return [{ id: "snack", label: "", templates: list }];
+    const labels = { sweet: "Sweet", savory: "Savory" };
+    const out = [];
+    list.forEach((t) => {
+      let g = out.find((x) => x.id === t.group);
+      if (!g) { g = { id: t.group, label: labels[t.group], templates: [] }; out.push(g); }
+      g.templates.push(t);
+    });
+    return out;
   }
 
   /**
@@ -3316,18 +3745,33 @@
       return Object.assign({ id, title, min: Math.min(min, options.length), max: Math.min(max, Math.max(options.length, 1)), options, required: [], hidden: budgetHidden }, extra || {});
     };
     const lowTier = !!tier.reduceVariety;
-    const seedFats = ["chia_tsp", "hemp_tsp", "walnuts_tsp", "pb_tsp"];
+    const seedFats = ["chia_tsp", "hemp_tsp", "flax_tsp", "walnuts_tsp", "pb_tsp"];
+    // doc34 Flavor step (after fats): optional multi-select 0–3; sweet vs savory by template.
+    // Cherries preselect cacao (chocolate cherry always has cacao unless you take it off).
+    const flavorStep = (defaults) => {
+      const vals = flavorOptionsFor(template);
+      const sweet = mealGroupFor(template) === "sweet";
+      return step("flavor", "flavor (optional)", 0, MAX_FLAVORS, vals, vals, {
+        note: sweet
+          ? "Optional: pick up to 3. Cacao with cherries makes it chocolate cherry. Spices and salt are pantry items; cacao goes on your grocery list."
+          : "Optional: pick up to 3. Season lightly — these are pantry items (listed on your grocery list, not priced in).",
+        defaults: (defaults || []).filter((v) => vals.indexOf(v) !== -1),
+      });
+    };
+    const cherryDefault = (carbs) => ((carbs || []).indexOf("cherries_cup") !== -1 ? ["cacao_tsp"] : []);
     const powder = flags.dairy ? "plant protein powder" : "protein powder";
     if (template === "bowl") {
       const allProteins = ["beef", "turkey", "chicken", "chicken_thigh", "salmon", "cod", "shrimp", "eggs", "egg_whites"].concat(flags.vegetarian ? ["tofu"] : []);
       const carbs = lowTier ? ["rice_cup"] : BOWL_CARB_KEYS.slice();
       const eggProtein = (sel.protein || []).some((p) => p === "eggs" || p === "egg_whites");
-      const fats = ["evoo", "avocado"].concat(eggProtein ? [] : ["hbe"]);
+      // doc34: cottage cheese joins the bowl fats.
+      const fats = ["evoo", "avocado"].concat(eggProtein ? [] : ["hbe"], ["cottage"]);
       return [
         step("protein", "a protein", 1, 1, allProteins, pools.bowlProteins),
         step("carb", "a carb", 1, 1, BOWL_CARB_KEYS, carbs),
         step("veg", "a vegetable", 1, 1, BOWL_VEG_KEYS, BOWL_VEG_KEYS),
         step("fat", "your fats", 1, 2, fats, fats, eggProtein ? { note: "Hard-boiled egg is skipped as a fat since eggs are already the protein." } : null),
+        flavorStep([]),
       ];
     }
     if (template === "smoothie" || template === "oatmeal") {
@@ -3355,7 +3799,35 @@
           ? "About 8 oz, blended in."
           : "About 4 oz per ½ cup oats." + (flags.dairy ? " Cow's milk is hidden for your restrictions; soy milk is the dairy-free pick." : ""),
       });
-      return smoothie ? [carbs, milk, fats] : [carbs, fats, milk];
+      const flavor = flavorStep(cherryDefault(sel.carbs));
+      return smoothie ? [carbs, milk, fats, flavor] : [carbs, fats, milk, flavor];
+    }
+    if (template === "yogurt_bowl") {
+      const fruitAll = ["banana", "berries_cup", "blueberries_cup", "strawberries_cup", "cherries_cup", "mango_cup", "raisins_cup", "dates_cup"];
+      const fruit = lowTier ? ["banana", "raisins_cup"] : fruitAll;
+      return [
+        step("carbs", "1–3 fruits", 1, 3, fruitAll, fruit, { note: "Protein: low-fat (2%) Greek yogurt is always the base." }),
+        step("extras", "optional add-ins", 0, 3, ["powder", "yogurt_oats", "honey_tsp", "maple_tsp"], ["powder", "yogurt_oats", "honey_tsp", "maple_tsp"],
+          { note: "Optional: " + powder + " for more protein, 1–2 tbsp dry oats, 1–2 tsp honey or maple syrup." }),
+        step("fats", "your fats", 1, 3, seedFats, seedFats, { note: "Pick 1–3: chia, flax or hemp, a small portion of nuts, or nut butter." }),
+        flavorStep(cherryDefault(sel.carbs)),
+      ];
+    }
+    if (template === "lunch_box") {
+      const allProteins = ["tuna", "canned_chicken", "canned_salmon", "hb_eggs", "deli_turkey"];
+      const fruitAll = ["apple", "orange", "grapes_cup", "berries_cup"];
+      const vegAll = ["carrots_cup", "celery_cup", "cucumber_cup", "peppers_cup", "snap_peas_cup", "cherry_tomato_cup", "broccoli_raw"];
+      const fats = ["hummus_tbsp", "almonds_oz", "pumpkin_seeds_oz", "pb_tsp", "cheddar_oz", "evoo_tsp"];
+      return [
+        step("protein", "a protein", 1, 1, allProteins, pools.lunchProteins || [],
+          { note: "Deli meat is used sparingly (with hard-boiled eggs) to keep sodium low." }),
+        step("carbs", "sourdough (optional)", 0, 2, ["sourdough_crackers_oz", "sourdough_bread_slice"], ["sourdough_crackers_oz", "sourdough_bread_slice"],
+          { note: "Optional: organic sourdough crackers or bread — no more than 5 ingredients, no seed oils." }),
+        step("fruit", "a fruit", 1, 1, fruitAll, lowTier ? ["apple", "orange"] : fruitAll),
+        step("veg", "raw vegetables", 1, 3, vegAll, vegAll, { note: "About a serving of raw vegetables in total." }),
+        step("fats", "your fats", 1, 2, fats, fats),
+        flavorStep([]),
+      ];
     }
     if (template === "salad_jar") {
       const allProteins = ["beef", "turkey", "chicken", "chicken_thigh", "salmon", "cod", "shrimp"].concat(flags.vegetarian ? ["tofu"] : []);
@@ -3368,6 +3840,7 @@
         step("veg", "your vegetables", 1, lowTier ? 1 : 3, veg, veg),
         step("extras", "optional add-ins", 0, 2, ["black_beans_cup", "salad_rice"], ["black_beans_cup", "salad_rice"], { note: "Optional: ¼–½ cup beans and/or a little rice help hit your carb target." }),
         step("fat", "your fats", 1, 2, fats, fats),
+        flavorStep([]),
       ];
     }
     if (template === "nut") {
@@ -3422,16 +3895,19 @@
   const PICK_TITLE_WORD = {
     banana: "banana", berries_cup: "berry", blueberries_cup: "blueberry", strawberries_cup: "strawberry", cherries_cup: "cherry",
     mango_cup: "mango", spinach_cup: "green", oats_cup: "oat", pumpkin_cup: "pumpkin", raisins_cup: "raisin", honey_tsp: "honey", maple_tsp: "maple",
+    dates_cup: "date",
   };
-  function pickedJarTitle(carbs, fats, noun) {
+  function pickedJarTitle(carbs, fats, noun, flavors) {
     const words = [];
+    // doc34: cacao makes it "chocolate" (with cherries: the chocolate cherry profile).
+    if ((flavors || []).indexOf("cacao_tsp") !== -1) words.push("chocolate");
     if ((fats || []).indexOf("pb_tsp") !== -1) words.push("peanut butter");
     (carbs || []).forEach((k) => {
       const w = PICK_TITLE_WORD[k];
       if (!w || (noun === "oatmeal" && k === "oats_cup")) return;
       if (words.indexOf(w) === -1 && words.length < 3) words.push(w);
     });
-    if (!words.length) return noun === "oatmeal" ? "Classic oatmeal" : "Protein smoothie";
+    if (!words.length) return noun === "oatmeal" ? "Classic oatmeal" : noun === "yogurt bowl" ? "Greek yogurt bowl" : "Protein smoothie";
     const t = words.join(" ") + " " + noun;
     return t.charAt(0).toUpperCase() + t.slice(1);
   }
@@ -3616,6 +4092,25 @@
     } else if (t === "smoothie") s = buildPickedSmoothie(sel, targetCal, tg, milkOverride, flags);
     else if (t === "oatmeal") s = buildPickedOatmeal(sel, targetCal, tg, milkOverride !== "none", flags);
     else if (t === "salad_jar") s = buildPickedSaladJar(sel, targetCal, tg, tier);
+    else if (t === "yogurt_bowl") {
+      const ex = sel.extras || [];
+      const sweet = ex.indexOf("honey_tsp") !== -1 ? "honey_tsp" : ex.indexOf("maple_tsp") !== -1 ? "maple_tsp" : null;
+      s = buildYogurtBowlSlot({
+        fruits: sel.carbs || ["banana"],
+        powder: ex.indexOf("powder") !== -1 ? true : false,
+        oats: ex.indexOf("yogurt_oats") !== -1,
+        sweet,
+        fats: sel.fats || ["chia_tsp"],
+      }, targetCal, tg, flags);
+    } else if (t === "lunch_box") {
+      s = buildLunchBoxSlot({
+        protein: (sel.protein || [])[0] || "tuna",
+        carbs: sel.carbs || [],
+        fruit: (sel.fruit || [])[0] || "apple",
+        veg: (sel.veg || ["carrots_cup"]).map((v) => (v === "broccoli_raw" ? "broccoli_cup" : v)),
+        fats: sel.fats || ["hummus_tbsp"],
+      }, targetCal, tg, flags);
+    }
     else if (t === "nut") s = buildNutOnlySnack(sel.nut[0], targetCal, tg);
     else if (t === "hb_egg") {
       const fruit = sel.fruit[0];
@@ -3639,6 +4134,19 @@
         ingredients: base.ings, totals: roundMacros(sumIngredients(base.ings)), notes: [], targetGrams: tg, targetCal,
       };
     }
+    // doc34 Flavor step: picked flavors become lines (old picks without the step: cherries → cacao).
+    if (s && (PICK_TEMPLATES.meal.some((m) => m.id === t))) {
+      const fl = Array.isArray(sel.flavor) ? sel.flavor
+        : (t === "smoothie" || t === "oatmeal" || t === "yogurt_bowl") && (sel.carbs || []).indexOf("cherries_cup") !== -1 ? ["cacao_tsp"] : [];
+      applyFlavors(s, fl, flags);
+      if (t === "smoothie" || t === "oatmeal" || t === "yogurt_bowl") {
+        s.title = pickedJarTitle(sel.carbs, sel.fats, t === "yogurt_bowl" ? "yogurt bowl" : t, s.flavors);
+        // Side note only for flavors not already picked.
+        s.notes = (s.notes || []).filter((n) => !/^Optional flavor/i.test(n));
+        const note = optionalFlavorNote(s.flavors, t === "smoothie" ? ["cinnamon_tsp", "cacao_tsp"] : ["cinnamon_tsp", "cacao_tsp", "salt_pinch"]);
+        if (note) s.notes.push(note);
+      }
+    }
     s._picked = { template: t, sel: JSON.parse(JSON.stringify(sel)) };
     return restrictSuggestion(s, flags);
   }
@@ -3655,11 +4163,16 @@
     strawberries_cup: ["c", 0.25, 0.25, 1.5], cherries_cup: ["c", 0.25, 0.25, 1.5], mango_cup: ["c", 0.25, 0.25, 1.5],
     pineapple_cup: ["c", 0.25, 0.5, 2], peach_cup: ["c", 0.25, 0.5, 2], black_beans_cup: ["c", 0.25, 0.25, 0.5],
     evoo_tsp: ["f", 1, 1, 3], avocado_oz: ["f", 0.5, 1, 4], feta_oz: ["f", 0.5, 0.5, 2], parmesan_oz: ["f", 0.5, 0.5, 1.5],
-    chia_tsp: ["f", 1, 1, 6], hemp_tsp: ["f", 1, 1, 6], walnuts_tsp: ["f", 1, 1, 6], pb_tsp: ["f", 1, 1, 6],
+    chia_tsp: ["f", 1, 1, 6], hemp_tsp: ["f", 1, 1, 6], walnuts_tsp: ["f", 1, 1, 6], pb_tsp: ["f", 1, 1, 6], flax_tsp: ["f", 1, 1, 6],
+    // doc34: Greek yogurt bowl + Lunch box
+    greek_2pct_cup: ["p", 0.25, 0.5, 2], tuna_oz: ["p", 0.5, 2, 8], canned_chicken_oz: ["p", 0.5, 2, 8], canned_salmon_oz: ["p", 0.5, 2, 8],
+    deli_turkey_oz: ["p", 0.5, 1, 3], grapes_cup: ["c", 0.25, 0.5, 1.5], dates_cup: ["c", 0.125, 0.125, 0.25],
+    sourdough_crackers_oz: ["c", 0.5, 0.5, 2], sourdough_bread_slice: ["c", 1, 1, 2], hummus_tbsp: ["f", 1, 1, 6], cheddar_oz: ["f", 0.5, 0.5, 2],
+    cottage_full_cup: ["f", 0.25, 0.25, 1],
     almonds_oz: ["f", 0.25, 0.5, 3], peanuts_oz: ["f", 0.25, 0.5, 3], cashews_oz: ["f", 0.25, 0.5, 3],
     pistachios_oz: ["f", 0.25, 0.5, 3], pumpkin_seeds_oz: ["f", 0.25, 0.5, 3],
   };
-  const TBSP_TO_TSP = { chia_tbsp: "chia_tsp", hemp_tbsp: "hemp_tsp", walnuts_tbsp: "walnuts_tsp", pb_tbsp: "pb_tsp" };
+  const TBSP_TO_TSP = { chia_tbsp: "chia_tsp", hemp_tbsp: "hemp_tsp", walnuts_tbsp: "walnuts_tsp", pb_tbsp: "pb_tsp", flax_tbsp: "flax_tsp" };
 
   /**
    * Tune a picked day toward ±100 kcal / ±2% macros by nudging only the
@@ -3693,8 +4206,9 @@
           if (!rule) return;
           if (baseKey === "oats_cup" && r.suggestion.type === "oatmeal" && rule) { /* oat base: keep ≥ ½ cup */ }
           const qty = TBSP_TO_TSP[ing._key] ? ing._qty * 3 : ing._qty;
-          const min = baseKey === "oats_cup" && r.suggestion.type === "oatmeal" ? 0.5 : rule[2];
-          const maxQ = baseKey === "oats_cup" && r.suggestion.type === "smoothie" ? 0.75 : rule[3];
+          const yogOats = baseKey === "oats_cup" && r.suggestion.type === "yogurt_bowl"; // doc34: 1–2 tbsp only
+          const min = baseKey === "oats_cup" && r.suggestion.type === "oatmeal" ? 0.5 : yogOats ? 0.125 : rule[2];
+          const maxQ = baseKey === "oats_cup" && r.suggestion.type === "smoothie" ? 0.75 : yogOats ? 0.125 : rule[3];
           [-1, 1].forEach((dir) => {
             const nq = Math.round((qty + dir * rule[1]) * 1000) / 1000;
             if (nq < min - 1e-9 || nq > maxQ + 1e-9) return;
@@ -3801,6 +4315,7 @@
    * generated plan for the current profile (skipping titles already in the day).
    */
   function scaleQtyFor(key, q) {
+    if (isFlavorKey(key)) return FLAVOR_QTY[key]; // doc34: flavors don't scale with calories
     const rule = PICK_TUNE[key];
     const u = FOOD[key] ? FOOD[key].unit : "";
     if (rule) {
@@ -4757,7 +5272,13 @@
       const pk = ps.picks[ps.i];
       const total = ps.slots.length;
       const lastSlot = ps.i === total - 1;
-      const templates = pickTemplatesFor(slot.kind, po);
+      // doc34: slot-aware Sweet/Savory order (Meal 1 + last meal on 4/5-meal plans: Sweet first).
+      const mealCtx = {
+        mealIndex: ps.slots.slice(0, ps.i + 1).filter((x) => x.kind === "meal").length,
+        mealCount: ps.slots.filter((x) => x.kind === "meal").length,
+      };
+      const templates = pickTemplatesFor(slot.kind, po, mealCtx);
+      const groups = pickTemplateGroups(slot.kind, po, mealCtx);
       const tplLabel = (id) => {
         const t = PICK_TEMPLATES[slot.kind === "snack" ? "snack" : "meal"].find((x) => x.id === id);
         return t ? t.label : id;
@@ -4773,7 +5294,14 @@
         body.appendChild(el(`<p class="mp-hint mp-pick-intro">${escText(slot.name)} · ${ps.i + 1} of ${total} meals &amp; snacks · about ${slot.calories} cal. Pick a template; next you'll choose what goes in it.</p>`));
         const box = el(`<div class="mp-options mp-pick-templates"></div>`);
         if (pk.template && !templates.some((t) => t.id === pk.template)) { pk.template = null; pk.sel = {}; }
-        templates.forEach((t) => box.appendChild(optionRow("radio", "pickTemplate", t.id, t.label, t.desc, pk.template === t.id)));
+        groups.forEach((g) => {
+          if (g.label) box.appendChild(el(`<p class="mp-pick-group" data-group="${escText(g.id)}">${escText(g.label)}</p>`));
+          g.templates.forEach((t) => {
+            const row = optionRow("radio", "pickTemplate", t.id, t.label, t.desc, pk.template === t.id);
+            if (t.group) row.setAttribute("data-group", t.group);
+            box.appendChild(row);
+          });
+        });
         body.appendChild(box);
         const f = frame({
           id: "pickTemplateStep",
@@ -4801,7 +5329,8 @@
       const stepsArr = pickStepsFor(pk.template, pk.sel, po);
       const st = stepsArr[ps.step - 1];
       const inOpts = (v) => st.options.some((o) => o.value === v);
-      let cur = (pk.sel[st.id] || []).filter(inOpts);
+      // doc34: a step's defaults (e.g. cacao when cherries are picked) apply until the step is visited.
+      let cur = (pk.sel[st.id] === undefined && st.defaults ? st.defaults : pk.sel[st.id] || []).filter(inOpts);
       st.required.forEach((r) => { if (inOpts(r) && cur.indexOf(r) === -1) cur.unshift(r); });
       if (!cur.length && st.min >= 1 && st.options.length === 1) cur = [st.options[0].value];
       pk.sel[st.id] = cur;
@@ -4913,7 +5442,7 @@
         const pie = "conic-gradient(var(--moss) 0 " + pct + "%, var(--linen) " + pct + "% 100%)";
         const amtLabel = (Math.abs(m.amount) >= 10 ? Math.round(m.amount) : Math.round(m.amount * 10) / 10) + m.unit;
         const sodiumNote = k === "sodium_mg"
-          ? `<p class="mp-micro-note">Does not include added salt/seasoning</p>`
+          ? `<p class="mp-micro-note">Does not include salt added to taste</p>`
           : "";
         return `<div class="mp-micro-pie-card" data-micro="${k}" title="${amtLabel} · ${m.pct}% of ${m.target}${m.unit}">
           <div class="mp-micro-pie" style="background:${pie}">
@@ -4929,8 +5458,8 @@
         .map(
           (it) =>
             `<li>
-              <span class="ing-name">${it.name}<small class="mp-buy-qty"> · buy ${it.qtyLabel} (${it.packages} pkg)</small></span>
-              <span class="ing-macros">$${it.unitPrice.toFixed(2)}/${it.unit} · <strong>$${it.lineTotal.toFixed(2)}</strong></span>
+              <span class="ing-name">${it.name}<small class="mp-buy-qty"> · ${it.pantry ? "pantry item · uses " + it.qtyLabel : "buy " + it.qtyLabel + " (" + it.packages + " pkg)"}</small></span>
+              <span class="ing-macros">${it.pantry ? "<strong>pantry</strong>" : "$" + it.unitPrice.toFixed(2) + "/" + it.unit + " · <strong>$" + it.lineTotal.toFixed(2) + "</strong>"}</span>
             </li>`
         )
         .join("");
@@ -5146,9 +5675,12 @@
    * the core of each step and append the plan's specifics (which items go in
    * the jar vs. are added the day of, with amounts).
    *
-   * From the Meal Templates doc (export 2026-09-28). The doc's Bowl "Daily prep"
-   * line duplicates the oatmeal one (jar/milk/oats), a copy-paste error, so it
-   * is not applied; bowls, salad jars and snacks have no doc steps (improvised).
+   * From the Meal Templates doc (export 2026-09-29, doc34). The Bowl's stray
+   * oatmeal "Daily prep" line is gone from the doc. The doc now splits Oatmeal
+   * into "Oatmeal prep" (the jar + microwave lines below = warm oatmeal) and an
+   * "Overnight oats prep" heading with no steps, so the overnight version is
+   * improvised (oatmeal.overnight). Bowls, salad jars, the Greek yogurt bowl,
+   * the lunch box and snacks have no doc steps (improvised).
    */
   const PREP_DOC = {
     smoothie: {
@@ -5160,6 +5692,8 @@
       builder: true,
       weekly: ["Portion out dry ingredients into {n} jars."],
       daily: ["Empty jar into bowl and add milk or water. Microwave for 1-2 minutes until oats are soft. Add toppings and enjoy."],
+      // doc34: improvised — the doc's "Overnight oats prep" heading has no instructions.
+      overnight: ["The night before, empty jar into a lidded jar or container and stir in milk or water. Refrigerate overnight (at least 6 hours). In the morning, add toppings and eat cold, or microwave about 1 minute to warm."],
     },
   };
   // Shelf-stable items that go in the weekly jar (smoothie/oatmeal). Everything
@@ -5167,6 +5701,7 @@
   const PREP_JAR_DRY = {
     protein_scoop: 1, oats_cup: 1, chia_tsp: 1, chia_tbsp: 1, hemp_tsp: 1, hemp_tbsp: 1,
     walnuts_tsp: 1, walnuts_tbsp: 1, raisins_cup: 1, cacao_tsp: 1, cinnamon_tsp: 1, pb_powder_tbsp: 1, pb_powder_tsp: 1,
+    flax_tsp: 1, flax_tbsp: 1, pumpkin_spice_tsp: 1, salt_pinch: 1, dates_cup: 1,
   };
   const PREP_FROZEN = { berries_cup: 1, blueberries_cup: 1, strawberries_cup: 1, cherries_cup: 1, mango_cup: 1 };
   const PREP_OVEN_F = 400;
@@ -5203,6 +5738,9 @@
     hard_boiled_egg: "", berries_cup: "mixed berries", cherries_cup: "frozen cherries", pumpkin_cup: "pumpkin puree",
     greek_nonfat_cup: "0% Greek yogurt", greek_2pct_cup: "2% Greek yogurt", cottage_lf_cup: "low-fat cottage cheese",
     black_beans_cup: "black beans", avocado_oz: "avocado",
+    apple: "", orange: "", salt_pinch: "of salt", pepper_pinch: "of black pepper", sourdough_bread_slice: "sourdough bread",
+    tuna_oz: "canned tuna", canned_chicken_oz: "canned chicken", canned_salmon_oz: "canned salmon", deli_turkey_oz: "deli turkey",
+    cottage_full_cup: "4% cottage cheese", sourdough_crackers_oz: "sourdough crackers", hummus_tbsp: "hummus",
   };
 
   function prepPlural(word, qty) {
@@ -5238,7 +5776,9 @@
       if (w >= 8 || w % 2 === 0) return formatCupQty(w / 8) + " " + prepPlural("cup", w / 8 > 1 ? 2 : 1) + " liquid egg whites";
       return w * 2 + " tbsp liquid egg whites";
     }
-    if (u === "medium") return prepNum(q) + " " + prepPlural("banana", q);
+    if (u === "medium") return prepNum(q) + " " + prepPlural(key === "banana" || !FOOD[key] ? "banana" : FOOD[key].name, q);
+    if (u === "pinch") return q <= 1 + 1e-9 ? "a pinch" : prepNum(q) + " pinches";
+    if (u === "slice") return prepNum(q) + " " + prepPlural("slice", q);
     if (u === "oz") return prepNum(q) + " oz";
     return formatQty(q) + (u ? " " + u : "");
   }
@@ -5365,7 +5905,11 @@
   /* ── per-template builders ── return { weekly, daily, tasks } ── */
 
   function prepCookedMeal(s, n, kind) {
-    const ings = prepIngs(s);
+    const allIngs = prepIngs(s);
+    // doc34: flavor-step seasonings — dry ones season the protein on prep day, wet ones (lemon/mustard) finish it.
+    const flav = allIngs.filter((i) => isFlavorKey(i.key));
+    const ings = allIngs.filter((i) => !isFlavorKey(i.key));
+    const cottage = (ings.find((i) => i.key === "cottage_full_cup") || {}).qty || 0;
     const weekly = [];
     const daily = [];
     const tasks = [];
@@ -5401,6 +5945,12 @@
         : " Peel and slice."));
       tasks.push({ kind: "boil", qty: hbe * n });
     }
+    const dryFlav = flav.filter((i) => i.key !== "lemon_juice_tsp" && i.key !== "mustard_tsp");
+    const wetFlav = flav.filter((i) => i.key === "lemon_juice_tsp" || i.key === "mustard_tsp");
+    if (kind === "bowl" && dryFlav.length) {
+      weekly.push("Season the " + (proteinKey ? prepName(proteinKey) || "protein" : "protein") + " lightly with " +
+        prepJoin(dryFlav.map((i) => prepItem(i.key, i.qty, n, false))) + " (" + prepJoin(dryFlav.map((i) => prepPer(i.key, i.qty))) + " per serving) before cooking.");
+    }
     // 3. Oven: one sheet pan at one temperature (bowls: protein + carb + veg; jars: protein only)
     const useOil = kind === "bowl" ? oilTsp : 0;
     const pan = prepSheetPanLine(oven, { oilTsp: useOil });
@@ -5421,7 +5971,7 @@
     }
     const limit = prepFridgeDays(ings.map((i) => i.key));
     if (kind === "bowl") {
-      const parts = ings.filter((i) => ["evoo_tsp", "avocado_oz", "hard_boiled_egg"].indexOf(i.key) === -1).map((i) => prepPer(i.key, i.qty));
+      const parts = ings.filter((i) => ["evoo_tsp", "avocado_oz", "hard_boiled_egg", "cottage_full_cup"].indexOf(i.key) === -1).map((i) => prepPer(i.key, i.qty));
       weekly.push("Cool 10 min, then divide into " + n + " " + prepPlural("container", n) + ": " + prepJoin(parts) + " each.");
       weekly.push(prepStorageLine(n === 1 ? "container" : "containers", n, limit));
       tasks.push({ kind: "portion", text: n + " " + s.title.toLowerCase() + " " + prepPlural("container", n), limit, n });
@@ -5430,6 +5980,8 @@
       if (hbe) daily.push(n > 5 ? "Peel and add " + prepAmountLabel("hard_boiled_egg", hbe) + "."
         : "Add " + prepAmountLabel("hard_boiled_egg", hbe) + " (already peeled).");
       if (oilTsp && !pan) daily.push("Drizzle " + prepAmountLabel("evoo_tsp", oilTsp / n) + " olive oil.");
+      if (cottage) daily.push("Top with " + prepPer("cottage_full_cup", cottage) + " after reheating.");
+      if (wetFlav.length) daily.push("Finish with " + prepJoin(wetFlav.map((i) => prepPer(i.key, i.qty))) + ".");
       daily.push("Season to taste and eat.");
     } else {
       // Salad jars: chop raw veg/greens once; layer dressing → hearty veg → rice → protein → cheese/egg → greens.
@@ -5445,6 +5997,8 @@
       }
       const layer = [];
       if (oilTsp) layer.push(prepPer("evoo_tsp", oilTsp / n) + " olive oil (+ a splash of vinegar or lemon)");
+      // doc34: the jar's flavor (mustard / lemon juice / seasoning) goes in with the dressing.
+      flav.forEach((i) => layer.push(prepPer(i.key, i.qty)));
       ings.filter((i) => ["black_beans_cup", "corn_cup", "onion_cup", "peppers_cup", "carrots_cup", "cucumber_cup", "cherry_tomato_cup"].indexOf(i.key) !== -1)
         .forEach((i) => layer.push(prepPer(i.key, i.qty)));
       Object.keys(PREP_GRAIN).forEach((g) => { if (byKey[g]) layer.push(prepPer(g, byKey[g])); });
@@ -5474,11 +6028,13 @@
   function prepJarFlavors(s) {
     const note = (s.notes || []).find((x) => /cinnamon|cacao|pumpkin spice|salt/i.test(x));
     if (!note) return "";
+    const has = {};
+    prepIngs(s).forEach((i) => { has[i.key] = true; });
     const words = [];
-    if (/cinnamon/i.test(note)) words.push("cinnamon");
-    if (/cacao/i.test(note)) words.push("cacao");
-    if (/pumpkin spice/i.test(note)) words.push("pumpkin spice");
-    if (/salt/i.test(note)) words.push("a pinch of salt");
+    if (/cinnamon/i.test(note) && !has.cinnamon_tsp) words.push("cinnamon");
+    if (/cacao/i.test(note) && !has.cacao_tsp) words.push("cacao");
+    if (/pumpkin spice/i.test(note) && !has.pumpkin_spice_tsp) words.push("pumpkin spice");
+    if (/salt/i.test(note) && !has.salt_pinch) words.push("a pinch of salt");
     if (!words.length) return "";
     const optional = /optional/i.test(note) || words.length > 1;
     const list = words.length > 1 ? words.slice(0, -1).join(", ") + " or " + words[words.length - 1] : words[0];
@@ -5540,10 +6096,66 @@
     const dailyDoc = PREP_DOC.oatmeal.daily[0];
     let text = dailyDoc.replace("add milk or water.", "add milk or water (" + liquid + withPumpkin + ").");
     if (toppings.length) text = text.replace("Add toppings and enjoy.", "Add toppings and enjoy: " + prepJoin(toppings.map(prepAddIn)) + ".");
+    // doc34: both versions — warm (the doc's Oatmeal prep) and overnight oats (improvised; the doc heading has no steps).
+    let night = PREP_DOC.oatmeal.overnight[0].replace("stir in milk or water.", "stir in " + (milk.length ? "the milk" : "the water") + " (" + liquid + withPumpkin + ").");
+    if (toppings.length) night = night.replace("add toppings and eat cold", "add toppings: " + prepJoin(toppings.map(prepAddIn)) + ". Eat cold");
     return {
-      weekly, daily: [text], source: "doc",
+      weekly, daily: [text, night], labels: ["Warm oatmeal", "Overnight oats"], source: "doc",
       tasks: [{ kind: "pack", text: n + " oatmeal " + prepPlural("jar", n) + " of dry ingredients (" + s.title.toLowerCase() + ")" }],
     };
+  }
+
+  /** doc34: Greek yogurt bowl — dry toppings in jars on prep day, assembled cold each day. */
+  function prepYogurtBowl(s, n) {
+    const ings = prepIngs(s);
+    const yogurt = ings.filter((i) => /greek_/.test(i.key));
+    const dry = ings.filter((i) => PREP_JAR_DRY[i.key]);
+    const rest = ings.filter((i) => !PREP_JAR_DRY[i.key] && !/greek_/.test(i.key));
+    const weekly = [
+      "Portion the dry toppings into " + n + " small " + prepPlural("jar", n) + (dry.length ? (n === 1 ? ": " : " (each): ") + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) : "") + ". Lid and keep in the pantry.",
+    ];
+    if (rest.some((i) => PREP_FROZEN[i.key])) weekly.push("Keep the frozen fruit in the freezer; move a portion to the fridge the night before so it thaws.");
+    if (n > 1) weekly.push("Uses " + prepJoin(ings.map((i) => prepItem(i.key, i.qty, n, false))) + " for the week.");
+    const daily = [
+      "Spoon " + prepJoin(yogurt.map((i) => prepPer(i.key, i.qty))) + " into a bowl" + (dry.some((i) => /protein_scoop/.test(i.key)) ? " and stir in the jar (protein powder first so it mixes smooth)" : " and add the jar") +
+        (rest.length ? ", then top with " + prepJoin(rest.map(prepAddIn)) : "") + ". Enjoy cold.",
+    ];
+    return { weekly, daily, tasks: [{ kind: "pack", text: n + " yogurt-bowl topping " + prepPlural("jar", n) + " (" + s.title.toLowerCase() + ")" }] };
+  }
+
+  /** doc34: Lunch box (grab-and-go snack plate) — packed cold on prep day. */
+  function prepLunchBox(s, n) {
+    const all = prepIngs(s);
+    const flav = all.filter((i) => isFlavorKey(i.key));
+    const ings = all.filter((i) => !isFlavorKey(i.key));
+    const eggs = ings.find((i) => i.key === "hard_boiled_egg");
+    const canned = ings.find((i) => i.key === "tuna_oz" || i.key === "canned_chicken_oz" || i.key === "canned_salmon_oz");
+    const dry = ings.filter((i) => i.key === "sourdough_crackers_oz" || i.key === "sourdough_bread_slice");
+    const wholeFruit = ings.filter((i) => i.key === "apple" || i.key === "orange");
+    const cupProduce = ings.filter((i) => FOOD[i.key].unit === "cup" && !/cottage|greek/.test(i.key));
+    const weekly = [];
+    const tasks = [];
+    const limit = canned && canned.key !== "canned_chicken_oz" ? 3 : 4;
+    if (eggs) {
+      weekly.push(prepBoilLine(eggs.qty * n) + " Peel " + (n > limit ? "the eggs for days 1–" + limit + "; keep the rest in the shell." : "them all."));
+      tasks.push({ kind: "boil", qty: eggs.qty * n });
+    }
+    if (canned) weekly.push("Drain " + prepItem(canned.key, canned.qty, n > limit ? limit : n, false) + " (opened cans keep " + limit + " days in the fridge).");
+    if (cupProduce.length) {
+      weekly.push("Wash and cut: " + prepJoin(cupProduce.map((i) => prepItem(i.key, i.qty, n, false))) + ".");
+      cupProduce.forEach((i) => tasks.push({ kind: "chop", key: i.key, qty: i.qty * n }));
+    }
+    if (wholeFruit.length) weekly.push("Wash " + prepJoin(wholeFruit.map((i) => prepAmountLabel(i.key, i.qty * n))) + " (keep whole so they don't brown).");
+    const packed = ings.filter((i) => dry.indexOf(i) === -1 && wholeFruit.indexOf(i) === -1).map((i) => prepPer(i.key, i.qty));
+    const build = Math.min(n, limit);
+    weekly.push("Pack " + build + " lunch " + prepPlural("box", build).replace("boxs", "boxes") + " (divided containers): " + prepJoin(packed) + " in each. Lid and refrigerate.");
+    if (n > limit) weekly.push("For days " + (limit + 1) + "–" + n + ": keep " + (canned ? "unopened cans in the pantry" : "the rest") + " and pack the night before (3 min).");
+    if (dry.length) weekly.push("Keep the " + prepJoin(dry.map((i) => prepName(i.key))) + " in the pantry — " + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) + " per day, packed separately so they stay crisp.");
+    const daily = ["Grab 1 lunch box" + (dry.length ? " plus " + prepJoin(dry.map((i) => prepPer(i.key, i.qty))) : "") + (wholeFruit.length ? " and " + prepJoin(wholeFruit.map((i) => prepAmountLabel(i.key, i.qty))) : "") + "."];
+    if (flav.length) daily.push("Season with " + prepJoin(flav.map((i) => prepPer(i.key, i.qty))) + " and eat cold.");
+    else daily.push("Eat cold (a pinch of salt and pepper on the eggs is optional).");
+    tasks.push({ kind: "pack", text: n + " " + s.title.toLowerCase().replace(/box$/, prepPlural("box", n).replace("boxs", "boxes")) });
+    return { weekly, daily, tasks };
   }
 
   function prepSnackContainers(s, n, noun) {
@@ -5590,6 +6202,8 @@
     else if (type === "salad_jar") gen = prepCookedMeal(s, n, "jar");
     else if (type === "smoothie") gen = prepSmoothie(s, n);
     else if (type === "oatmeal") gen = prepOatmeal(s, n);
+    else if (type === "yogurt_bowl") gen = prepYogurtBowl(s, n);
+    else if (type === "lunch_box") gen = prepLunchBox(s, n);
     else if (type === "nut") gen = prepNuts(s, n);
     else if (type === "greek_yogurt" || type === "cottage_cheese") gen = prepSnackContainers(s, n, "cup");
     else if (type === "hb_egg_snack") gen = prepSnackContainers(s, n, "container");
@@ -5680,12 +6294,12 @@
     const r = prepForSlot(slot, ctx);
     // doc31: collapsed by default (tap "Prep steps" to expand); pass { open: true } to start open.
     const open = !!(ctx && ctx.open === true);
-    const li = (arr) => arr.map((t) => "<li>" + prepEsc(t) + "</li>").join("");
+    const li = (arr, labels) => arr.map((t, i) => "<li" + (labels && labels[i] ? ' data-prep-version="' + prepEsc(labels[i]) + '"><b>' + prepEsc(labels[i]) + ":</b> " : ">") + prepEsc(t) + "</li>").join("");
     return '<details class="mp-prep" data-prep-type="' + prepEsc(r.type) + '" data-prep-source="' + r.source + '" data-prep-days="' + r.days + '"' + (open ? " open" : "") + ">" +
       '<summary><span class="mp-prep-title">Prep steps</span><span class="mp-prep-sub">weekly + daily</span></summary>' +
       '<div class="mp-prep-body">' +
       '<div class="mp-prep-block mp-prep-weekly"><h4><span class="mp-prep-ico" aria-hidden="true">🧺</span>Weekly prep <small>· prep day, ' + r.days + " " + prepPlural("serving", r.days) + "</small></h4><ol>" + li(r.weekly) + "</ol></div>" +
-      '<div class="mp-prep-block mp-prep-daily"><h4><span class="mp-prep-ico" aria-hidden="true">🌱</span>Daily <small>· day of</small></h4><ol>' + li(r.daily) + "</ol></div>" +
+      '<div class="mp-prep-block mp-prep-daily"><h4><span class="mp-prep-ico" aria-hidden="true">🌱</span>Daily <small>· day of</small></h4><ol>' + li(r.daily, r.labels) + "</ol></div>" +
       "</div></details>";
   }
 
@@ -5715,6 +6329,8 @@
     oatMilkKey,
     MAX_WHOLE_EGGS,
     pickTemplatesFor,
+    pickTemplateGroups,
+    sweetFirstFor,
     pickStepsFor,
     pickStepValid,
     buildPickedSuggestion,

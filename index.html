@@ -805,6 +805,16 @@
       border: 1px dashed rgba(111, 143, 100, 0.45); font-size: 0.84rem; color: var(--accent-deep);
     }
     .mp-pick-intro, .mp-pick-note { margin: 0 0 12px; }
+    /* doc34: Sweet / Savory template groups */
+    .mp-pick-group {
+      display: flex; align-items: center; gap: 8px; margin: 8px 2px 0; font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 700; color: var(--accent-deep); letter-spacing: 0.01em;
+    }
+    .mp-pick-group:first-child { margin-top: 0; }
+    .mp-pick-group::before { font-size: 1rem; }
+    .mp-pick-group[data-group="sweet"]::before { content: "🍓"; }
+    .mp-pick-group[data-group="savory"]::before { content: "🥕"; }
+    .mp-pick-group::after { content: ""; flex: 1; height: 1px; background: var(--border); }
     .mp-pick-count { margin: 10px 2px 0; font-size: 0.8rem; color: var(--moss); font-weight: 600; }
     .mp-pick-budget { margin-top: 6px; }
     .mp-pick-empty {
@@ -1226,7 +1236,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc33"></script>
+  <script src="onboarding.js?v=doc34"></script>
   <script>
 
 (function () {
@@ -2215,8 +2225,8 @@
     const rowsHtml = baseItems.map((it) => {
       const step = M.groceryUnitStep(it.key);
       return `<div class="inv-item grocery-row" data-key="${escHtml(it.key)}">
-        <span class="gr-main">${escHtml(it.name)}<br/><small class="panel-muted gr-qty">buy ${escHtml(it.qtyLabel)}</small></span>
-        <span class="gr-price">${money(it.lineTotal)}</span>
+        <span class="gr-main">${escHtml(it.name)}<br/><small class="panel-muted gr-qty">${it.pantry ? "pantry item · uses " : "buy "}${escHtml(it.qtyLabel)}</small></span>
+        <span class="gr-price">${it.pantry ? "pantry" : money(it.lineTotal)}</span>
         <label class="gr-have" ${groceryEditMode ? "" : "hidden"}>
           <span>I have</span>
           <input type="number" class="gr-have-input" data-key="${escHtml(it.key)}" data-name="${escHtml(it.name)}" data-unit="${escHtml(it.unit)}"
@@ -2363,10 +2373,11 @@
       visible += 1;
       const reduced = it.originalQty != null && it.stockQty > 0;
       row.classList.toggle("reduced", !!reduced);
+      const verb = it.pantry ? "pantry item · uses " : "buy ";
       row.querySelector(".gr-qty").innerHTML = reduced
-        ? `buy ${escHtml(it.qtyLabel)} <span class="gr-was">${escHtml(qtyText(it.originalQty, it.unit))}</span>`
-        : `buy ${escHtml(it.qtyLabel)}`;
-      row.querySelector(".gr-price").textContent = money(it.lineTotal);
+        ? `${verb}${escHtml(it.qtyLabel)} <span class="gr-was">${escHtml(qtyText(it.originalQty, it.unit))}</span>`
+        : `${verb}${escHtml(it.qtyLabel)}`;
+      row.querySelector(".gr-price").textContent = it.pantry ? "pantry" : money(it.lineTotal);
     });
     const total = root.querySelector("#groceryTotal");
     if (total && adjusted) total.textContent = money(adjusted.grandTotal);

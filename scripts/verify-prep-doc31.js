@@ -79,7 +79,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc33", "onboarding.js?v=doc33");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc34", "onboarding.js?v=doc34");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
   check(typeof (await page.evaluate(() => typeof window.MealPlanOnboarding.prepForSlot)) === "string" &&
@@ -145,7 +145,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
                   s.ingredients.forEach((i) => {
                     if (!i._key) return;
                     const label = M.prepAmountLabel(i._key, i._qty);
-                    const dry = /^(protein_scoop|oats_cup|chia_|hemp_|walnuts_|raisins_cup|cacao_tsp)/.test(i._key);
+                    const dry = /^(protein_scoop|oats_cup|chia_|hemp_|walnuts_|raisins_cup|cacao_tsp|flax_|cinnamon_tsp|pumpkin_spice_tsp|salt_pinch)/.test(i._key); // doc34: + flax, dry spices
                     if (dry && !jar.includes(label)) push(out.jarSplit, s.title + ": " + i._key + " not in jar");
                     if (!dry && (/Each jar:|In the jar:/.test(jar) && jar.split(/Each jar:|In the jar:/)[1].includes(label + " "))) {
                       const name = i._key === "banana" ? "banana" : (i._key.match(/milk|berries|cherries|pb|pumpkin|maple|honey|spinach|mango/) || [""])[0];
@@ -258,7 +258,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(!(await page.$eval(".mp-slots > .mp-card:first-child details.mp-prep", (d) => d.open)), "tapping again collapses it");
   const pd = await page.$$eval(".mp-result details.mp-prepday .mp-prepday-list li", (ls) => ls.map((l) => l.textContent.trim()));
   const bf = cards.find((c) => /smoothie|oatmeal/i.test(c.title));
-  check(!!bf && /^Portion out dry ingredients into 6 jars\./.test(bf.weekly[0]) && /^Empty jar into (blender|bowl)/.test(bf.daily[0]),
+  check(!!bf && /^Portion out dry ingredients into 6 jars\./.test(bf.weekly[0]) && /^(Warm oatmeal: )?Empty jar into (blender|bowl)/.test(bf.daily[0]), // doc34: oats list "Warm oatmeal" + "Overnight oats"
     "results card (" + (bf ? bf.title.replace(/^.*- /, "") : "none") + ") shows the doc jar steps for 6 servings");
   check(pd.length >= 2 && (await page.$(".mp-result details.mp-prepday + .mp-slots")) !== null, "prep-day checklist (" + pd.length + " steps) sits above the meal cards");
   const overflow = await page.evaluate(() => [...document.querySelectorAll(".mp-prep, .mp-prepday")].some((e) => e.getBoundingClientRect().right > window.innerWidth + 1));
@@ -285,7 +285,8 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   const expected = await page.evaluate((plan) => {
     const M = window.MealPlanOnboarding;
     const n = M.prepDaysFor(plan);
-    return { slots: plan.schedule.map((sl) => { const r = M.prepForSlot(sl, { days: n }); return r.weekly.concat(r.daily).join("|"); }), day: M.prepDayPlan(plan).steps.length };
+    // doc34: labelled daily versions (oats: "Warm oatmeal:" / "Overnight oats:") render as a bold prefix.
+    return { slots: plan.schedule.map((sl) => { const r = M.prepForSlot(sl, { days: n }); return r.weekly.concat(r.daily.map((t, i) => (r.labels && r.labels[i] ? r.labels[i] + ": " : "") + t)).join("|"); }), day: M.prepDayPlan(plan).steps.length };
   }, st.plan);
   check(JSON.stringify(expected.slots) === JSON.stringify(resultsTexts), "results-page steps (after reroll) = steps computed from the saved plan");
 

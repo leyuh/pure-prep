@@ -167,7 +167,8 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
 
   console.log("4) Pick path: slot-by-slot templates + ingredients");
   await page.waitForSelector("#pickTemplateStep");
-  check((await templates()).join(",") === "bowl,smoothie,oatmeal,salad_jar", "meal 1 offers bowl, smoothie, oatmeal, salad jar");
+  // doc34: 6 meal templates, Sweet group first on Meal 1.
+  check((await templates()).join(",") === "smoothie,yogurt_bowl,oatmeal,lunch_box,salad_jar,bowl", "meal 1 offers the 6 doc34 templates, sweet first");
   check(await nextDisabled(), "template Next disabled until one is chosen");
   check(/Meal 1/.test(await page.textContent("#pickTemplateStep .step-label")), "step label names the slot (Meal 1)");
   await shot("doc32-template.png");
@@ -183,13 +184,14 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   s = await ingState(); check(s.step === "veg" && s.type === "radio", "bowl step 3: 1 vegetable");
   const veg = (await pickStep())[0]; await next();
   s = await ingState();
-  check(s.step === "fat" && s.type === "checkbox" && s.min === 1 && s.max === 2 && s.values.length === 3, "bowl step 4: 1–2 fats of 3");
+  check(s.step === "fat" && s.type === "checkbox" && s.min === 1 && s.max === 2 && s.values.length === 4, "bowl step 4: 1–2 fats of 4 (doc34: + cottage cheese)");
   await tick("evoo"); await tick("avocado");
   s = await ingState();
-  check(s.disabled.length === 1 && !s.checked.includes(s.disabled[0]) && /\(max\)/.test(s.count), "2 fats picked → the 3rd is disabled (max 2): " + s.count.trim());
+  check(s.disabled.length === 2 && !s.disabled.some((d) => s.checked.includes(d)) && /\(max\)/.test(s.count), "2 fats picked → the rest are disabled (max 2): " + s.count.trim());
   check(/Chicken|Lean|Salmon|Cod|Shrimp|egg/i.test(await page.textContent("#pickIngredientStep .mp-pick-sofar")), "'so far' line shows earlier picks");
   await shot("doc32-ingredients-bowl.png");
   await next();
+  await next(); // doc34: optional Flavor step
 
   await page.waitForSelector("#pickTemplateStep");
   check((await templates()).join(",") === "nut,greek,cottage,hb_egg", "snack offers nuts, Greek yogurt, cottage cheese, hard-boiled eggs");
@@ -222,6 +224,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await pickStep(); await next();
   s = await ingState(); check(s.step === "fats" && s.max === 2, "smoothie fats 1–2");
   await tick("chia_tsp"); await next();
+  await next(); // doc34: Flavor step
 
   await page.waitForSelector("#pickTemplateStep");
   await chooseTemplate("greek");
@@ -239,7 +242,8 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   s = await ingState(); check(s.step === "fats", "oatmeal fats step");
   await tick("walnuts_tsp"); await next();
   s = await ingState(); check(s.step === "milk", "oatmeal milk step after fats (doc33)");
-  await pickStep();
+  await pickStep(); await next();
+  s = await ingState(); check(s.step === "flavor" && s.min === 0, "doc34: optional Flavor step after the oatmeal milk");
   check((await ingState()).next.trim() === "See my plan", "last step's button says 'See my plan'");
   await next();
   await page.waitForSelector("#saveClose");
@@ -397,7 +401,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
       fishFreeProteins: vals(M.pickStepsFor("bowl", {}, { budget: 900, restrictions: ["fish_free"] })[0]).join(","),
     };
   });
-  check(po.veganMeals === "bowl,smoothie,oatmeal,salad_jar" && po.veganSnacks === "nut", "vegan: all 4 meal templates (tofu), snacks = nuts only (" + po.veganSnacks + ")");
+  check(po.veganMeals === "smoothie,oatmeal,salad_jar,bowl" && po.veganSnacks === "nut", "vegan: the 4 plant-compatible meal templates, sweet first (doc34; tofu), snacks = nuts only (" + po.veganSnacks + ")");
   check(po.dairySnacks === "nut,hb_egg" && po.eggSnacks === "nut,greek,cottage", "impossible snack templates hidden (dairy-free: " + po.dairySnacks + "; egg-free: " + po.eggSnacks + ")");
   check(po.veganProteins === "tofu", "vegan bowl proteins = tofu only (meat/fish/eggs hidden)");
   check(!/hbe/.test(po.veganBowlFats) && !/hbe|feta|parmesan/.test(po.veganJarFats), "vegan: egg/cheese fats hidden (" + po.veganJarFats + ")");
@@ -414,7 +418,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await questionnaire({ budget: 600, calories: 2200, restrictions: ["vegan", "nut_free"] });
   await page.click('input[name="buildMode"][value="pick"]'); await next();
   await page.waitForSelector("#pickTemplateStep");
-  check((await templates()).join(",") === "bowl,smoothie,oatmeal,salad_jar", "vegan meal templates shown");
+  check((await templates()).join(",") === "smoothie,oatmeal,salad_jar,bowl", "vegan meal templates shown (doc34: no yogurt bowl / lunch box; sweet first)");
   await chooseTemplate("bowl");
   s = await ingState();
   check(s.values.join(",") === "tofu" && s.checked.join(",") === "tofu" && !(await nextDisabled()), "vegan bowl: tofu is the only protein (preselected)");
@@ -422,6 +426,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   s = await ingState();
   check(s.values.join(",") === "evoo,avocado", "vegan bowl fats: olive oil + avocado only");
   await tick("avocado"); await next();
+  await next(); // doc34: Flavor step
   await page.waitForSelector("#pickTemplateStep");
   check((await templates()).join(",") === "nut", "snack: only the seeds template remains");
   check(/Nuts/.test(await page.textContent("#pickTemplateStep")), "template listed");
@@ -439,8 +444,10 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   s = await ingState();
   check(!s.values.some((v) => /walnuts|pb_tsp/.test(v)), "no nut fats offered");
   await pickStep(); await next();
+  await next(); // doc34: Flavor step
   await chooseTemplate("nut"); await next();
   await chooseTemplate("oatmeal"); await next(); await pickStep(); await next(); await pickStep(); await next();
+  await next(); // doc34: Flavor step
   await page.waitForSelector("#saveClose");
   const vsupp = await page.$$eval(".mp-supps li.mp-supp", (ls) => ls.map((l) => l.dataset.supp + ":" + l.querySelector("strong").textContent));
   check(vsupp.some((x) => /^omega3:Algae/.test(x)) && vsupp.some((x) => /^b12/.test(x)) && vsupp.some((x) => /^vitamin_d:.*vegan/.test(x)) && !vsupp.some((x) => /^fish_oil/.test(x)),
@@ -506,7 +513,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.waitForSelector("#buildChoice");
   await page.click('input[name="buildMode"][value="pick"]'); await next();
   await page.waitForSelector("#pickTemplateStep");
-  check((await templates()).join(",") === "bowl,smoothie,oatmeal,salad_jar", "Pick new meals (next week) follows the updated profile");
+  check((await templates()).join(",") === "smoothie,yogurt_bowl,oatmeal,lunch_box,salad_jar,bowl", "Pick new meals (next week) follows the updated profile");
   await chooseTemplate("bowl");
   s = await ingState();
   check(s.values.includes("chicken") && !s.values.some((v) => /salmon|cod|shrimp/.test(v)) && !s.values.includes("tofu"), "new week: fish hidden, meat back (" + s.values.join(",") + ")");

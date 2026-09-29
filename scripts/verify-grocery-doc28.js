@@ -80,7 +80,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc33", "onboarding.js?v=doc33");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc34", "onboarding.js?v=doc34");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
 
@@ -146,10 +146,12 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   const swapped = await page.evaluate(() => {
     const M = window.MealPlanOnboarding;
     const st = JSON.parse(localStorage.getItem("purePrepState"));
+    // doc34: search a few variants too (new templates shift which variant mixes both egg kinds).
+    for (const v of [undefined, 1, 2, 3, 4, 5])
     for (const cal of [2600, 2200, 2400, 2000, 2800])
       for (const budget of [500, 400, 300, 600]) {
         const a = Object.assign({}, st.answers, { calories: cal, budget, mealOption: "3m", meals: 3, snacks: 0 });
-        const p = M.buildPlan(a);
+        const p = v === undefined ? M.buildPlan(a) : M.buildPlan(a, { variant: v });
         const ks = {};
         p.schedule.forEach((sl) => sl.suggestion.ingredients.forEach((i) => { ks[i._key] = 1; }));
         if (ks.egg && ks.hard_boiled_egg) {
@@ -217,7 +219,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   }));
   check(inputs.length === rowNames.length && inputs.every((x) => x.visible && x.type === "number" && x.min === "0" && x.step > 0),
     "number input (min 0, step) shown on all " + inputs.length + " items");
-  const plural = { egg: "eggs", white: "whites" };
+  const plural = { egg: "eggs", white: "whites", slice: "slices", pinch: "pinches" }; // doc34: slice/pinch units
   check(inputs.every((x) => x.unit && (x.unit === x.dataUnit || x.unit === plural[x.dataUnit])), "unit shown next to each input");
   check(inputs.filter((x) => x.dataUnit === "egg" || x.dataUnit === "oz" || x.dataUnit === "medium").every((x) => x.step === 1) &&
         inputs.filter((x) => x.dataUnit === "cup").every((x) => x.step === 0.25), "sensible steps (1 for eggs/oz/each, 0.25 cup)");

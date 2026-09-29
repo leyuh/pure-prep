@@ -122,10 +122,10 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc33", "onboarding.js?v=doc33");
+  check(/^onboarding\.js\?v=doc3[3-9]$/.test(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src"))), "onboarding.js cache-bust is doc33 or later (doc34 now)");
   check(await page.$eval('link[rel="icon"][type="image/svg+xml"]', (l) => l.getAttribute("href")) === "assets/favicon.svg?v=leaf8", "favicon stays ?v=leaf8");
-  const pagesCss = await page.evaluate(async () => Promise.all(["about.html", "privacy.html", "disclosure.html"].map(async (f) => (await (await fetch(f, { cache: "no-store" })).text()).includes('pages.css?v=doc33'))));
-  check(pagesCss.every(Boolean), "about/privacy/disclosure use pages.css?v=doc33");
+  const pagesCss = await page.evaluate(async () => Promise.all(["about.html", "privacy.html", "disclosure.html"].map(async (f) => (await (await fetch(f, { cache: "no-store" })).text()).match(/pages\.css\?v=doc3[3-9]/))));
+  check(pagesCss.every(Boolean), "about/privacy/disclosure use pages.css?v=doc33+");
 
   console.log("1) New foods (USDA) + pricing");
   const foods = await page.evaluate(() => {
@@ -168,8 +168,9 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
       eggFreeSnacks: M.pickTemplatesFor("snack", o(["egg_free"])).map((t) => t.id).join(","),
     };
   });
-  check(ps.smoothieOrder === "carbs>milk>fats", "smoothie steps follow the template: carbs → milk → fats");
-  check(ps.oatOrder === "carbs>fats>milk", "oatmeal steps follow the template: carbs → fats → milk");
+  // doc34: the optional Flavor step follows (after fats; oats: after the milk that follows fats).
+  check(ps.smoothieOrder === "carbs>milk>fats>flavor", "smoothie steps follow the template: carbs → milk → fats (→ flavor, doc34)");
+  check(ps.oatOrder === "carbs>fats>milk>flavor", "oatmeal steps follow the template: carbs → fats → milk (→ flavor, doc34)");
   check(ps.sm === "almond_milk_oz,coconut_milk_oz,milk_skim_oz|1-1" && ps.smLabels === "Almond milk,Coconut milk,Cow's milk", "smoothie milk: pick 1 of almond / coconut / cow's");
   check(ps.oat === "milk_skim_oz,water|1-1" && ps.oatLabels === "Cow's milk,None (water)", "oat milk: cow's milk or None (water) — no almond");
   check(ps.smDairy.startsWith("almond_milk_oz,coconut_milk_oz|") && ps.smVegan.startsWith("almond_milk_oz,coconut_milk_oz|"), "dairy-free / vegan smoothies hide cow's milk");
@@ -301,6 +302,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   let s = await ingState();
   check(!s.values.includes("hbe"), "egg bowl: hard-boiled egg not offered as a fat");
   await pickStep(["evoo"]); await next();
+  await next(); // doc34: optional Flavor step (none picked)
   await page.waitForSelector("#pickTemplateStep");
   check(/Nuts & seeds/.test(await page.textContent("#pickTemplateStep")), "snack template reads 'Nuts & seeds'");
   await chooseTemplate("nut");
@@ -318,6 +320,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await next();
   s = await ingState(); check(s.step === "fats", "then fats");
   await tick("chia_tsp"); await next();
+  await next(); // doc34: Flavor step
   await chooseTemplate("greek");
   s = await ingState();
   check(s.step === "fruit" && s.type === "checkbox" && s.min === 1 && s.max === 2 && s.values.includes("banana") && s.values.includes("mango"), "yogurt fruit step: pick 1–2 (" + s.labels.join(" / ") + ")");
@@ -335,6 +338,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await tick("milk_skim_oz");
   await shot("doc33-oat-milk-step.png", "#pickIngredientStep");
   await next();
+  await next(); // doc34: Flavor step
   await page.waitForSelector("#saveClose");
   const t0 = await cardText(0), t1 = await cardText(1), t2 = await cardText(2), t3 = await cardText(3), t4 = await cardText(4);
   const eggM = t0.match(/(\d+) large eggs/);
