@@ -116,7 +116,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("1) Build + cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc32", "onboarding.js?v=doc32");
+  check(/^onboarding\.js\?v=doc(3[2-9])$/.test(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src"))), "onboarding.js?v=doc32+");
   check(await page.$eval('link[rel="icon"][type="image/svg+xml"]', (l) => l.getAttribute("href")) === "assets/favicon.svg?v=leaf8", "favicon stays ?v=leaf8");
 
   console.log("2) Dietary restrictions question");
@@ -217,12 +217,15 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   s = await ingState(); check(s.checked.length === 2 && !s.disabled.length, "unchecking re-enables options");
   const smoothieCarbs = s.checked.slice();
   await next();
+  // doc33: a milk step sits between carbs and fats.
+  s = await ingState(); check(s.step === "milk" && s.type === "radio", "smoothie milk step (doc33)");
+  await pickStep(); await next();
   s = await ingState(); check(s.step === "fats" && s.max === 2, "smoothie fats 1–2");
   await tick("chia_tsp"); await next();
 
   await page.waitForSelector("#pickTemplateStep");
   await chooseTemplate("greek");
-  s = await ingState(); check(s.step === "fruit" && s.type === "radio", "yogurt: 1 fruit");
+  s = await ingState(); check(s.step === "fruit" && s.min === 1 && s.max === 2, "yogurt: 1–2 fruits (doc33)");
   await pickStep(); await next();
   s = await ingState();
   check(s.step === "sweet" && s.min === 0 && !(await nextDisabled()), "sweetener optional (Next enabled with none)");
@@ -234,7 +237,9 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(!(await nextDisabled()), "oats alone is valid");
   await tick("banana"); await next();
   s = await ingState(); check(s.step === "fats", "oatmeal fats step");
-  await tick("walnuts_tsp");
+  await tick("walnuts_tsp"); await next();
+  s = await ingState(); check(s.step === "milk", "oatmeal milk step after fats (doc33)");
+  await pickStep();
   check((await ingState()).next.trim() === "See my plan", "last step's button says 'See my plan'");
   await next();
   await page.waitForSelector("#saveClose");
@@ -387,7 +392,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
       veganProteins: vals(vg[0]).join(","), veganBowlFats: vals(vg[3]).join(","),
       veganJarFats: vals(jar[4]).join(","), veganOatCarbs: vals(oat[0]).join(","),
       nutSeeds: vals(M.pickStepsFor("nut", {}, nf)[0]).join(","),
-      nutSmoothieFats: vals(sm[1]).join(","), nutSmoothieNote: sm[0].note,
+      nutSmoothieFats: vals(sm.find((x) => x.id === "fats")).join(","), nutSmoothieMilk: vals(sm.find((x) => x.id === "milk")).join(","),
       veganNote: M.pickStepsFor("smoothie", {}, v)[0].note,
       fishFreeProteins: vals(M.pickStepsFor("bowl", {}, { budget: 900, restrictions: ["fish_free"] })[0]).join(","),
     };
@@ -398,7 +403,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   check(!/hbe/.test(po.veganBowlFats) && !/hbe|feta|parmesan/.test(po.veganJarFats), "vegan: egg/cheese fats hidden (" + po.veganJarFats + ")");
   check(!/honey/.test(po.veganOatCarbs) && /maple/.test(po.veganOatCarbs), "vegan oatmeal: honey hidden, maple offered");
   check(po.nutSeeds === "pumpkin_seeds_oz", "nut-free nut snack → pumpkin seeds only");
-  check(!/walnuts|pb_tsp/.test(po.nutSmoothieFats) && /soy milk/.test(po.nutSmoothieNote), "nut-free smoothie: no walnuts/peanut butter; soy milk instead of almond milk");
+  check(!/walnuts|pb_tsp/.test(po.nutSmoothieFats) && !/almond/.test(po.nutSmoothieMilk) && /coconut/.test(po.nutSmoothieMilk), "nut-free smoothie: no walnuts/peanut butter; no almond milk (doc33: coconut/cow's)");
   check(/plant protein powder/.test(po.veganNote), "vegan smoothie note says plant protein powder");
   check(!/salmon|cod|shrimp/.test(po.fishFreeProteins) && /chicken/.test(po.fishFreeProteins), "fish/shellfish-free hides salmon, cod, shrimp");
 
@@ -426,13 +431,16 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await next();
   await chooseTemplate("smoothie");
   s = await ingState();
-  check(/plant protein powder/.test(s.note) && /soy milk/.test(s.note), "smoothie note: plant protein + soy milk");
+  check(/plant protein powder/.test(s.note), "smoothie note: plant protein");
+  await pickStep(); await next();
+  s = await ingState();
+  check(s.step === "milk" && s.values.join(",") === "coconut_milk_oz", "vegan + nut-free smoothie milk: coconut only (doc33)");
   await pickStep(); await next();
   s = await ingState();
   check(!s.values.some((v) => /walnuts|pb_tsp/.test(v)), "no nut fats offered");
   await pickStep(); await next();
   await chooseTemplate("nut"); await next();
-  await chooseTemplate("oatmeal"); await next(); await pickStep(); await next();
+  await chooseTemplate("oatmeal"); await next(); await pickStep(); await next(); await pickStep(); await next();
   await page.waitForSelector("#saveClose");
   const vsupp = await page.$$eval(".mp-supps li.mp-supp", (ls) => ls.map((l) => l.dataset.supp + ":" + l.querySelector("strong").textContent));
   check(vsupp.some((x) => /^omega3:Algae/.test(x)) && vsupp.some((x) => /^b12/.test(x)) && vsupp.some((x) => /^vitamin_d:.*vegan/.test(x)) && !vsupp.some((x) => /^fish_oil/.test(x)),
