@@ -80,7 +80,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc31", "onboarding.js?v=doc31");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc32", "onboarding.js?v=doc32");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
 
@@ -133,9 +133,11 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.click('input[name="calorieMode"][value="known"]'); await next();
   await page.fill("#calories", "2600"); await next();
   await page.click('input[name="weightGoal"][value="maintain"]'); await next();
+  await next(); // doc32: dietary restrictions (None)
   // 3 meals @ 2600, $500: this plan mixes eggs (bowls) and hard boiled eggs — the reported duplicate.
   await page.click('input[name="meals"][value="3m"]'); await next();
   await next();
+  await page.click('input[name="buildMode"][value="ideas"]'); await next(); // doc32: "Give me some ideas"
   await page.waitForSelector("#saveClose");
   await page.click("#saveClose");
   await page.waitForSelector("#screen-home .macro-pie");

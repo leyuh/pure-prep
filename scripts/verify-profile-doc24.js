@@ -95,8 +95,10 @@ function check(cond, msg) {
   await page.click('input[name="calorieMode"][value="known"]'); await next();
   await page.fill("#calories", "2000"); await next();
   await page.click('input[name="weightGoal"][value="maintain"]'); await next();
+  await next(); // doc32: dietary restrictions (None)
   await page.click('input[name="meals"][value="3m2s"]'); await next();
   await next(); // See my plan (default days)
+  await page.click('input[name="buildMode"][value="ideas"]'); await next(); // doc32: "Give me some ideas"
   await page.waitForSelector("#saveClose");
   await page.click("#saveClose");
   await page.waitForSelector("#screen-home .macro-pie");
@@ -218,6 +220,7 @@ function check(cond, msg) {
   await page.click("#nextWeek");
   await page.waitForSelector("#pickNewMeals");
   await page.click("#pickNewMeals");
+  await page.click('input[name="buildMode"][value="ideas"]'); await next(); // doc32 build choice
   await page.waitForSelector("#saveClose");
   const target = await page.textContent("#onboard-root .mp-cals");
   check(target.trim() === "2600", "Pick new builds from updated profile (2600 target)");
@@ -242,6 +245,7 @@ function check(cond, msg) {
   await page.click("#nextWeek"); await page.click("#prevWeek");
   check((await page.textContent("#screen-home .week-toggle strong")) === offsetBefore, "home week toggle usable");
   await page.evaluate(() => { const b = document.getElementById("updateMealPlan"); b && b.click(); });
+  await page.click('input[name="buildMode"][value="ideas"]'); await next(); // doc32 build choice
   await page.waitForSelector("#saveClose");
   const updTarget = await page.textContent("#onboard-root .mp-cals");
   check(updTarget.trim() === "2600", "Update meal plan on scheduled week uses that week's snapshot (" + updTarget.trim() + "), not 1800");

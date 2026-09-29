@@ -79,7 +79,7 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.reload();
 
   console.log("0) Cache-bust");
-  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc31", "onboarding.js?v=doc31");
+  check(await page.$eval('script[src^="onboarding.js"]', (s) => s.getAttribute("src")) === "onboarding.js?v=doc32", "onboarding.js?v=doc32");
   const favs = await page.$$eval('link[rel~="icon"], link[rel="apple-touch-icon"]', (ls) => ls.map((l) => l.getAttribute("href")));
   check(favs.length && favs.every((h) => /\?v=leaf8$/.test(h)), "favicons stay ?v=leaf8");
   check(typeof (await page.evaluate(() => typeof window.MealPlanOnboarding.prepForSlot)) === "string" &&
@@ -234,8 +234,10 @@ const money = (s) => Number(String(s).replace(/[^0-9.]/g, ""));
   await page.click('input[name="calorieMode"][value="known"]'); await next();
   await page.fill("#calories", "2400"); await next();
   await page.click('input[name="weightGoal"][value="maintain"]'); await next();
+  await next(); // doc32: dietary restrictions (None)
   await page.click('input[name="meals"][value="3m2s"]'); await next();
   await next();
+  await page.click('input[name="buildMode"][value="ideas"]'); await next(); // doc32: "Give me some ideas"
   await page.waitForSelector("#saveClose");
   const cards = await page.$$eval(".mp-slots > .mp-card", (cs) => cs.map((c) => ({
     title: c.querySelector(".mp-card-head strong").textContent,

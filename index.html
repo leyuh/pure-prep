@@ -769,6 +769,61 @@
       font-size: 0.78rem !important;
     }
     .mp-days .mp-option { user-select: none; }
+    /* doc32: build choice, "Let's pick our meals" wizard, restrictions, supplements */
+    .mp-next:disabled { opacity: 0.4; cursor: not-allowed; filter: none; box-shadow: none; }
+    .mp-option-text { display: flex; flex-direction: column; gap: 3px; }
+    .mp-option-title { font-weight: 600; color: var(--text); }
+    .mp-option-desc { color: var(--muted); font-size: 0.8rem; line-height: 1.4; font-weight: 450; }
+    .mp-build-choice .mp-option { padding: 16px 18px; }
+    .mp-build-choice .mp-option-title { font-family: var(--font-display); font-size: 1.05rem; color: var(--accent-deep); }
+    .mp-option.disabled { opacity: 0.45; cursor: not-allowed; }
+    .mp-option.locked { cursor: default; }
+    .mp-option input:disabled { cursor: not-allowed; }
+    .mp-pick-ingredients { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mp-pick-ingredients .mp-option { padding: 11px 12px; align-items: center; }
+    .mp-pick-ingredients .mp-option input { margin-top: 0; }
+    .mp-pick-ingredients .mp-pick-empty { grid-column: 1 / -1; }
+    .mp-pick-tag {
+      display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
+      color: var(--ok); background: rgba(90, 122, 82, 0.12); border: 1px solid rgba(79, 122, 72, 0.3);
+      border-radius: 99px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; white-space: nowrap;
+    }
+    .mp-pick-sofar {
+      margin: 0 0 10px; padding: 8px 12px; border-radius: 12px; background: var(--sage-soft);
+      border: 1px dashed rgba(111, 143, 100, 0.45); font-size: 0.84rem; color: var(--accent-deep);
+    }
+    .mp-pick-intro, .mp-pick-note { margin: 0 0 12px; }
+    .mp-pick-count { margin: 10px 2px 0; font-size: 0.8rem; color: var(--moss); font-weight: 600; }
+    .mp-pick-budget { margin-top: 6px; }
+    .mp-pick-empty {
+      margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--clay-soft);
+      border: 1px solid rgba(196, 120, 90, 0.35); color: var(--terracotta); font-size: 0.88rem; line-height: 1.45;
+    }
+    .mp-restrictions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mp-restrictions .mp-option { padding: 11px 12px; align-items: center; user-select: none; }
+    .mp-restrictions .mp-option input { margin-top: 0; }
+    .mp-supps { padding: 14px 16px; }
+    .mp-supps > .mp-hint { margin-bottom: 8px; }
+    .mp-supp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .mp-supp {
+      padding: 10px 12px; border-radius: 12px; background: var(--card);
+      border: 1px solid rgba(217, 208, 189, 0.9); border-left: 3px solid var(--moss);
+    }
+    .mp-supp.soft { border-left-color: var(--sage); opacity: 0.92; }
+    .mp-supp-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .mp-supp-head strong { font-size: 0.92rem; color: var(--accent-deep); }
+    .mp-supp-ico { font-size: 1rem; }
+    .mp-supp-tag {
+      margin-left: auto; font-size: 0.66rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+      color: #8a6a10; background: rgba(240, 198, 116, 0.18); border: 1px solid rgba(184, 134, 11, 0.3);
+    }
+    .mp-supp-tag.cond { color: var(--terracotta); background: var(--clay-soft); border-color: rgba(196, 120, 90, 0.3); }
+    .mp-supp-tag.soft { color: var(--ok); background: rgba(90, 122, 82, 0.1); border-color: rgba(79, 122, 72, 0.3); }
+    .mp-supp-why { margin: 6px 0 4px; font-size: 0.82rem; line-height: 1.45; color: var(--text); }
+    .mp-supp-dose { margin: 0; font-size: 0.8rem; color: var(--muted); }
+    .mp-supp-dose b { color: var(--moss); }
+    .mp-supp-disclaimer { margin: 10px 0 0; font-size: 0.76rem; color: var(--muted); font-style: italic; }
+    .profile-restrictions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
     .shell.onboard {
       width: min(720px, 100%);
       margin: 8px auto 0;
@@ -1159,7 +1214,7 @@
       </button>
     </nav>
   </div>
-  <script src="onboarding.js?v=doc31"></script>
+  <script src="onboarding.js?v=doc32"></script>
   <script>
 
 (function () {
@@ -1212,7 +1267,7 @@
    * never touches weeks that are already scheduled. */
   const PROFILE_KEYS = [
     "budget", "cadence", "calorieMode", "calories", "weightLbs", "weightGoal",
-    "activity", "mealOption", "meals", "snacks", "daysPerWeek", "selectedDays",
+    "activity", "mealOption", "meals", "snacks", "daysPerWeek", "selectedDays", "restrictions",
   ];
   const DAY_ORDER = M.DAYS_OF_WEEK.map((d) => d.id);
 
@@ -1246,6 +1301,8 @@
     if (n.calorieMode === "help" && n.weightLbs && n.weightGoal && n.activity) {
       n.calories = M.estimateCalories(n.weightLbs, n.weightGoal, n.activity);
     }
+    // doc32: dietary restrictions (missing on older profiles = none).
+    n.restrictions = M.normalizeRestrictions(n.restrictions);
     return n;
   }
 
@@ -1290,6 +1347,8 @@
       });
       if (goal) base.weightGoal = goal;
     }
+    // Plans record the restrictions they were built with; older plans predate restrictions (none).
+    base.restrictions = Array.isArray(plan.restrictions) ? plan.restrictions.slice() : [];
     const cal = plan.daily && plan.daily.calories;
     if (cal) {
       if (base.calorieMode === "help") {
@@ -2462,6 +2521,10 @@
       d.meals = M.MEAL_OPTIONS[meal].meals;
       d.snacks = M.MEAL_OPTIONS[meal].snacks;
     }
+    const rBoxes = root.querySelectorAll('input[name="pf-restriction"]');
+    if (rBoxes.length) {
+      d.restrictions = M.normalizeRestrictions(Array.from(rBoxes).filter((n) => n.checked && n.value !== "none").map((n) => n.value));
+    }
     const dayBoxes = root.querySelectorAll('input[name="pf-day"]');
     if (dayBoxes.length) {
       d.selectedDays = Array.from(dayBoxes).filter((n) => n.checked).map((n) => n.value);
@@ -2487,6 +2550,14 @@
     const goalOptions = [
       { value: "lose", label: "Lose" }, { value: "maintain", label: "Maintain" }, { value: "gain", label: "Gain" },
     ];
+    const curRestr = M.normalizeRestrictions(d.restrictions);
+    const restrictionChecks = [{ id: "none", label: "None" }].concat(M.RESTRICTION_OPTIONS).map((o) => {
+      const on = o.id === "none" ? !curRestr.length : curRestr.indexOf(o.id) !== -1;
+      return `<label class="mp-option${on ? " selected" : ""}">
+        <input type="checkbox" name="pf-restriction" value="${o.id}" ${on ? "checked" : ""} />
+        <span>${escHtml(o.label)}</span>
+      </label>`;
+    }).join("");
     let calorieFields;
     if (d.calorieMode === "help") {
       calorieFields = `
@@ -2544,6 +2615,12 @@
           <label class="mp-label">Which days will you follow your plan?</label>
           <div class="mp-options mp-days profile-days">${dayChecks}</div>
         </section>
+        <section class="panel profile-group" data-group="restrictions">
+          <h2>Dietary restrictions</h2>
+          <label class="mp-label">Any dietary restrictions?</label>
+          <div class="mp-options profile-restrictions">${restrictionChecks}</div>
+          <p class="mp-hint" style="margin-top:8px">We leave these foods out of plans, rerolls and suggestions. Vegan covers vegetarian, dairy-free and egg-free.</p>
+        </section>
         <p class="mp-error" id="profileError" hidden></p>
         <div class="profile-actions">
           <button type="submit" class="cta" id="saveProfile">Save profile</button>
@@ -2567,6 +2644,13 @@
     };
     form.addEventListener("input", refresh);
     form.addEventListener("change", (e) => {
+      if (e.target && e.target.name === "pf-restriction") {
+        // "None" is exclusive, same as the questionnaire.
+        const boxes = Array.from(root.querySelectorAll('input[name="pf-restriction"]'));
+        if (e.target.value === "none" && e.target.checked) boxes.forEach((n) => { if (n !== e.target) n.checked = false; });
+        if (e.target.value !== "none" && e.target.checked) boxes.forEach((n) => { if (n.value === "none") n.checked = false; });
+        if (!boxes.some((n) => n.checked)) boxes.forEach((n) => { if (n.value === "none") n.checked = true; });
+      }
       if (e.target && e.target.name === "pf-calorieMode") {
         syncProfileDraftFromForm(root);
         renderProfile(); // conditional fields: known-calories vs help path

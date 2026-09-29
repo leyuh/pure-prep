@@ -169,6 +169,11 @@
     egg_white: { name: "egg white", unit: "white", kcal: 17, p: 3.6, c: 0.2, f: 0.1, m: M({ sodium_mg: 55, potassium_mg: 54, calcium_mg: 2, magnesium_mg: 4 }) },
     avocado_oz: { name: "avocado", unit: "oz", kcal: 45, p: 0.6, c: 2.4, f: 4.2, m: M({ fiber_g: 1.9, potassium_mg: 140, magnesium_mg: 8, vitC_mg: 2.8, vitA_mcg: 2, calcium_mg: 3, iron_mg: 0.15, vitE_mg: 0.6, vitK_mcg: 6, folate_mcg: 25, copper_mg: 0.05, manganese_mg: 0.04, choline_mg: 4}) },
     hard_boiled_egg: { name: "hard boiled egg", unit: "egg", kcal: 78, p: 6.3, c: 0.6, f: 5.3, m: M({ sodium_mg: 62, vitA_mcg: 74, vitD_mcg: 1.1, vitB12_mcg: 0.55, iron_mg: 0.6, calcium_mg: 25, potassium_mg: 63, zinc_mg: 0.5, choline_mg: 147, selenium_mcg: 15, phosphorus_mg: 86, riboflavin_mg: 0.2, folate_mcg: 22, vitE_mg: 0.5}) },
+    // doc32 dietary restrictions: only used when a restriction rules out the usual item.
+    plant_protein_scoop: { name: "plant protein powder", unit: "scoop", kcal: 120, p: 22, c: 4, f: 2, m: M({ iron_mg: 5, sodium_mg: 290, potassium_mg: 60, calcium_mg: 50, magnesium_mg: 25, zinc_mg: 1.5, phosphorus_mg: 150 }) },
+    soy_milk_oz: { name: "unsweetened soy milk", unit: "oz", kcal: 10, p: 0.875, c: 0.5, f: 0.5, m: M({ calcium_mg: 38, vitD_mcg: 0.36, vitB12_mcg: 0.34, potassium_mg: 37, magnesium_mg: 5, sodium_mg: 11, riboflavin_mg: 0.06, vitA_mcg: 19 }) },
+    tofu_oz: { name: "extra-firm tofu", unit: "oz", kcal: 26, p: 2.9, c: 0.6, f: 1.5, m: M({ calcium_mg: 98, iron_mg: 0.5, magnesium_mg: 17, zinc_mg: 0.3, potassium_mg: 50, phosphorus_mg: 40, selenium_mcg: 3, manganese_mg: 0.2, copper_mg: 0.06 }) },
+    pumpkin_seeds_oz: { name: "pumpkin seeds", unit: "oz", kcal: 158, p: 8.5, c: 3, f: 13.9, m: M({ fiber_g: 1.7, magnesium_mg: 156, zinc_mg: 2.2, iron_mg: 2.5, potassium_mg: 229, phosphorus_mg: 330, manganese_mg: 1.3, copper_mg: 0.4, calcium_mg: 13 }) },
   };
 
   /** Approximate edible grams per FOOD unit (for display). */
@@ -189,6 +194,7 @@
     greek_nonfat_cup: 245, greek_2pct_cup: 245, cottage_lf_cup: 226,
     pineapple_cup: 165, peach_cup: 154,
     egg: 50, egg_white: 33, avocado_oz: 28, hard_boiled_egg: 50,
+    plant_protein_scoop: 33, soy_milk_oz: 30, tofu_oz: 28, pumpkin_seeds_oz: 28,
   };
 
   const DAYS_OF_WEEK = [
@@ -319,7 +325,82 @@
     black_beans_cup: { product: "Canned black beans", packageQty: 3.5, packageUnit: "cup", packagePrice: 0.92 },
     feta_oz: { product: "Feta cheese", packageQty: 6, packageUnit: "oz", packagePrice: 3.48 },
     parmesan_oz: { product: "Parmesan", packageQty: 5, packageUnit: "oz", packagePrice: 3.98 },
+    plant_protein_scoop: { product: "Plant protein powder (pea)", packageQty: 30, packageUnit: "scoop", packagePrice: 34.98 },
+    soy_milk_oz: { product: "Unsweetened soy milk", packageQty: 64, packageUnit: "oz", packagePrice: 2.98 },
+    tofu_oz: { product: "Extra-firm tofu", packageQty: 14, packageUnit: "oz", packagePrice: 2.28 },
+    pumpkin_seeds_oz: { product: "Pumpkin seeds (pepitas)", packageQty: 10, packageUnit: "oz", packagePrice: 4.98 },
   };
+
+  /* ── Dietary restrictions (doc32) ──────────────────────────────────────
+   * Multi-select in the questionnaire + Profile (future plans only). Every
+   * food carries the tags that rule it out; generation, rerolls, top-ups and
+   * the "Let's pick our meals" options all go through foodAllowed(), and
+   * restrictSuggestion() swaps any leftover item for an allowed equivalent
+   * (whey → plant protein, almond milk → soy milk, walnuts → chia…).
+   * No "Other" free-text option: it can't be matched to foods reliably.
+   */
+  const RESTRICTION_OPTIONS = [
+    { id: "dairy_free", label: "Dairy-free" },
+    { id: "gluten_free", label: "Gluten-free" },
+    { id: "egg_free", label: "Egg-free" },
+    { id: "nut_free", label: "Nut-free (tree nuts + peanuts)" },
+    { id: "fish_free", label: "Fish/shellfish-free" },
+    { id: "vegetarian", label: "Vegetarian" },
+    { id: "vegan", label: "Vegan" },
+    { id: "pork_free", label: "Pork-free" },
+  ];
+  const FOOD_TAGS = {
+    milk_skim_oz: ["dairy"], milk_2pct_oz: ["dairy"], protein_scoop: ["dairy"], feta_oz: ["dairy"], parmesan_oz: ["dairy"],
+    greek_nonfat_cup: ["dairy"], greek_2pct_cup: ["dairy"], cottage_lf_cup: ["dairy"],
+    egg: ["egg"], egg_white: ["egg"], hard_boiled_egg: ["egg"],
+    almond_milk_oz: ["nut"], walnuts_tsp: ["nut"], walnuts_tbsp: ["nut"], pb_tsp: ["nut"], pb_tbsp: ["nut"],
+    almonds_oz: ["nut"], peanuts_oz: ["nut"], cashews_oz: ["nut"], pistachios_oz: ["nut"],
+    salmon_oz: ["fish"], cod_oz: ["fish"], shrimp_oz: ["fish"],
+    beef_oz: ["meat"], turkey_oz: ["meat"], chicken_oz: ["meat"], chicken_thigh_oz: ["meat"],
+    honey_tsp: ["honey"],
+  };
+
+  function normalizeRestrictions(list) {
+    const have = {};
+    (Array.isArray(list) ? list : []).forEach((id) => { have[id] = true; });
+    return RESTRICTION_OPTIONS.map((o) => o.id).filter((id) => have[id]);
+  }
+
+  /** What a restriction list rules out (vegan ⊃ vegetarian + dairy-free + egg-free; vegetarian ⊃ fish-free). */
+  function restrictionFlags(list) {
+    const ids = normalizeRestrictions(list);
+    const has = (id) => ids.indexOf(id) !== -1;
+    const vegan = has("vegan");
+    const vegetarian = vegan || has("vegetarian");
+    return {
+      ids,
+      any: ids.length > 0,
+      vegan,
+      vegetarian,
+      dairy: vegan || has("dairy_free"),
+      egg: vegan || has("egg_free"),
+      nut: has("nut_free"),
+      fish: vegetarian || has("fish_free"),
+      meat: vegetarian,
+      honey: vegan,
+      gluten: has("gluten_free"),
+      pork: vegetarian || has("pork_free"),
+    };
+  }
+
+  function foodAllowed(key, flags) {
+    if (!flags || !flags.any) return true;
+    const tags = FOOD_TAGS[key] || [];
+    return !tags.some((t) => flags[t]);
+  }
+
+  function proteinPowderKey(flags) {
+    return flags && flags.dairy ? "plant_protein_scoop" : "protein_scoop";
+  }
+  /** Default milk for smoothies/oatmeal: almond, or soy when nut-free. */
+  function plantMilkKey(flags) {
+    return flags && flags.nut ? "soy_milk_oz" : "almond_milk_oz";
+  }
 
   /** Unit price for one FOOD catalog unit. Swappable for a live Walmart API. */
   function lookupPrice(ingredientKey) {
@@ -636,6 +717,45 @@
     return suggestion;
   }
 
+
+  /**
+   * doc32: swap anything a restriction rules out for an allowed equivalent
+   * (same role, similar macros). Generated suggestions pass through here, so
+   * builders, rerolls and calorie top-ups can never leak a restricted food.
+   * No-op without restrictions.
+   */
+  function restrictSuggestion(s, flags) {
+    if (!s || !s.ingredients || !flags || !flags.any) return s;
+    const spoonSeed = { walnuts_tsp: "chia_tsp", walnuts_tbsp: "chia_tsp", pb_tsp: "hemp_tsp", pb_tbsp: "hemp_tsp" };
+    const out = [];
+    s.ingredients.forEach((ing) => {
+      if (!ing || ing._note || !ing._key) { out.push(ing); return; }
+      const k = ing._key;
+      const q = Number(ing._qty) || 0;
+      if (foodAllowed(k, flags)) { out.push(ing); return; }
+      const fat = (FOOD[k] ? FOOD[k].f : 0) * q;
+      if (k === "protein_scoop") out.push(qtyLine(proteinPowderKey(flags), q));
+      else if (/milk/.test(k)) out.push(qtyLine(plantMilkKey(flags), q));
+      else if (spoonSeed[k]) out.push(qtyLine(spoonSeed[k], clamp(Math.round(fat / FOOD[spoonSeed[k]].f), 1, 6)));
+      else if (FOOD_TAGS[k] && FOOD_TAGS[k][0] === "nut") out.push(qtyLine("pumpkin_seeds_oz", q));
+      else if (k === "feta_oz" || k === "parmesan_oz" || k === "hard_boiled_egg") {
+        out.push(qtyLine("avocado_oz", clamp(Math.round((fat / FOOD.avocado_oz.f) * 2) / 2, 1, 3)));
+      } else if (k === "honey_tsp") out.push(qtyLine("maple_tsp", q));
+      // Main proteins (meat/fish/eggs/dairy snacks) are never offered under a
+      // restriction that rules them out (see mealTypePools), so nothing else to swap.
+      else out.push(ing);
+    });
+    s.ingredients = dedupeIngredients(out);
+    if (s.type === "nut" && s.ingredients[0] && s.ingredients[0]._key === "pumpkin_seeds_oz") s.title = "Pumpkin seeds";
+    const notes = (s.notes || []).slice();
+    const keys = s.ingredients.map((i) => i && i._key);
+    const addNote = (t) => { if (notes.indexOf(t) === -1) notes.push(t); };
+    if (flags.gluten && keys.indexOf("oats_cup") !== -1) addNote("Gluten-free: use oats labeled certified gluten-free");
+    if (flags.gluten && keys.some((k) => /protein_scoop/.test(k || ""))) addNote("Gluten-free: choose a protein powder labeled gluten-free");
+    s.notes = notes;
+    s.totals = roundMacros(sumIngredients(s.ingredients));
+    return s;
+  }
 
   function noteLine(text) {
     return { label: text, kcal: 0, p: 0, c: 0, f: 0, _note: true };
@@ -1027,6 +1147,7 @@
       eggs: "egg",
       egg_whites: "egg_white",
       shrimp: "shrimp_oz",
+      tofu: "tofu_oz",
     }[protein];
     const titles = {
       beef: "Ground beef bowl",
@@ -1038,6 +1159,7 @@
       eggs: "Egg bowl",
       egg_whites: "Egg white bowl",
       shrimp: "Shrimp bowl",
+      tofu: "Tofu bowl",
     };
     const vegKey = options.vegKey || "broccoli_cup";
     const fatStyle = options.fatStyle || "evoo"; // evoo | avocado | hbe
@@ -1073,7 +1195,17 @@
     // Fat: 1–3 tsp EVOO, portion of avocado, or hard boiled egg
     used = sumIngredients(ings);
     const fatNeed = targetGrams.f - used.f;
-    if (fatNeed >= 2) {
+    // doc32 "Let's pick our meals": 1–2 picked fats, each always included (min
+    // portion) and sharing the remaining fat need. Generated plans never pass this.
+    const pickedFats = Array.isArray(options.fatStyles) && options.fatStyles.length ? options.fatStyles.slice(0, 2) : null;
+    if (pickedFats) {
+      const share = Math.max(0, fatNeed) / pickedFats.length;
+      pickedFats.forEach((fs) => {
+        if (fs === "avocado") ings.push(qtyLine("avocado_oz", clamp(Math.round((share / FOOD.avocado_oz.f) * 2) / 2, 1, 4)));
+        else if (fs === "hbe") ings.push(qtyLine("hard_boiled_egg", clamp(Math.round(share / FOOD.hard_boiled_egg.f), 1, 2)));
+        else ings.push(qtyLine("evoo_tsp", clamp(Math.round(share / FOOD.evoo_tsp.f), 1, 3)));
+      });
+    } else if (fatNeed >= 2) {
       if (fatStyle === "avocado") {
         const oz = clamp(Math.round((fatNeed / FOOD.avocado_oz.f) * 2) / 2, 1, 4);
         ings.push(qtyLine("avocado_oz", oz));
@@ -1104,12 +1236,12 @@
     const tier = options.tier || budgetTier(options.budget || 300);
     const proteinKey = {
       beef: "beef_oz", turkey: "turkey_oz", chicken: "chicken_oz", chicken_thigh: "chicken_thigh_oz",
-      salmon: "salmon_oz", cod: "cod_oz", shrimp: "shrimp_oz",
+      salmon: "salmon_oz", cod: "cod_oz", shrimp: "shrimp_oz", tofu: "tofu_oz",
     }[protein];
     const titles = {
       beef: "Ground beef salad jar", turkey: "Turkey salad jar", chicken: "Chicken salad jar",
       chicken_thigh: "Chicken thigh salad jar", salmon: "Salmon salad jar", cod: "Cod salad jar",
-      shrimp: "Shrimp salad jar",
+      shrimp: "Shrimp salad jar", tofu: "Tofu salad jar",
     };
     if (!proteinKey) {
       // Eggs are bowl-only; fall back to chicken for salad jars
@@ -1218,6 +1350,7 @@
       peanuts_oz: "Peanuts",
       cashews_oz: "Cashews",
       pistachios_oz: "Pistachios",
+      pumpkin_seeds_oz: "Pumpkin seeds",
     };
     return {
       title: names[nutKey] || "Nuts",
@@ -1258,7 +1391,7 @@
     return { ings, title, kind, fruit, _role: "lean" };
   }
 
-  function addFruitCarbs(ings, fruit, carbNeed, calNeed) {
+  function addFruitCarbs(ings, fruit, carbNeed, calNeed, pickOpts) {
     const fruitKey =
       fruit === "pineapple"
         ? "pineapple_cup"
@@ -1292,6 +1425,19 @@
     ings.push(qtyLine(fruitKey, cups, formatQty(cups) + " cup " + fruitNames[fruitKey]));
 
     let used = sumIngredients(ings);
+    // doc32 picks: honey/maple only when the user picked it (then at least 1 tsp).
+    if (pickOpts && "sweetener" in pickOpts) {
+      const sk = pickOpts.sweetener;
+      if (sk && FOOD[sk]) {
+        const tsp = clamp(
+          Math.round(Math.max((carbNeed - used.c) / FOOD[sk].c, calNeed > 0 ? (calNeed - used.kcal) / FOOD[sk].kcal : 0)),
+          1,
+          2
+        );
+        ings.push(qtyLine(sk, tsp, formatQty(tsp) + " tsp " + FOOD[sk].name));
+      }
+      return ings;
+    }
     // Optional honey/maple if carbs still short
     if (used.c < carbNeed - 5 || (calNeed > 0 && used.kcal < calNeed - 40)) {
       const tsp = clamp(
@@ -1347,7 +1493,45 @@
         ? ["pineapple", "peach"]
         : ["pineapple", "peach", "mango", "berries"]
       : ["pineapple", "peach", "mango", "berries"];
-    return { tier, bowlProteins, saladProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
+    const pools = { tier, bowlProteins, saladProteins, breakfastFlavors, smoothieSafeFlavors, nutKeys, fruits };
+    return restrictPools(pools, restrictionFlags(planOptions.restrictions));
+  }
+
+  const PROTEIN_FOOD_KEY = {
+    beef: "beef_oz", turkey: "turkey_oz", chicken: "chicken_oz", chicken_thigh: "chicken_thigh_oz",
+    salmon: "salmon_oz", cod: "cod_oz", shrimp: "shrimp_oz", eggs: "egg", egg_whites: "egg_white", tofu: "tofu_oz",
+  };
+
+  /**
+   * doc32: apply dietary restrictions to the (budget-aware) pools. Without
+   * restrictions the pools are returned unchanged (plus the full type lists).
+   * Vegetarian/vegan bowls and jars get tofu; nut-free snacks get pumpkin seeds.
+   */
+  function restrictPools(pools, flags) {
+    const out = Object.assign({}, pools, { flags: flags || restrictionFlags([]) });
+    if (flags && flags.any) {
+      const ok = (p) => foodAllowed(PROTEIN_FOOD_KEY[p], flags);
+      out.bowlProteins = pools.bowlProteins.filter(ok);
+      out.saladProteins = pools.saladProteins.filter(ok);
+      if (flags.vegetarian) {
+        out.bowlProteins.push("tofu");
+        out.saladProteins.push("tofu");
+      }
+      if (flags.nut) {
+        out.breakfastFlavors = pools.breakfastFlavors.filter((f) => f !== "pb_banana");
+        if (!out.breakfastFlavors.length) out.breakfastFlavors = ["banana_bread"];
+        out.smoothieSafeFlavors = out.breakfastFlavors.filter((f) => f !== "pumpkin_spice" && f !== "banana_bread");
+        if (!out.smoothieSafeFlavors.length) out.smoothieSafeFlavors = ["berry_banana"];
+        out.nutKeys = ["pumpkin_seeds_oz"];
+      }
+    }
+    const f = out.flags;
+    // Smoothie/oatmeal always work (whey or plant protein powder); bowls/jars need a protein.
+    out.mealTypes = MEAL_TYPES_ALL.filter((t) =>
+      t === "bowl" ? out.bowlProteins.length > 0 : t === "salad_jar" ? out.saladProteins.length > 0 : true);
+    out.snackTypes = SNACK_TYPES_ALL.filter((t) =>
+      t === "nut" ? out.nutKeys.length > 0 : t === "hb_egg" ? !f.egg : !f.dairy);
+    return out;
   }
 
   /**
@@ -1355,6 +1539,12 @@
    * seed cycles flavors / proteins / veg / fat styles.
    */
   function buildMealSuggestionForType(type, calories, targetGrams, seed, planOptions) {
+    const pools = mealTypePools(planOptions || {});
+    if (pools.mealTypes.indexOf(type) === -1) type = pools.mealTypes[pools.mealTypes.length - 1] || "oatmeal";
+    return restrictSuggestion(buildMealSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions), pools.flags);
+  }
+
+  function buildMealSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions) {
     seed = Math.max(0, Number(seed) || 0);
     planOptions = planOptions || {};
     const pools = mealTypePools(planOptions);
@@ -1415,6 +1605,12 @@
 
   /** Build one snack of an explicit kind: nut | cottage | greek | hb_egg. */
   function buildSnackSuggestionForType(type, calories, targetGrams, seed, planOptions) {
+    const pools = mealTypePools(planOptions || {});
+    if (pools.snackTypes.indexOf(type) === -1) type = pools.snackTypes[0] || "nut";
+    return restrictSuggestion(buildSnackSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions), pools.flags);
+  }
+
+  function buildSnackSuggestionForTypeRaw(type, calories, targetGrams, seed, planOptions) {
     seed = Math.max(0, Number(seed) || 0);
     planOptions = planOptions || {};
     const pools = mealTypePools(planOptions);
@@ -1468,43 +1664,23 @@
     const snackSlots = slots.filter((s) => s.kind === "snack");
     const is3m2s = mealSlots.length === 3 && snackSlots.length === 2;
 
-    // Cheap proteins first; exclude seafood when preferCheapProtein
-    const cheapProteins = ["beef", "chicken", "turkey", "chicken_thigh", "eggs", "egg_whites"];
-    const cheapSaladProteins = ["beef", "chicken", "turkey", "chicken_thigh"];
-    const priceyProteins = ["salmon", "shrimp", "cod"];
-    const bowlProteins = tier.preferCheapProtein
-      ? cheapProteins.slice()
-      : cheapProteins.concat(priceyProteins);
+    // Cheap proteins first; exclude seafood when preferCheapProtein (budget-aware
+    // pools, then dietary restrictions — doc32; unchanged without restrictions)
+    const pools = mealTypePools({ budget: planOptions.budget, tierOverrides: planOptions.tierOverrides, restrictions: planOptions.restrictions });
+    const rflags = pools.flags;
+    const bowlProteins = pools.bowlProteins;
     // Salad jars: no eggs/egg whites (bowls may still use them)
-    const saladProteins = tier.preferCheapProtein
-      ? cheapSaladProteins.slice()
-      : cheapSaladProteins.concat(priceyProteins);
-    const breakfastFlavors = tier.preferCheapProduce
-      ? tier.reduceVariety
-        ? ["banana_bread", "pumpkin_spice", "pb_banana"]
-        : ["banana_bread", "pumpkin_spice", "pb_banana", "berry_banana", "chocolate_cherry"]
-      : [
-          "berry_banana",
-          "pumpkin_spice",
-          "pb_banana",
-          "banana_bread",
-          "chocolate_cherry",
-        ];
-    const smoothieSafeFlavors = breakfastFlavors.filter((f) => f !== "pumpkin_spice" && f !== "banana_bread");
+    const saladProteins = pools.saladProteins;
+    const breakfastFlavors = pools.breakfastFlavors;
+    const smoothieSafeFlavors = pools.smoothieSafeFlavors;
     // Peanuts first on budget tiers; pricey nuts mainly on high
-    const nutKeys =
-      tier.preferCheapProduce || tier.preferCheapProtein
-        ? tier.reduceVariety
-          ? ["peanuts_oz"]
-          : ["peanuts_oz", "almonds_oz"]
-        : ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
-    const leanKinds = ["cottage", "greek"];
+    const nutKeys = pools.nutKeys;
+    const leanKinds = ["cottage", "greek"].filter((k) => pools.snackTypes.indexOf(k) !== -1);
     // Cheap lean fruits: pineapple over peach/mango/berries when budget-tight
-    const fruits = tier.preferCheapProduce
-      ? tier.reduceVariety
-        ? ["pineapple", "peach"]
-        : ["pineapple", "peach", "mango", "berries"]
-      : ["pineapple", "peach", "mango", "berries"];
+    const fruits = pools.fruits;
+    const allowBowl = bowlProteins.length > 0;
+    const allowSalad = saladProteins.length > 0;
+    const allowHbEgg = pools.snackTypes.indexOf("hb_egg") !== -1;
 
     const pick = (arr, i) => arr[((i % arr.length) + arr.length) % arr.length];
     const usedProduce = new Set(); // produce families used across the day
@@ -1551,6 +1727,15 @@
       };
     }
 
+    // One-snack days: nut / hard-boiled egg / lean dairy by variant, falling back
+    // to an allowed kind when a restriction rules the usual one out.
+    function snackMode(nSnacks, v) {
+      let mode = nSnacks === 1 && v % 3 === 1 ? "nut" : nSnacks === 1 && v % 3 === 2 ? "hb" : "lean";
+      if (mode === "hb" && !allowHbEgg) mode = leanKinds.length ? "lean" : "nut";
+      if (mode === "lean" && !leanKinds.length) mode = allowHbEgg ? "hb" : "nut";
+      return mode;
+    }
+
     const results = [];
     let mealCount = 0;
     let snackCount = 0;
@@ -1567,11 +1752,12 @@
         let suggestion;
         if (planOptions.freeMealTypes) {
           // Variant-driven among all 4 meal types (used by day reroll / free mix)
-          const type = MEAL_TYPES_ALL[(variant + mealCount) % MEAL_TYPES_ALL.length];
+          const type = pools.mealTypes[(variant + mealCount) % pools.mealTypes.length];
           suggestion = buildMealSuggestionForType(type, slot.calories, tg, variant + mealCount * 17, {
             budget: planOptions.budget,
             tier,
             tierOverrides: planOptions.tierOverrides,
+            restrictions: planOptions.restrictions,
           });
         } else if (is3m2s) {
           if (mealCount === 1) {
@@ -1587,7 +1773,9 @@
             const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
             const saladPool = saladProteins;
             const protBowl = bowlProteins[Math.floor(variant / 2) % bowlProteins.length];
-            if (variant % 2 === 1) {
+            if (!allowBowl && !allowSalad) {
+              suggestion = buildOatmealSlot(pick(breakfastFlavors, variant + 1), slot.calories, tg, true);
+            } else if (allowSalad && (variant % 2 === 1 || !allowBowl)) {
               const prot = saladPool[Math.floor(variant / 2) % saladPool.length];
               const greenOpts = ["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"];
               const greens = greenOpts[variant % greenOpts.length];
@@ -1632,7 +1820,9 @@
           const protBowl = bowlProteins[bowlI % bowlProteins.length];
           const saladPool = saladProteins;
           const saladFat = ["evoo", "avocado", "feta", "parmesan", "hbe"];
-          if ((variant + bowlI) % 2 === 1) {
+          if (!allowBowl && !allowSalad) {
+            suggestion = buildOatmealSlot(pick(breakfastFlavors, variant + bowlI), slot.calories, tg, true);
+          } else if (allowSalad && ((variant + bowlI) % 2 === 1 || !allowBowl)) {
             const prot = saladPool[bowlI % saladPool.length];
             const greens = pickDiverseKey(["lettuce_cup", "mixed_greens_cup", "kale_cup", "spinach_cup"], usedProduce, variant + bowlI);
             const vegKeys = [
@@ -1678,10 +1868,10 @@
             pendingLean.push({ slot, tg, index: results.length });
             results.push(null);
           }
-        } else if (snackSlots.length === 1 && variant % 3 === 1) {
+        } else if (snackMode(snackSlots.length, variant) === "nut") {
           const suggestion = buildNutOnlySnack(pick(nutKeys, variant), slot.calories, tg);
           results.push(Object.assign({}, slot, { targetMacros: gramsFromPct(slot.calories, macroPct), suggestion }));
-        } else if (snackSlots.length === 1 && variant % 3 === 2) {
+        } else if (snackMode(snackSlots.length, variant) === "hb") {
           const sf = pickDiverseFruitName(fruits, usedProduce, variant + snackCount);
           const suggestion = buildHbEggSnack(slot.calories, tg, sf);
           markProduceFromIngredients(usedProduce, suggestion.ingredients);
@@ -1712,6 +1902,16 @@
     }
 
     for (const item of pendingLean) {
+      if (!leanKinds.length) {
+        // doc32: no dairy allowed → the second snack is hard-boiled eggs & fruit, or another nut/seed.
+        const sf = pickDiverseFruitName(fruits, usedProduce, variant + 1);
+        const alt = allowHbEgg
+          ? buildHbEggSnack(item.slot.calories, item.tg, sf)
+          : buildNutOnlySnack(pick(nutKeys, variant + 1), item.slot.calories, item.tg);
+        markProduceFromIngredients(usedProduce, alt.ingredients);
+        results[item.index] = Object.assign({}, item.slot, { targetMacros: gramsFromPct(item.slot.calories, macroPct), suggestion: alt });
+        continue;
+      }
       leanFruit = pickDiverseFruitName(fruits, usedProduce, variant + 1);
       leanPlan.fruit = leanFruit;
       const base = buildLeanSnackProtein(leanPlan.kind, leanFruit, leanPlan.targetP, leanPlan.targetF);
@@ -1740,6 +1940,9 @@
       });
     }
 
+    // doc32: swap anything a dietary restriction rules out before tuning.
+    for (const r of results) r.suggestion = restrictSuggestion(r.suggestion, rflags);
+
     // Smoothie milk: prefer dairy skim/2% when day is under on cal or protein;
     // use almond milk if day's protein or calories already too high.
     let dayKcal = results.reduce((a, r) => a + r.suggestion.totals.kcal, 0);
@@ -1747,7 +1950,7 @@
     const dayTargetP = (dailyCalories * macroPct.p) / 100 / 4;
     const calTooHigh = dayKcal > dailyCalories;
     const proteinTooHigh = dayP > dayTargetP + 8;
-    if (!calTooHigh && !proteinTooHigh && (dayKcal < dailyCalories - 80 || dayP < dayTargetP - 8)) {
+    if (!rflags.dairy && !calTooHigh && !proteinTooHigh && (dayKcal < dailyCalories - 80 || dayP < dayTargetP - 8)) {
       for (const r of results) {
         if (r.suggestion.type === "smoothie") {
           const prefer2pct = dayKcal < dailyCalories - 200 && dayP >= dayTargetP - 5;
@@ -1755,12 +1958,12 @@
           const delta = 8 * (FOOD[milkKey].kcal - FOOD.almond_milk_oz.kcal);
           const pDelta = 8 * (FOOD[milkKey].p - FOOD.almond_milk_oz.p);
           if (dayKcal + delta <= dailyCalories + 100 && dayP + pDelta <= dayTargetP + 12) {
-            const rebuilt = buildSmoothieSlot(
+            const rebuilt = restrictSuggestion(buildSmoothieSlot(
               r.suggestion.flavor,
               r.calories,
               r.suggestion.targetGrams,
               milkKey
-            );
+            ), rflags);
             dayKcal = dayKcal - r.suggestion.totals.kcal + rebuilt.totals.kcal;
             dayP = dayP - r.suggestion.totals.p + rebuilt.totals.p;
             r.suggestion = rebuilt;
@@ -1775,7 +1978,7 @@
     if (dayKcal > dailyCalories + 100) {
       for (const r of results) {
         if (r.suggestion.type === "oatmeal") {
-          const rebuilt = buildOatmealSlot(r.suggestion.flavor, r.calories, r.suggestion.targetGrams, false);
+          const rebuilt = restrictSuggestion(buildOatmealSlot(r.suggestion.flavor, r.calories, r.suggestion.targetGrams, false), rflags);
           const newDay = dayKcal - r.suggestion.totals.kcal + rebuilt.totals.kcal;
           if (newDay <= dailyCalories + 100 || newDay < dayKcal) {
             dayKcal = newDay;
@@ -1843,7 +2046,7 @@
             }
           }
         } else if (r.suggestion.type === "smoothie" || r.suggestion.type === "oatmeal") {
-          const fatFood = "walnuts_tsp";
+          const fatFood = rflags.nut ? "chia_tsp" : "walnuts_tsp";
           const existing = r.suggestion.ingredients
             .filter((i) => i._key === fatFood || i._key === "chia_tsp" || i._key === "pb_tsp" || i._key === "hemp_tsp")
             .reduce((a, i) => a + (i._qty || 0), 0);
@@ -2038,7 +2241,7 @@
     }
 
     for (const r of results) {
-      if (r && r.suggestion) finalizeSuggestion(r.suggestion);
+      if (r && r.suggestion) finalizeSuggestion(restrictSuggestion(r.suggestion, rflags));
     }
     return results;
   }
@@ -2468,6 +2671,7 @@
         budget: answers.budget,
         tierOverrides: tierOverrides,
         freeMealTypes: !!options.freeMealTypes,
+        restrictions: answers.restrictions,
       }
     );
 
@@ -2489,6 +2693,7 @@
       budget: answers.budget,
       budgetTier: tier,
       cadence: answers.cadence,
+      restrictions: normalizeRestrictions(answers.restrictions),
       selectedDays,
       daysPerWeek,
       daily: {
@@ -2635,6 +2840,7 @@
       budget: answers.budget,
       budgetTier: tier,
       cadence: answers.cadence,
+      restrictions: normalizeRestrictions(answers.restrictions),
       selectedDays,
       daysPerWeek,
       daily: {
@@ -2692,6 +2898,7 @@
       budget: answers.budget,
       tierOverrides: answers._tierOverrides,
       tier: budgetTier(answers.budget, answers._tierOverrides),
+      restrictions: answers.restrictions,
     };
     const macroPct = currentPlan.daily.macros;
     const tg = gramsExact(slot.calories, macroPct);
@@ -2700,7 +2907,7 @@
     // Build candidate list: meals explore all 4 template types; snacks explore nut/cottage/greek/hb_egg
     const candidates = [];
     if (isMeal) {
-      const orderedTypes = MEAL_TYPES_ALL.slice().sort((a, b) => {
+      const orderedTypes = mealTypePools(planOptions).mealTypes.slice().sort((a, b) => {
         if (a === prevType) return 1;
         if (b === prevType) return -1;
         return 0;
@@ -2724,7 +2931,7 @@
         }
       }
     } else {
-      const orderedSnacks = SNACK_TYPES_ALL.slice().sort((a, b) => {
+      const orderedSnacks = mealTypePools(planOptions).snackTypes.slice().sort((a, b) => {
         if (a === prevSnackKind) return 1;
         if (b === prevSnackKind) return -1;
         return 0;
@@ -2798,6 +3005,8 @@
     }
 
     const chosen = best || currentPlan;
+    // doc32: a picked plan stays marked as picked when one slot is rerolled.
+    if (currentPlan.builtBy && chosen !== currentPlan) chosen.builtBy = currentPlan.builtBy;
     if (chosen._slotVariants) answers._slotVariants = chosen._slotVariants.slice();
     const chosenTitle =
       chosen.schedule &&
@@ -2847,6 +3056,507 @@
     return best || currentPlan;
   }
 
+
+  /* ── doc32: "Let's pick our meals" ────────────────────────────────────────
+   * The user walks each slot in order: pick a template (the Meal Templates
+   * doc's options for that slot kind), then its ingredients in template order.
+   * Limits follow the doc: bowl = 1 protein, 1 carb, 1 veg ("always a serving
+   * of vegetables"), 1–2 fats; smoothie/oatmeal = protein powder is automatic,
+   * 1–4 carbs, 1–2 fats (oatmeal always keeps its oat base); salad jar = 1
+   * protein, 1–2 greens, 1–3 veg, optional beans/rice, 1–2 fats; nuts = 1 nut;
+   * yogurt/cottage cheese = 1 fruit + optional honey/maple; eggs = 1 fruit.
+   * Options come from the same budget-aware pools as generated plans (pricier
+   * items hidden on tighter budgets) and respect dietary restrictions; portions
+   * are sized by the same macro logic as the generator, then the day is tuned
+   * by nudging only the picked ingredients.
+   */
+  const PICK_TEMPLATES = {
+    meal: [
+      { id: "bowl", label: "Bowl", desc: "A protein, a carb, a veggie and a little healthy fat." },
+      { id: "smoothie", label: "Smoothie", desc: "Protein powder blended with fruit, milk and a healthy fat." },
+      { id: "oatmeal", label: "Oatmeal", desc: "Protein oats with fruit or a little sweetness and a healthy fat." },
+      { id: "salad_jar", label: "Salad jar", desc: "A protein, greens and crunchy veggies layered in a jar." },
+    ],
+    snack: [
+      { id: "nut", label: "Nuts", desc: "A measured handful of one kind of nut." },
+      { id: "greek", label: "Greek yogurt & fruit", desc: "0% Greek yogurt with fruit, plus honey or maple if you like." },
+      { id: "cottage", label: "Cottage cheese & fruit", desc: "Low-fat cottage cheese with fruit, plus honey or maple if you like." },
+      { id: "hb_egg", label: "Hard-boiled eggs & fruit", desc: "1–3 hard-boiled eggs with a side of fruit." },
+    ],
+  };
+  const PICK_LABELS = {
+    beef: "Lean ground beef", turkey: "Lean ground turkey", chicken: "Chicken breast", chicken_thigh: "Chicken thighs",
+    salmon: "Salmon fillet", cod: "Cod fillet", shrimp: "Shrimp", eggs: "Whole eggs", egg_whites: "Egg whites", tofu: "Extra-firm tofu",
+    rice_cup: "White rice", brown_rice_cup: "Brown rice", potato_oz: "Potatoes", sweet_potato_oz: "Sweet potatoes", quinoa_cup: "Quinoa",
+    broccoli_cup: "Broccoli", carrots_cup: "Carrots", cauliflower_cup: "Cauliflower", peppers_cup: "Bell peppers",
+    asparagus_cup: "Asparagus", mixed_veg_cup: "Mixed vegetables", zucchini_cup: "Zucchini",
+    evoo: "Olive oil", avocado: "Avocado", hbe: "Hard-boiled egg", feta: "Feta", parmesan: "Parmesan",
+    oats_cup: "Oats", banana: "Banana", berries_cup: "Mixed berries", blueberries_cup: "Blueberries", strawberries_cup: "Strawberries",
+    cherries_cup: "Cherries", mango_cup: "Mango", spinach_cup: "Spinach", pumpkin_cup: "Pumpkin puree", raisins_cup: "Raisins",
+    honey_tsp: "Honey", maple_tsp: "Maple syrup",
+    chia_tsp: "Chia seeds", hemp_tsp: "Hemp hearts", walnuts_tsp: "Walnuts", pb_tsp: "Peanut butter",
+    lettuce_cup: "Romaine lettuce", mixed_greens_cup: "Mixed greens", kale_cup: "Kale",
+    cherry_tomato_cup: "Cherry tomatoes", cucumber_cup: "Cucumber", onion_cup: "Onion", corn_cup: "Corn",
+    black_beans_cup: "Black beans", salad_rice: "A little white rice",
+    almonds_oz: "Almonds", peanuts_oz: "Peanuts", cashews_oz: "Cashews", pistachios_oz: "Pistachios", pumpkin_seeds_oz: "Pumpkin seeds",
+    pineapple: "Pineapple", peach: "Peaches", mango: "Mango", berries: "Mixed berries",
+  };
+  // Value → FOOD key (for in-stock tags and restriction checks).
+  const PICK_FOOD_KEY = Object.assign({}, PROTEIN_FOOD_KEY, {
+    evoo: "evoo_tsp", avocado: "avocado_oz", hbe: "hard_boiled_egg", feta: "feta_oz", parmesan: "parmesan_oz",
+    salad_rice: "rice_cup", pineapple: "pineapple_cup", peach: "peach_cup", mango: "mango_cup", berries: "berries_cup",
+  });
+  function pickFoodKey(v) { return PICK_FOOD_KEY[v] || v; }
+
+  /** Templates offered for a slot kind, minus ones a restriction makes impossible. */
+  function pickTemplatesFor(kind, planOptions) {
+    const pools = mealTypePools(planOptions || {});
+    const allowed = kind === "snack" ? pools.snackTypes : pools.mealTypes;
+    return PICK_TEMPLATES[kind === "snack" ? "snack" : "meal"].filter((t) => allowed.indexOf(t.id) !== -1);
+  }
+
+  /**
+   * Ingredient steps for a template (in template order). Each step:
+   * { id, title, min, max, options: [{ value, label, key }], required: [values], hidden (count of
+   * options hidden by budget), note }.
+   */
+  function pickStepsFor(template, sel, planOptions) {
+    planOptions = planOptions || {};
+    const pools = mealTypePools(planOptions);
+    const tier = pools.tier;
+    const flags = pools.flags;
+    sel = sel || {};
+    const opt = (values) => values.filter((v) => foodAllowed(pickFoodKey(v), flags)).map((v) => ({ value: v, label: PICK_LABELS[v] || v, key: pickFoodKey(v) }));
+    const step = (id, title, min, max, all, allowedValues, extra) => {
+      const options = opt(allowedValues);
+      const budgetHidden = all.filter((v) => allowedValues.indexOf(v) === -1 && foodAllowed(pickFoodKey(v), flags)).length;
+      return Object.assign({ id, title, min: Math.min(min, options.length), max: Math.min(max, Math.max(options.length, 1)), options, required: [], hidden: budgetHidden }, extra || {});
+    };
+    const lowTier = !!tier.reduceVariety;
+    const seedFats = ["chia_tsp", "hemp_tsp", "walnuts_tsp", "pb_tsp"];
+    const powder = flags.dairy ? "plant protein powder" : "protein powder";
+    if (template === "bowl") {
+      const allProteins = ["beef", "turkey", "chicken", "chicken_thigh", "salmon", "cod", "shrimp", "eggs", "egg_whites"].concat(flags.vegetarian ? ["tofu"] : []);
+      const carbs = lowTier ? ["rice_cup"] : BOWL_CARB_KEYS.slice();
+      const eggProtein = (sel.protein || []).some((p) => p === "eggs" || p === "egg_whites");
+      const fats = ["evoo", "avocado"].concat(eggProtein ? [] : ["hbe"]);
+      return [
+        step("protein", "a protein", 1, 1, allProteins, pools.bowlProteins),
+        step("carb", "a carb", 1, 1, BOWL_CARB_KEYS, carbs),
+        step("veg", "a vegetable", 1, 1, BOWL_VEG_KEYS, BOWL_VEG_KEYS),
+        step("fat", "your fats", 1, 2, fats, fats, eggProtein ? { note: "Hard-boiled egg is skipped as a fat since eggs are already the protein." } : null),
+      ];
+    }
+    if (template === "smoothie" || template === "oatmeal") {
+      const smoothie = template === "smoothie";
+      const fruitAll = ["banana", "berries_cup", "blueberries_cup", "strawberries_cup", "cherries_cup", "mango_cup"];
+      // Tight budgets mirror the generator's cheap flavors (banana, raisins, pumpkin).
+      const fruit = lowTier ? ["banana"] : fruitAll;
+      const all = smoothie
+        ? ["oats_cup"].concat(fruitAll, ["spinach_cup"])
+        : ["oats_cup"].concat(fruitAll.filter((k) => k !== "mango_cup"), ["raisins_cup", "pumpkin_cup", "honey_tsp", "maple_tsp"]);
+      const allowed = smoothie
+        ? ["oats_cup"].concat(fruit, ["spinach_cup"])
+        : ["oats_cup"].concat(fruit.filter((k) => k !== "mango_cup"), ["raisins_cup", "pumpkin_cup", "honey_tsp", "maple_tsp"]);
+      const carbs = step("carbs", "your carbs", 1, 4, all, allowed, {
+        note: (smoothie
+          ? "Protein: " + powder + " is always included. 8 oz " + (flags.nut ? "soy" : "almond") + " milk is added for you."
+          : "Protein: " + powder + " is always included. Oats are always the base; milk is added at 4 oz per ½ cup oats."),
+      });
+      if (!smoothie) carbs.required = ["oats_cup"];
+      return [carbs, step("fats", "your fats", 1, 2, seedFats, seedFats)];
+    }
+    if (template === "salad_jar") {
+      const allProteins = ["beef", "turkey", "chicken", "chicken_thigh", "salmon", "cod", "shrimp"].concat(flags.vegetarian ? ["tofu"] : []);
+      const greens = ["lettuce_cup", "mixed_greens_cup", "spinach_cup", "kale_cup"];
+      const veg = ["carrots_cup", "peppers_cup", "cherry_tomato_cup", "cucumber_cup", "onion_cup", "corn_cup"];
+      const fats = ["evoo", "avocado", "hbe", "feta", "parmesan"];
+      return [
+        step("protein", "a protein", 1, 1, allProteins, pools.saladProteins),
+        step("greens", "your greens", 1, lowTier ? 1 : 2, greens, lowTier ? ["lettuce_cup"] : greens),
+        step("veg", "your vegetables", 1, lowTier ? 1 : 3, veg, veg),
+        step("extras", "optional add-ins", 0, 2, ["black_beans_cup", "salad_rice"], ["black_beans_cup", "salad_rice"], { note: "Optional: ¼–½ cup beans and/or a little rice help hit your carb target." }),
+        step("fat", "your fats", 1, 2, fats, fats),
+      ];
+    }
+    if (template === "nut") {
+      const all = ["almonds_oz", "peanuts_oz", "cashews_oz", "pistachios_oz"];
+      return [step("nut", flags.nut ? "your seeds" : "a nut", 1, 1, flags.nut ? [] : all, pools.nutKeys)];
+    }
+    if (template === "greek" || template === "cottage") {
+      return [
+        step("fruit", "a fruit", 1, 1, ["pineapple", "peach", "mango", "berries"], pools.fruits),
+        step("sweet", "a sweetener (optional)", 0, 1, ["honey_tsp", "maple_tsp"], ["honey_tsp", "maple_tsp"], { note: "Optional: 1–2 tsp if your carbs allow." }),
+      ];
+    }
+    if (template === "hb_egg") {
+      return [step("fruit", "a fruit", 1, 1, ["pineapple", "peach", "mango", "berries"], pools.fruits)];
+    }
+    return [];
+  }
+
+  /** True when a step's selection satisfies its limits. */
+  function pickStepValid(st, chosen) {
+    const vals = (chosen || []).filter((v) => st.options.some((o) => o.value === v));
+    if (st.required.some((r) => vals.indexOf(r) === -1 && st.options.some((o) => o.value === r))) return false;
+    return vals.length >= st.min && vals.length <= st.max;
+  }
+
+  function splitFatSpoons(ings, keys, fatLeft) {
+    const share = Math.max(0, fatLeft) / keys.length;
+    const cap = keys.length === 1 ? 6 : 3;
+    keys.forEach((k) => {
+      const tsp = clamp(Math.round(share / FOOD[k].f), 1, cap);
+      ings.push(qtyLine(k, tsp, formatQty(tsp) + " tsp " + FOOD[k].name));
+    });
+  }
+
+  const PICK_TITLE_WORD = {
+    banana: "banana", berries_cup: "berry", blueberries_cup: "blueberry", strawberries_cup: "strawberry", cherries_cup: "cherry",
+    mango_cup: "mango", spinach_cup: "green", oats_cup: "oat", pumpkin_cup: "pumpkin", raisins_cup: "raisin", honey_tsp: "honey", maple_tsp: "maple",
+  };
+  function pickedJarTitle(carbs, fats, noun) {
+    const words = [];
+    if ((fats || []).indexOf("pb_tsp") !== -1) words.push("peanut butter");
+    (carbs || []).forEach((k) => {
+      const w = PICK_TITLE_WORD[k];
+      if (!w || (noun === "oatmeal" && k === "oats_cup")) return;
+      if (words.indexOf(w) === -1 && words.length < 3) words.push(w);
+    });
+    if (!words.length) return noun === "oatmeal" ? "Classic oatmeal" : "Protein smoothie";
+    const t = words.join(" ") + " " + noun;
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  function buildPickedSmoothie(sel, targetCal, tg, milkKey, flags) {
+    const carbs = sel.carbs || [];
+    const fats = sel.fats || [];
+    const ings = [];
+    const scoops = proteinQtyForTarget(FOOD[proteinPowderKey(flags)].p, tg.p, 0.5, 2, 0.25);
+    ings.push(qtyLine(proteinPowderKey(flags), scoops));
+    const fruits = carbs.filter((k) => k !== "oats_cup" && k !== "spinach_cup");
+    const others = fruits.filter((k) => k !== "banana");
+    const fruitQty = {};
+    if (fruits.indexOf("banana") !== -1) fruitQty.banana = others.length ? 0.5 : 1;
+    others.forEach((k) => { fruitQty[k] = others.length === 1 ? (fruitQty.banana ? 0.75 : 1) : 0.5; });
+    const pushFruit = () => fruits.map((k) => qtyLine(k, fruitQty[k]));
+    let fruitLines = pushFruit();
+    let used = sumIngredients(ings.concat(fruitLines));
+    // Short on carbs and no oats picked: grow the picked fruit (banana ≤ 1, others ≤ 1½ cups).
+    if (carbs.indexOf("oats_cup") === -1) {
+      let guard = 0;
+      while (used.c < tg.c - 8 && guard++ < 12) {
+        let grew = false;
+        if (fruitQty.banana != null && fruitQty.banana < 1) { fruitQty.banana = 1; grew = true; }
+        else {
+          const k = others.find((x) => fruitQty[x] < 1.5);
+          if (k) { fruitQty[k] += 0.25; grew = true; }
+        }
+        if (!grew) break;
+        fruitLines = pushFruit();
+        used = sumIngredients(ings.concat(fruitLines));
+      }
+    }
+    fruitLines.forEach((l) => ings.push(l));
+    if (carbs.indexOf("spinach_cup") !== -1) ings.push(qtyLine("spinach_cup", 1));
+    if (carbs.indexOf("oats_cup") !== -1) {
+      used = sumIngredients(ings);
+      const oatCups = clamp(Math.round(((tg.c - used.c) / FOOD.oats_cup.c) * 4) / 4, 0.25, 0.75);
+      ings.push(qtyLine("oats_cup", oatCups, formatQty(oatCups) + " cup dry oats"));
+    }
+    const mk = milkKey || plantMilkKey(flags);
+    ings.push(qtyLine(mk, 8, "8 oz " + FOOD[mk].name));
+    used = sumIngredients(ings);
+    splitFatSpoons(ings, fats, tg.f - used.f);
+    return {
+      title: pickedJarTitle(carbs, fats, "smoothie"),
+      type: "smoothie",
+      flavor: null,
+      ingredients: ings,
+      totals: roundMacros(sumIngredients(ings)),
+      notes: ["Optional flavor: cinnamon or cacao"],
+      targetGrams: tg,
+      targetCal,
+    };
+  }
+
+  function buildPickedOatmeal(sel, targetCal, tg, includeMilk, flags) {
+    const carbs = sel.carbs || [];
+    const fats = sel.fats || [];
+    const ings = [];
+    const scoops = proteinQtyForTarget(FOOD[proteinPowderKey(flags)].p, tg.p, 0.5, 2, 0.25);
+    ings.push(qtyLine(proteinPowderKey(flags), scoops));
+    let oatCups = clamp(Math.round(((tg.c * (2 / 3)) / FOOD.oats_cup.c) * 4) / 4, 0.5, 2);
+    const extras = carbs.filter((k) => k !== "oats_cup");
+    const fruitCount = extras.filter((k) => k !== "honey_tsp" && k !== "maple_tsp").length;
+    const qty = {
+      banana: fruitCount === 1 ? 1 : 0.5,
+      berries_cup: 0.5, blueberries_cup: 0.5, strawberries_cup: 0.5,
+      cherries_cup: fruitCount > 2 ? 0.5 : 0.75,
+      raisins_cup: 0.125, pumpkin_cup: 1 / 3, honey_tsp: 1, maple_tsp: 1,
+    };
+    const build = () => {
+      const list = ings.slice();
+      list.push(qtyLine("oats_cup", oatCups, formatQty(oatCups) + " cup dry oats"));
+      extras.forEach((k) => list.push(qtyLine(k, qty[k])));
+      return list;
+    };
+    let list = build();
+    let guard = 0;
+    while (sumIngredients(list).c < tg.c - 10 && guard++ < 10) {
+      const sw = extras.find((k) => (k === "honey_tsp" || k === "maple_tsp") && qty[k] < 2);
+      if (sw) qty[sw] = 2;
+      else if (oatCups < 2) oatCups += 0.25;
+      else break;
+      list = build();
+    }
+    if (includeMilk !== false) {
+      const milkOz = Math.max(0, Math.round((oatCups / 0.5) * 4));
+      const mk = plantMilkKey(flags);
+      if (milkOz > 0) list.push(qtyLine(mk, milkOz, milkOz + " oz " + FOOD[mk].name));
+    }
+    splitFatSpoons(list, fats, tg.f - sumIngredients(list).f);
+    return {
+      title: pickedJarTitle(carbs, fats, "oatmeal"),
+      type: "oatmeal",
+      flavor: null,
+      ingredients: list,
+      totals: roundMacros(sumIngredients(list)),
+      notes: ["Optional flavor: cinnamon, cacao, or a pinch of salt"],
+      targetGrams: tg,
+      targetCal,
+      _oatCups: oatCups,
+    };
+  }
+
+  function buildPickedSaladJar(sel, targetCal, tg, tier) {
+    const protein = (sel.protein || [])[0] || "chicken";
+    const pk = PROTEIN_FOOD_KEY[protein];
+    const titles = {
+      beef: "Ground beef salad jar", turkey: "Turkey salad jar", chicken: "Chicken salad jar", chicken_thigh: "Chicken thigh salad jar",
+      salmon: "Salmon salad jar", cod: "Cod salad jar", shrimp: "Shrimp salad jar", tofu: "Tofu salad jar",
+    };
+    const extras = sel.extras || [];
+    const ings = [qtyLine(pk, proteinQtyForTarget(FOOD[pk].p, tg.p, 3, 10, 0.5))];
+    if (extras.indexOf("black_beans_cup") !== -1) {
+      ings.push(qtyLine("black_beans_cup", extras.indexOf("salad_rice") !== -1 ? 0.25 : 0.5));
+    }
+    const greens = sel.greens || ["lettuce_cup"];
+    greens.forEach((g, i) => {
+      let cups;
+      if (greens.length === 1) cups = 2.5;
+      else if (g === "lettuce_cup") cups = 2;
+      else cups = greens.indexOf("lettuce_cup") !== -1 ? 1 : 1.5;
+      if (g === "kale_cup") cups = Math.min(cups, 2);
+      ings.push(qtyLine(g, cups));
+    });
+    (sel.veg || []).forEach((vk, i) => {
+      ings.push(qtyLine(vk, clamp(snapCupFraction(0.25 + ((i + 1) % 3) * 0.25), 0.25, 1)));
+    });
+    if (extras.indexOf("salad_rice") !== -1) {
+      const need = tg.c - sumIngredients(ings).c;
+      ings.push(qtyLine("rice_cup", clamp(snapCupFraction(need / FOOD.rice_cup.c), 0.25, 1)));
+    }
+    const fats = sel.fat || ["evoo"];
+    const share = Math.max(0, tg.f - sumIngredients(ings).f) / fats.length;
+    fats.forEach((fs) => {
+      if (fs === "avocado") ings.push(qtyLine("avocado_oz", clamp(Math.round((share / FOOD.avocado_oz.f) * 2) / 2, 1, 3)));
+      else if (fs === "hbe") ings.push(qtyLine("hard_boiled_egg", clamp(Math.round(share / FOOD.hard_boiled_egg.f), 1, 2)));
+      else if (fs === "feta") ings.push(qtyLine("feta_oz", clamp(Math.round((share / FOOD.feta_oz.f) * 2) / 2, 0.5, 2)));
+      else if (fs === "parmesan") ings.push(qtyLine("parmesan_oz", clamp(Math.round((share / FOOD.parmesan_oz.f) * 2) / 2, 0.5, 1.5)));
+      else ings.push(qtyLine("evoo_tsp", clamp(Math.round(share / FOOD.evoo_tsp.f), 1, 3)));
+    });
+    return {
+      title: titles[protein] || "Salad jar",
+      type: "salad_jar",
+      protein,
+      ingredients: ings,
+      totals: roundMacros(sumIngredients(ings)),
+      notes: ["Season lightly to taste"],
+      targetGrams: tg,
+      targetCal,
+    };
+  }
+
+  /** One picked slot → suggestion (portions from the template macro logic). */
+  function buildPickedSuggestion(pick, targetCal, tg, planOptions, milkOverride) {
+    planOptions = planOptions || {};
+    const pools = mealTypePools(planOptions);
+    const tier = pools.tier;
+    const flags = pools.flags;
+    const sel = (pick && pick.sel) || {};
+    const t = pick && pick.template;
+    let s;
+    if (t === "bowl") {
+      s = buildBowlSlot(sel.protein[0], targetCal, tg, { vegKey: sel.veg[0], carbKey: sel.carb[0], tier, fatStyles: sel.fat });
+    } else if (t === "smoothie") s = buildPickedSmoothie(sel, targetCal, tg, milkOverride, flags);
+    else if (t === "oatmeal") s = buildPickedOatmeal(sel, targetCal, tg, milkOverride !== "none", flags);
+    else if (t === "salad_jar") s = buildPickedSaladJar(sel, targetCal, tg, tier);
+    else if (t === "nut") s = buildNutOnlySnack(sel.nut[0], targetCal, tg);
+    else if (t === "hb_egg") {
+      const fruit = sel.fruit[0];
+      const ings = [qtyLine("hard_boiled_egg", clamp(Math.round(tg.p / FOOD.hard_boiled_egg.p), 1, 3))];
+      addFruitCarbs(ings, fruit, tg.c - sumIngredients(ings).c, targetCal - sumIngredients(ings).kcal, { sweetener: null });
+      s = { title: "Hard boiled eggs & " + fruit, type: "hb_egg_snack", ingredients: ings, totals: roundMacros(sumIngredients(ings)), notes: [], targetGrams: tg, targetCal };
+    } else {
+      const kind = t === "cottage" ? "cottage" : "greek";
+      const fruit = sel.fruit[0];
+      const base = buildLeanSnackProtein(kind, fruit, tg.p, tg.f);
+      addFruitCarbs(base.ings, fruit, tg.c - sumIngredients(base.ings).c, targetCal - sumIngredients(base.ings).kcal,
+        { sweetener: (sel.sweet || [])[0] || null });
+      const fruitWord = { pineapple: "pineapple", peach: "peach", mango: "mango", berries: "berries" }[fruit] || "fruit";
+      s = {
+        title: (kind === "cottage" ? "Cottage cheese & " : "Greek yogurt & ") + fruitWord,
+        type: kind === "cottage" ? "cottage_cheese" : "greek_yogurt",
+        ingredients: base.ings, totals: roundMacros(sumIngredients(base.ings)), notes: [], targetGrams: tg, targetCal,
+      };
+    }
+    s._picked = { template: t, sel: JSON.parse(JSON.stringify(sel)) };
+    return restrictSuggestion(s, flags);
+  }
+
+  // Adjustable picked ingredients: [step, min, max] in the food's unit, by macro role.
+  const PICK_TUNE = {
+    beef_oz: ["p", 0.5, 3, 10], turkey_oz: ["p", 0.5, 3, 10], chicken_oz: ["p", 0.5, 3, 10], chicken_thigh_oz: ["p", 0.5, 3, 10],
+    salmon_oz: ["p", 0.5, 3, 10], cod_oz: ["p", 0.5, 3, 10], shrimp_oz: ["p", 0.5, 3, 10], tofu_oz: ["p", 0.5, 3, 12],
+    egg: ["p", 1, 2, 8], egg_white: ["p", 1, 3, 8], protein_scoop: ["p", 0.5, 0.5, 2], plant_protein_scoop: ["p", 0.5, 0.5, 2],
+    cottage_lf_cup: ["p", 0.25, 0.5, 2], greek_nonfat_cup: ["p", 0.25, 0.5, 2],
+    rice_cup: ["c", 0.25, 0.25, 2], brown_rice_cup: ["c", 0.25, 0.5, 2], quinoa_cup: ["c", 0.25, 0.5, 2],
+    potato_oz: ["c", 1, 4, 16], sweet_potato_oz: ["c", 1, 4, 16], oats_cup: ["c", 0.25, 0.25, 2],
+    banana: ["c", 0.5, 0.5, 1], berries_cup: ["c", 0.25, 0.25, 1.5], blueberries_cup: ["c", 0.25, 0.25, 1.5],
+    strawberries_cup: ["c", 0.25, 0.25, 1.5], cherries_cup: ["c", 0.25, 0.25, 1.5], mango_cup: ["c", 0.25, 0.25, 1.5],
+    pineapple_cup: ["c", 0.25, 0.5, 2], peach_cup: ["c", 0.25, 0.5, 2], black_beans_cup: ["c", 0.25, 0.25, 0.5],
+    evoo_tsp: ["f", 1, 1, 3], avocado_oz: ["f", 0.5, 1, 4], feta_oz: ["f", 0.5, 0.5, 2], parmesan_oz: ["f", 0.5, 0.5, 1.5],
+    chia_tsp: ["f", 1, 1, 6], hemp_tsp: ["f", 1, 1, 6], walnuts_tsp: ["f", 1, 1, 6], pb_tsp: ["f", 1, 1, 6],
+    almonds_oz: ["f", 0.25, 0.5, 3], peanuts_oz: ["f", 0.25, 0.5, 3], cashews_oz: ["f", 0.25, 0.5, 3],
+    pistachios_oz: ["f", 0.25, 0.5, 3], pumpkin_seeds_oz: ["f", 0.25, 0.5, 3],
+  };
+  const TBSP_TO_TSP = { chia_tbsp: "chia_tsp", hemp_tbsp: "hemp_tsp", walnuts_tbsp: "walnuts_tsp", pb_tbsp: "pb_tsp" };
+
+  /**
+   * Tune a picked day toward ±100 kcal / ±2% macros by nudging only the
+   * ingredients the user picked (never adding or removing foods). Greedy: each
+   * pass applies the single ±1-step change that most improves the day.
+   */
+  function tunePickedDay(results, macroPct, dailyCalories) {
+    const score = () => {
+      const tot = results.reduce((a, r) => ({ kcal: a.kcal + r.suggestion.totals.kcal, p: a.p + r.suggestion.totals.p, c: a.c + r.suggestion.totals.c, f: a.f + r.suggestion.totals.f }), { kcal: 0, p: 0, c: 0, f: 0 });
+      const pct = macroPercents(tot);
+      let sc = Math.max(0, Math.abs(tot.kcal - dailyCalories) - 60) / 40;
+      ["p", "c", "f"].forEach((m) => { sc += Math.max(0, Math.abs(pct[m] - macroPct[m]) - 1.5); });
+      results.forEach((r) => {
+        const tol = r.kind === "snack" ? 75 : 150;
+        sc += Math.max(0, Math.abs(r.suggestion.totals.kcal - r.calories) - tol) / 20;
+      });
+      return sc;
+    };
+    const lineAt = (key, qty) => {
+      if (FOOD[key].unit === "tsp") return qtyLine(key, qty, formatQty(qty) + " tsp " + FOOD[key].name);
+      return qtyLine(key, qty);
+    };
+    let current = score();
+    for (let pass = 0; pass < 40 && current > 0; pass++) {
+      let best = null;
+      results.forEach((r, ri) => {
+        r.suggestion.ingredients.forEach((ing, ii) => {
+          if (!ing || ing._note || !ing._key) return;
+          const baseKey = TBSP_TO_TSP[ing._key] || ing._key;
+          const rule = PICK_TUNE[baseKey];
+          if (!rule) return;
+          if (baseKey === "oats_cup" && r.suggestion.type === "oatmeal" && rule) { /* oat base: keep ≥ ½ cup */ }
+          const qty = TBSP_TO_TSP[ing._key] ? ing._qty * 3 : ing._qty;
+          const min = baseKey === "oats_cup" && r.suggestion.type === "oatmeal" ? 0.5 : rule[2];
+          const maxQ = baseKey === "oats_cup" && r.suggestion.type === "smoothie" ? 0.75 : rule[3];
+          [-1, 1].forEach((dir) => {
+            const nq = Math.round((qty + dir * rule[1]) * 1000) / 1000;
+            if (nq < min - 1e-9 || nq > maxQ + 1e-9) return;
+            const prevIngs = r.suggestion.ingredients;
+            const prevTotals = r.suggestion.totals;
+            const next = prevIngs.slice();
+            next[ii] = lineAt(baseKey, nq);
+            r.suggestion.ingredients = next;
+            r.suggestion.totals = roundMacros(sumIngredients(next));
+            const sc = score();
+            r.suggestion.ingredients = prevIngs;
+            r.suggestion.totals = prevTotals;
+            if (sc < current - 0.05 && (!best || sc < best.sc)) best = { sc, ri, ii, key: baseKey, nq };
+          });
+        });
+      });
+      if (!best) break;
+      const r = results[best.ri];
+      const next = r.suggestion.ingredients.slice();
+      next[best.ii] = lineAt(best.key, best.nq);
+      r.suggestion.ingredients = next;
+      r.suggestion.totals = roundMacros(sumIngredients(next));
+      current = best.sc;
+    }
+    return results;
+  }
+
+  /**
+   * Build a full plan from picks (one { template, sel } per schedule slot).
+   * Mirrors the generator's day-level milk rules, then tunes picked portions.
+   */
+  function buildPickedPlan(answers, picks, variant) {
+    const calories = answers.calorieMode === "help"
+      ? estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity)
+      : answers.calories;
+    const macro = macrosFromWeightGoal(answers.weightGoal);
+    const macroPct = { p: macro.p, c: macro.c, f: macro.f };
+    let meals = answers.meals;
+    let snacks = answers.snacks;
+    if (answers.mealOption && MEAL_OPTIONS[answers.mealOption]) {
+      meals = MEAL_OPTIONS[answers.mealOption].meals;
+      snacks = MEAL_OPTIONS[answers.mealOption].snacks;
+    }
+    const planOptions = { budget: answers.budget, tierOverrides: answers._tierOverrides, restrictions: answers.restrictions };
+    const flags = restrictionFlags(answers.restrictions);
+    const slots = buildSchedule(calories, meals, snacks);
+    const results = slots.map((slot, i) => {
+      const tg = gramsExact(slot.calories, macroPct);
+      return Object.assign({}, slot, {
+        targetMacros: gramsFromPct(slot.calories, macroPct),
+        suggestion: buildPickedSuggestion(picks[i], slot.calories, { p: tg.p, c: tg.c, f: tg.f }, planOptions),
+      });
+    });
+    const dayTot = () => results.reduce((a, r) => ({ kcal: a.kcal + r.suggestion.totals.kcal, p: a.p + r.suggestion.totals.p }), { kcal: 0, p: 0 });
+    const dayTargetP = (calories * macroPct.p) / 100 / 4;
+    // Smoothie milk: dairy skim/2% when the day is short (same rule as generated plans; never when dairy-free).
+    let t = dayTot();
+    if (!flags.dairy && t.kcal <= calories && t.p <= dayTargetP + 8 && (t.kcal < calories - 80 || t.p < dayTargetP - 8)) {
+      const r = results.find((x) => x.suggestion.type === "smoothie");
+      if (r) {
+        const milkKey = t.kcal < calories - 200 && t.p >= dayTargetP - 5 ? "milk_2pct_oz" : "milk_skim_oz";
+        const rebuilt = buildPickedSuggestion(picks[results.indexOf(r)], r.calories, r.suggestion.targetGrams, planOptions, milkKey);
+        const nk = t.kcal - r.suggestion.totals.kcal + rebuilt.totals.kcal;
+        const np = t.p - r.suggestion.totals.p + rebuilt.totals.p;
+        if (nk <= calories + 100 && np <= dayTargetP + 12) r.suggestion = rebuilt;
+      }
+    }
+    // Oatmeal milk: omit if the day would pass the goal by more than 100.
+    t = dayTot();
+    if (t.kcal > calories + 100) {
+      results.forEach((r, i) => {
+        if (r.suggestion.type !== "oatmeal") return;
+        const rebuilt = buildPickedSuggestion(picks[i], r.calories, r.suggestion.targetGrams, planOptions, "none");
+        const cur = dayTot().kcal;
+        if (cur - r.suggestion.totals.kcal + rebuilt.totals.kcal < cur) {
+          rebuilt.notes = rebuilt.notes.concat(["Milk omitted to stay within daily calorie tolerance"]);
+          r.suggestion = rebuilt;
+        }
+      });
+    }
+    tunePickedDay(results, macroPct, calories);
+    results.forEach((r) => {
+      const picked = r.suggestion._picked;
+      finalizeSuggestion(restrictSuggestion(r.suggestion, flags));
+      r.suggestion._picked = picked;
+    });
+    const plan = recomputePlanFromSchedule(answers, results, variant || 0);
+    plan.builtBy = "pick";
+    return plan;
+  }
 
   function nutritionOverview(plan) {
     const bd = (plan.micros && plan.micros.breakdown) || {};
@@ -2946,6 +3656,147 @@
     return { blurb };
   }
 
+  /* ── doc32: Suggested supplements ─────────────────────────────────────────
+   * Plan-aware and restriction-aware. From the nutrition audit: vitamin D was
+   * low in every plan; EPA/DHA is near zero without fish; iron can run short on
+   * a cut for anyone who menstruates (the app doesn't know sex, so it's
+   * phrased conditionally); creatine is the common evidence-based lifter pick;
+   * vegans need B12. No brands or links.
+   */
+  const FISH_KEYS = { salmon_oz: "salmon", cod_oz: "cod" };
+
+  function supplementsForPlan(plan, answers) {
+    plan = plan || {};
+    const bd = (plan.micros && plan.micros.breakdown) || {};
+    const restr = Array.isArray(plan.restrictions) ? plan.restrictions : (answers && answers.restrictions);
+    const flags = restrictionFlags(restr);
+    const days = prepDaysFor(plan);
+    let goal = answers && answers.weightGoal;
+    const mac = plan.daily && plan.daily.macros;
+    if (mac) {
+      const g = ["lose", "maintain", "gain"].find((x) => { const m = macrosFromWeightGoal(x); return m.p === mac.p && m.c === mac.c && m.f === mac.f; });
+      if (g) goal = g;
+    }
+    // Fish servings a week: fish slots per day × plan days (the day's menu repeats all week).
+    let fishSlots = 0;
+    let salmonSlots = 0;
+    (plan.schedule || []).forEach((slot) => {
+      const keys = ((slot.suggestion && slot.suggestion.ingredients) || []).map((i) => i && i._key);
+      if (keys.some((k) => FISH_KEYS[k])) fishSlots += 1;
+      if (keys.indexOf("salmon_oz") !== -1) salmonSlots += 1;
+    });
+    const fishWeek = fishSlots * days;
+    const salmonWeek = salmonSlots * days;
+    const amt = (m) => (m ? (Math.abs(m.amount) >= 10 ? Math.round(m.amount) : Math.round(m.amount * 10) / 10) + " " + m.unit : "");
+    const items = [];
+
+    const d = bd.vitD_mcg;
+    items.push({
+      id: "vitamin_d",
+      icon: "☀️",
+      name: flags.vegan ? "Vitamin D (vegan D3 or D2)" : "Vitamin D3",
+      tag: "Low in your plan",
+      why: (d ? "Your plan gets about " + amt(d) + " a day (" + Math.round(d.pct) + "% of the " + d.target + " " + d.unit + " target). " : "") +
+        "Few everyday foods have much vitamin D, and every Pure Prep plan comes up short." +
+        (flags.vegan ? " Most D3 comes from sheep's wool, so pick one labeled vegan (lichen-sourced) or use D2." : ""),
+      dose: "1,000–2,000 IU (25–50 mcg) a day, with a meal",
+    });
+
+    const noFish = flags.fish; // vegetarian, vegan or fish/shellfish-free
+    if (noFish) {
+      items.push({
+        id: "omega3",
+        icon: "🌿",
+        name: "Algae-based omega-3 (EPA + DHA)",
+        tag: "Low in your plan",
+        why: "Your plan skips fish, so it has almost none of the omega-3s EPA and DHA (heart and brain health). Algae oil is where fish get theirs, so it fits " +
+          (flags.vegan ? "a vegan" : flags.vegetarian ? "a vegetarian" : "a fish-free") + " diet.",
+        dose: "250–500 mg combined EPA + DHA a day, with food",
+      });
+    } else if (fishWeek >= 2) {
+      items.push({
+        id: "fish_oil",
+        icon: "🐟",
+        name: "Fish oil (omega-3 EPA + DHA)",
+        tag: "Optional",
+        soft: true,
+        why: salmonWeek >= 2
+          ? "You're eating salmon about " + salmonWeek + " times a week, which already covers EPA and DHA for most people. Only worth it on weeks without fish."
+          : "You're eating fish about " + fishWeek + " times a week. Cod is lean and fairly low in omega-3s, so a small dose is optional.",
+        dose: "If you take it: 250 mg combined EPA + DHA a day, with food",
+      });
+    } else {
+      items.push({
+        id: "fish_oil",
+        icon: "🐟",
+        name: "Fish oil (omega-3 EPA + DHA)",
+        tag: "Low in your plan",
+        why: (fishWeek === 1 ? "Your plan has fish only once a week" : "Your plan has no fish") +
+          ", so it's very low in the omega-3s EPA and DHA (heart and brain health). Guidelines suggest about 2 servings of fish a week.",
+        dose: "250–500 mg combined EPA + DHA a day, with food",
+      });
+    }
+
+    const iron = bd.iron_mg;
+    if (goal === "lose" || flags.vegetarian || (iron && iron.pct < 60)) {
+      items.push({
+        id: "iron",
+        icon: "🍃",
+        name: "Iron",
+        tag: "Only if it applies to you",
+        conditional: true,
+        why: "Only if you menstruate or a blood test showed low iron: women 19–50 need about 18 mg a day" +
+          (iron ? " and your plan gives about " + amt(iron) + " (" + Math.round(iron.pct) + "%)" : "") + "." +
+          (goal === "lose" ? " Eating less on a cut makes it harder to get enough." : "") +
+          (flags.vegetarian ? " Iron from plants is absorbed less well, so pair beans and greens with vitamin C." : "") +
+          " Men and post-menopausal women usually need only 8 mg and shouldn't take iron unless told to.",
+        dose: "Often 18 mg a day, only if your doctor agrees",
+      });
+    }
+
+    if (flags.vegan) {
+      items.push({
+        id: "b12",
+        icon: "🌱",
+        name: "Vitamin B12",
+        tag: "Needed on a vegan diet",
+        why: "B12 comes almost only from animal foods, so vegans need a supplement or fortified foods to avoid a deficiency.",
+        dose: "25–100 mcg a day (or 1,000 mcg two to three times a week)",
+      });
+    }
+
+    items.push({
+      id: "creatine",
+      icon: "💪",
+      name: "Creatine monohydrate",
+      tag: "If you lift",
+      conditional: true,
+      why: "If you strength train, it's the best-studied supplement for strength and muscle gains." +
+        (flags.vegetarian ? " Meat-free diets have less creatine to start with, so the benefit may be bigger, and it's made synthetically (vegan-friendly)." : "") +
+        " Skip it if you don't lift.",
+      dose: "3–5 g a day, any time of day; no loading phase needed",
+    });
+
+    return {
+      items,
+      disclaimer: "Not medical advice — check with your doctor before starting any supplement, especially if you're pregnant, nursing, take medication or have a health condition.",
+    };
+  }
+
+  function supplementsHtml(plan, answers) {
+    const r = supplementsForPlan(plan, answers);
+    const lis = r.items.map((it) =>
+      '<li class="mp-supp' + (it.soft ? " soft" : "") + '" data-supp="' + prepEsc(it.id) + '">' +
+      '<div class="mp-supp-head"><span class="mp-supp-ico" aria-hidden="true">' + it.icon + "</span><strong>" + prepEsc(it.name) + "</strong>" +
+      '<span class="mp-supp-tag' + (it.soft ? " soft" : it.conditional ? " cond" : "") + '">' + prepEsc(it.tag) + "</span></div>" +
+      '<p class="mp-supp-why">' + prepEsc(it.why) + "</p>" +
+      '<p class="mp-supp-dose"><b>Typical dose:</b> ' + prepEsc(it.dose) + "</p></li>"
+    ).join("");
+    return '<div class="mp-card mp-supps"><p class="mp-hint">Based on this plan\'s nutrition — a few gaps food alone doesn\'t easily cover.</p>' +
+      '<ul class="mp-supp-list">' + lis + "</ul>" +
+      '<p class="mp-supp-disclaimer">' + prepEsc(r.disclaimer) + "</p></div>";
+  }
+
   function macroPieHtml(macros, centerStrong, centerLabel) {
     const p = Number(macros.p) || 0;
     const c = Number(macros.c) || 0;
@@ -2993,6 +3844,7 @@
       snacks: 2,
       daysPerWeek: 6,
       selectedDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
+      restrictions: [],
     };
     let step = 0;
     // Random seed so each questionnaire run gets a different meal mix
@@ -3028,6 +3880,7 @@
         list.push("weightGoal");
       }
       if (answers.calorieMode === "help") list.push("calorieHelp");
+      list.push("restrictions");
       list.push("meals");
       list.push("daysPerWeek");
       return list;
@@ -3112,10 +3965,9 @@
         const refreshed = steps();
         const idx = refreshed.indexOf(id);
         if (idx + 1 >= refreshed.length) {
-          planVariant = randomPlanVariant();
-          answers.__lockedPlan = null;
-          answers._slotVariants = [];
-          showResult();
+          // doc32: choose "Let's pick our meals" or "Give me some ideas" first.
+          pickState = null;
+          showBuildChoice();
           return;
         }
         step = idx + 1;
@@ -3287,6 +4139,39 @@
         });
       }
 
+      if (id === "restrictions") {
+        const cur = normalizeRestrictions(answers.restrictions);
+        const body = el(`<div></div>`);
+        const box = el(`<div class="mp-options mp-restrictions"></div>`);
+        [{ id: "none", label: "None" }].concat(RESTRICTION_OPTIONS).forEach((o) => {
+          const on = o.id === "none" ? !cur.length : cur.indexOf(o.id) !== -1;
+          box.appendChild(el(
+            `<label class="mp-option${on ? " selected" : ""}">
+              <input type="checkbox" name="restriction" value="${o.id}" ${on ? "checked" : ""} />
+              <span>${o.label}</span>
+            </label>`
+          ));
+        });
+        box.addEventListener("change", (e) => {
+          const t = e.target;
+          if (!t || t.name !== "restriction") return;
+          const all = Array.from(box.querySelectorAll('input[name="restriction"]'));
+          // "None" is exclusive: picking it clears the rest, picking anything clears "None".
+          if (t.value === "none" && t.checked) all.forEach((n) => { if (n !== t) n.checked = false; });
+          if (t.value !== "none" && t.checked) all.forEach((n) => { if (n.value === "none") n.checked = false; });
+          all.forEach((n) => n.closest(".mp-option").classList.toggle("selected", n.checked));
+        });
+        body.appendChild(box);
+        body.appendChild(el(
+          `<p class="mp-hint" style="margin-top:10px">Pick all that apply. We'll leave those foods out of every plan, reroll and suggestion. Vegan covers vegetarian, dairy-free and egg-free; dairy-free plans use plant protein powder, and nut-free swaps almond milk for soy milk. Pure Prep's menu has no pork, so pork-free is always met.</p>`
+        ));
+        ask("Any dietary restrictions?", body, () => {
+          const checked = Array.from(root.querySelectorAll('input[name="restriction"]:checked')).map((n) => n.value);
+          if (!checked.length) return "Pick at least one option (or None).";
+          answers.restrictions = normalizeRestrictions(checked.filter((v) => v !== "none"));
+        });
+      }
+
       if (id === "meals") {
         ask(
           "How many meals do you prefer per day?",
@@ -3339,6 +4224,266 @@
           "See my plan"
         );
       }
+    }
+
+    /* ── doc32: build choice + "Let's pick our meals" wizard ── */
+    const fromQuestionnaire = opts.startAt !== "results";
+    let pickState = null;
+    let lastBuildMode = null;
+
+    function escText(t) {
+      return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    /** Shared step chrome (progress, label, title, Back / Dashboard / Next). */
+    function frame(o) {
+      clear();
+      root.appendChild(el(`<div class="mp-progress"><span style="width:${Math.max(4, Math.min(100, Math.round(o.pct || 0)))}%"></span></div>`));
+      const wrap = el(`<section class="mp-step mp-build"${o.id ? ` id="${o.id}"` : ""}></section>`);
+      wrap.appendChild(el(`<div class="step-label">${escText(o.label)}</div>`));
+      wrap.appendChild(el(`<h2 class="mp-q">${escText(o.title)}</h2>`));
+      wrap.appendChild(o.body);
+      const err = el(`<p class="mp-error" hidden></p>`);
+      wrap.appendChild(err);
+      const nav = el(`<div class="mp-nav"></div>`);
+      const back = el(`<button type="button" class="mp-back">Back</button>`);
+      back.disabled = !o.onBack;
+      if (o.onBack) back.onclick = o.onBack;
+      const dash = el(`<button type="button" class="mp-back" id="dashLink">Dashboard</button>`);
+      dash.onclick = () => {
+        root.dispatchEvent(new CustomEvent("pureprep-goto", { detail: { screen: "home", save: false }, bubbles: true }));
+      };
+      const next = el(`<button type="button" class="mp-next">${escText(o.nextLabel || "Next")}</button>`);
+      if (o.onNext) next.onclick = () => { if (!next.disabled) o.onNext(); };
+      else next.disabled = true;
+      nav.appendChild(back);
+      nav.appendChild(dash);
+      nav.appendChild(next);
+      wrap.appendChild(nav);
+      root.appendChild(wrap);
+      return { wrap, next, err };
+    }
+
+    function optionRow(type, name, value, title, desc, checked, extra) {
+      return el(
+        `<label class="mp-option${checked ? " selected" : ""}${extra && extra.locked ? " locked" : ""}">
+          <input type="${type}" name="${name}" value="${escText(value)}" ${checked ? "checked" : ""} ${extra && extra.locked ? "disabled" : ""} />
+          <span class="mp-option-text"><span class="mp-option-title">${escText(title)}${extra && extra.tag ? ` <span class="mp-pick-tag">${escText(extra.tag)}</span>` : ""}</span>${desc ? `<small class="mp-option-desc">${escText(desc)}</small>` : ""}</span>
+        </label>`
+      );
+    }
+
+    function showBuildChoice() {
+      const body = el(`<div class="mp-options mp-build-choice"></div>`);
+      body.appendChild(optionRow("radio", "buildMode", "pick", "Let's pick our meals",
+        "Choose a template and ingredients for each meal and snack. We'll portion everything to hit your targets.", lastBuildMode === "pick"));
+      body.appendChild(optionRow("radio", "buildMode", "ideas", "Give me some ideas",
+        "We'll suggest a full day of meals for you. You can reroll any of them.", lastBuildMode === "ideas"));
+      const f = frame({
+        id: "buildChoice",
+        label: "Build your meal plan",
+        title: "How would you like to build your meals?",
+        body,
+        pct: 100,
+        onBack: fromQuestionnaire ? () => { step = steps().length - 1; render(); } : null,
+        onNext: () => {
+          const v = selectedRadio("buildMode");
+          if (!v) return;
+          lastBuildMode = v;
+          if (v === "ideas") {
+            if (fromQuestionnaire) {
+              planVariant = randomPlanVariant();
+              answers.__lockedPlan = null;
+              answers._slotVariants = [];
+            }
+            showResult();
+          } else {
+            startPick();
+          }
+        },
+      });
+      f.next.disabled = !lastBuildMode;
+      body.addEventListener("change", () => {
+        body.querySelectorAll(".mp-option").forEach((n) => n.classList.toggle("selected", n.querySelector("input").checked));
+        f.next.disabled = !selectedRadio("buildMode");
+      });
+    }
+
+    function pickPlanOptions() {
+      return { budget: answers.budget, tierOverrides: answers._tierOverrides, restrictions: answers.restrictions };
+    }
+
+    function startPick() {
+      if (!pickState) {
+        const calories = answers.calorieMode === "help"
+          ? estimateCalories(answers.weightLbs, answers.weightGoal, answers.activity)
+          : answers.calories;
+        const mo = answers.mealOption && MEAL_OPTIONS[answers.mealOption];
+        const slots = buildSchedule(calories, mo ? mo.meals : answers.meals, mo ? mo.snacks : answers.snacks);
+        pickState = { slots, i: 0, step: 0, picks: slots.map(() => ({ template: null, sel: {} })) };
+      } else {
+        pickState.i = 0;
+        pickState.step = 0;
+      }
+      renderPick();
+    }
+
+    function pickBack() {
+      const ps = pickState;
+      if (ps.step > 0) ps.step -= 1;
+      else if (ps.i > 0) {
+        ps.i -= 1;
+        const pk = ps.picks[ps.i];
+        ps.step = pk.template ? pickStepsFor(pk.template, pk.sel, pickPlanOptions()).length : 0;
+      } else {
+        showBuildChoice();
+        return;
+      }
+      renderPick();
+    }
+
+    function stockKeys() {
+      const have = {};
+      (answers._inventory || []).forEach((it) => {
+        if (it && it.key && Number(it.qtyRemaining) > 0) have[groceryKey(it.key)] = true;
+      });
+      return have;
+    }
+
+    function renderPick() {
+      const ps = pickState;
+      const po = pickPlanOptions();
+      const slot = ps.slots[ps.i];
+      const pk = ps.picks[ps.i];
+      const total = ps.slots.length;
+      const lastSlot = ps.i === total - 1;
+      const templates = pickTemplatesFor(slot.kind, po);
+      const tplLabel = (id) => {
+        const t = PICK_TEMPLATES[slot.kind === "snack" ? "snack" : "meal"].find((x) => x.id === id);
+        return t ? t.label : id;
+      };
+      if (ps.step === 0) {
+        const body = el(`<div></div>`);
+        if (!templates.length) {
+          // Defensive: a restriction combination that leaves this slot without any protein.
+          body.appendChild(el(`<p class="mp-pick-empty">Your dietary restrictions leave no protein option for ${escText(slot.name.toLowerCase())}, so we can't build it. Go back and loosen a restriction, or edit them later on your Profile.</p>`));
+          frame({ label: slot.name, title: slot.name + ": no options fit", body, pct: (ps.i / total) * 100, onBack: pickBack });
+          return;
+        }
+        body.appendChild(el(`<p class="mp-hint mp-pick-intro">${escText(slot.name)} of ${total} · about ${slot.calories} cal. Pick a template; next you'll choose what goes in it.</p>`));
+        const box = el(`<div class="mp-options mp-pick-templates"></div>`);
+        if (pk.template && !templates.some((t) => t.id === pk.template)) { pk.template = null; pk.sel = {}; }
+        templates.forEach((t) => box.appendChild(optionRow("radio", "pickTemplate", t.id, t.label, t.desc, pk.template === t.id)));
+        body.appendChild(box);
+        const f = frame({
+          id: "pickTemplateStep",
+          label: slot.name + " · template",
+          title: slot.name + ": pick a template",
+          body,
+          pct: (ps.i / total) * 100,
+          onBack: pickBack,
+          onNext: () => {
+            const v = selectedRadio("pickTemplate");
+            if (!v) return;
+            if (v !== pk.template) { pk.template = v; pk.sel = {}; }
+            ps.step = 1;
+            renderPick();
+          },
+        });
+        f.next.disabled = !pk.template;
+        box.addEventListener("change", () => {
+          box.querySelectorAll(".mp-option").forEach((n) => n.classList.toggle("selected", n.querySelector("input").checked));
+          f.next.disabled = !selectedRadio("pickTemplate");
+        });
+        return;
+      }
+
+      const stepsArr = pickStepsFor(pk.template, pk.sel, po);
+      const st = stepsArr[ps.step - 1];
+      const inOpts = (v) => st.options.some((o) => o.value === v);
+      let cur = (pk.sel[st.id] || []).filter(inOpts);
+      st.required.forEach((r) => { if (inOpts(r) && cur.indexOf(r) === -1) cur.unshift(r); });
+      if (!cur.length && st.min >= 1 && st.options.length === 1) cur = [st.options[0].value];
+      pk.sel[st.id] = cur;
+      const single = st.min === 1 && st.max === 1;
+      const limitText = st.min === st.max ? "Pick " + st.min : st.min === 0 ? "Optional: pick up to " + st.max : "Pick " + st.min + "–" + st.max;
+      const body = el(`<div></div>`);
+      // What's already picked for this slot (earlier steps).
+      const sofar = stepsArr.slice(0, ps.step - 1).map((s2) => (pk.sel[s2.id] || []).map((v) => {
+        const o = s2.options.find((x) => x.value === v);
+        return o ? o.label : v;
+      }).join(" + ")).filter(Boolean);
+      body.appendChild(el(`<p class="mp-pick-sofar"><strong>${escText(tplLabel(pk.template))}</strong>${sofar.length ? " · " + escText(sofar.join(" · ")) : ""}</p>`));
+      if (st.note) body.appendChild(el(`<p class="mp-hint mp-pick-note">${escText(st.note)}</p>`));
+      const box = el(`<div class="mp-options mp-pick-ingredients" data-step="${escText(st.id)}" data-min="${st.min}" data-max="${st.max}"></div>`);
+      const stock = stockKeys();
+      if (!st.options.length) {
+        box.appendChild(el(`<p class="mp-pick-empty">None of these fit your dietary restrictions${st.min ? ", so this template can't be built. Go back and pick another template." : ". You can skip this step."}</p>`));
+      }
+      st.options.forEach((o) => {
+        const locked = st.required.indexOf(o.value) !== -1;
+        const inStock = stock[groceryKey(o.key)];
+        box.appendChild(optionRow(single ? "radio" : "checkbox", "pickIng", o.value, o.label, locked ? "Always the base" : "",
+          cur.indexOf(o.value) !== -1, { locked, tag: inStock ? "In stock" : "" }));
+      });
+      body.appendChild(box);
+      const count = el(`<p class="mp-pick-count" aria-live="polite"></p>`);
+      body.appendChild(count);
+      if (st.hidden) {
+        body.appendChild(el(`<p class="mp-hint mp-pick-budget">A few pricier options are hidden to fit your $${escText(answers.budget)}/month budget.</p>`));
+      }
+      const isLast = lastSlot && ps.step === stepsArr.length;
+      const f = frame({
+        id: "pickIngredientStep",
+        label: slot.name + " · " + tplLabel(pk.template) + " · step " + ps.step + " of " + stepsArr.length,
+        title: "Pick " + st.title,
+        body,
+        pct: ((ps.i + ps.step / (stepsArr.length + 1)) / total) * 100,
+        onBack: () => { pk.sel[st.id] = cur.slice(); pickBack(); },
+        nextLabel: isLast ? "See my plan" : "Next",
+        onNext: () => {
+          if (!pickStepValid(st, cur)) return;
+          pk.sel[st.id] = cur.slice();
+          if (ps.step < stepsArr.length) ps.step += 1;
+          else if (!lastSlot) { ps.i += 1; ps.step = 0; }
+          else { finishPick(); return; }
+          renderPick();
+        },
+      });
+      const sync = () => {
+        const inputs = Array.from(box.querySelectorAll('input[name="pickIng"]'));
+        cur = inputs.filter((n) => n.checked).map((n) => n.value);
+        const full = cur.length >= st.max;
+        inputs.forEach((n) => {
+          const row = n.closest(".mp-option");
+          if (!single && !st.required.includes(n.value)) {
+            n.disabled = full && !n.checked;
+            row.classList.toggle("disabled", n.disabled);
+          }
+          row.classList.toggle("selected", n.checked);
+        });
+        count.textContent = limitText + " · " + cur.length + " picked" + (full && st.max > 1 ? " (max)" : "");
+        f.next.disabled = !pickStepValid(st, cur);
+      };
+      box.addEventListener("change", sync);
+      sync();
+    }
+
+    function finishPick() {
+      const po = pickPlanOptions();
+      // Drop any selection no longer valid (e.g. protein changed after picking fats).
+      const picks = pickState.picks.map((pk) => {
+        const sel = {};
+        pickStepsFor(pk.template, pk.sel, po).forEach((st) => {
+          sel[st.id] = (pk.sel[st.id] || []).filter((v) => st.options.some((o) => o.value === v));
+        });
+        return { template: pk.template, sel };
+      });
+      planVariant = randomPlanVariant();
+      answers._slotVariants = [];
+      answers._rerollHistory = {};
+      answers.__lockedPlan = buildPickedPlan(answers, picks, planVariant);
+      showResult();
     }
 
     function badge(ok, label) {
@@ -3434,6 +4579,8 @@
         <p class="mp-hint">$${plan.budget}/mo · shop ${cadence} · ${plan.daysPerWeek} days/week${plan.selectedDays && plan.selectedDays.length ? " (" + plan.selectedDays.map(function(d){ var x = DAYS_OF_WEEK.find(function(z){return z.id===d}); return x?x.short:d; }).join(", ") + ")" : ""}. Budget tier: ${plan.budgetTier ? plan.budgetTier.label : "—"}. Macro targets follow weight goal (${answers.weightGoal || "maintain"}). Snacks ≈ half a meal (±75); meals within ±150.</p>
         <h2>Meals &amp; snacks</h2>
         <div class="mp-slots"></div>
+        <h2>Suggested supplements</h2>
+        ${supplementsHtml(plan, answers)}
         <h2>Nutrition overview</h2>
         <div class="mp-goal mp-nutrition-overview">
           <p class="mp-overview-blurb">${overview.blurb}</p>
@@ -3567,7 +4714,9 @@
     }
 
     if (opts.startAt === "results" && (answers.__lockedPlan || answers.calories)) {
-      showResult();
+      // Locked (groceries ordered) weeks go straight to the read-only plan.
+      if (opts.mealPlanLocked) showResult();
+      else showBuildChoice();
     } else {
       render();
     }
@@ -4146,6 +5295,20 @@
   }
 
   global.MealPlanOnboarding = {
+    RESTRICTION_OPTIONS,
+    FOOD_TAGS,
+    supplementsForPlan,
+    supplementsHtml,
+    pickTemplatesFor,
+    pickStepsFor,
+    pickStepValid,
+    buildPickedSuggestion,
+    buildPickedPlan,
+    normalizeRestrictions,
+    restrictionFlags,
+    foodAllowed,
+    restrictSuggestion,
+    mealTypePools,
     MACRO_PRESETS,
     macrosFromWeightGoal,
     MEAL_OPTIONS,
